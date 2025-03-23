@@ -63,7 +63,8 @@ class MainGame(ShowBase):
     def __cancel_queue(self):
         self.logger.info("Exiting queue and stopping background check.")
         leave_queue(self.player_id)
-        self.queue_task.remove()
+        if self.queue_task is not None:
+            self.queue_task.remove()
         self.queue_task = None
 
     def __check_queue_status(self, task):
@@ -71,7 +72,8 @@ class MainGame(ShowBase):
         success, status, match_id = check_queue_status(self.player_id)
         if not success:
             return Task.again
-        if status != QueueStatus.MATCHED:
+        self.logger.info(f"{status}")
+        if status != QueueStatus.MATCHED.value:
             self.logger.debug("Not matched yet...")
             return Task.again
         if len(match_id) > 0:
