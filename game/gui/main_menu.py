@@ -1,4 +1,4 @@
-from game.const.events import GUI_SETTINGS_EVENT, START_GAME_EVENT
+from game.const.events import ENTER_QUEUE, GUI_SETTINGS_EVENT, START_GAME_EVENT
 from game.helpers.config import save_config
 from panda3d.core import TextNode, TransparencyAttrib
 
@@ -28,14 +28,14 @@ class MainMenu(GuiBase):
         self.load_background_image()
 
         menu_box = DirectFrame( 
-            frameSize=(-0.60, 0.60, -0.80, 0.30),
+            frameSize=(-0.60, 0.60, -1.00, 0.30),
             pos=(-0.85, 0, 0), 
             frameColor = (1,1,1,1),
         )
         menu_box.setTransparency(TransparencyAttrib.MAlpha)
         self.ui_elements.append(menu_box)
         
-        start_button = DirectButton(text=("Start"),
+        start_button = DirectButton(text=("Start offline"),
                     parent = menu_box,
                     pos=(0,0,0.05), 
                     scale=0.12, 
@@ -50,9 +50,24 @@ class MainMenu(GuiBase):
         start_button.setTransparency(TransparencyAttrib.MAlpha)
         self.menu_elements.append(start_button)
 
-        settings_button = DirectButton(text=("Settings"),
+        queue_button = DirectButton(text=("Queue online..."),
                     parent = menu_box,
                     pos=(0,0,-0.25), 
+                    scale=0.12, 
+                    command=self.queue_up, 
+                    relief=DGG.FLAT, 
+                    text_fg=(TEXT_COLOR),
+                    #pad = (1, 0.1),
+                    frameSize = (-4, 4, -1, 1),
+                    text_scale = 1.3,
+                    text_pos = (0, -0.3),
+                    frameColor = (1,1,1,1))
+        queue_button.setTransparency(TransparencyAttrib.MAlpha)
+        self.menu_elements.append(queue_button)
+
+        settings_button = DirectButton(text=("Settings"),
+                    parent = menu_box,
+                    pos=(0,0,-0.55), 
                     scale=0.12, 
                     command=self.open_settings, 
                     relief=DGG.FLAT, 
@@ -68,7 +83,7 @@ class MainMenu(GuiBase):
 
         quit_button = DirectButton(text=("Quit"),
                     parent = menu_box,
-                    pos=(0,0,-0.55), 
+                    pos=(0,0,-0.85), 
                     scale=0.12, 
                     command=self.quit_game, 
                     relief=DGG.FLAT, 
@@ -85,12 +100,15 @@ class MainMenu(GuiBase):
         self.ui_elements += self.menu_elements
         
     def start_game(self):
-        print("Start button pressed")
+        self.logger.info("Start button pressed")
         # Use global event messenger to start the game
         messenger.send(START_GAME_EVENT)
 
     def open_settings(self):
         messenger.send(GUI_SETTINGS_EVENT)
+
+    def queue_up(self):
+        messenger.send(ENTER_QUEUE)
         
     def quit_game(self):
         save_config('./user_settings.json')

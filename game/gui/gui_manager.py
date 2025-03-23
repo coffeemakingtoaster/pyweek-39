@@ -4,6 +4,7 @@ import logging
 
 from game.gui.gui_base import GuiBase
 from game.gui.main_menu import MainMenu
+from game.gui.queue_menu import QueueMenu
 
 class GuiStates(Enum):
     RUNNING = "RUNNING"
@@ -11,6 +12,7 @@ class GuiStates(Enum):
     SETTINGS = "SETTINGS"
     MAIN_MENU = "MAIN_MENU"
     GAME_END_SCREEN = "GAME_END_SCREEN"
+    QUEUE = "QUEUE"
     LIMBO = "LIMBO"
 
 class StateTransitionEvents(Enum):
@@ -18,8 +20,9 @@ class StateTransitionEvents(Enum):
     RETURN = "RETURN"
     SETTINGS = "GOTO_SETTINGS"
     MAIN_MENU = "GOTO_MAIN_MENU"
+    QUEUE = "QUEUE"
     PLAY = "PLAY"
-    FORCE_MAIN_MENU = "GOTO_MAIN_MENU"
+    FORCE_MAIN_MENU = "FORCE_GOTO_MAIN_MENU"
 
 # State machine to implement gui state change interactions
 class GuiStateMachine(FSM):
@@ -39,12 +42,16 @@ class GuiStateMachine(FSM):
         (GuiStates.GAME_END_SCREEN.value, StateTransitionEvents.ESC.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.GAME_END_SCREEN.value, StateTransitionEvents.RETURN.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.MAIN_MENU.value, StateTransitionEvents.PLAY.value) : GuiStates.RUNNING.value,
+        (GuiStates.MAIN_MENU.value, StateTransitionEvents.QUEUE.value) : GuiStates.QUEUE.value,
         (GuiStates.MAIN_MENU.value, StateTransitionEvents.SETTINGS.value) : GuiStates.SETTINGS.value,
+        (GuiStates.QUEUE.value, StateTransitionEvents.RETURN.value) : GuiStates.MAIN_MENU.value,
+        (GuiStates.QUEUE.value, StateTransitionEvents.ESC.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.RUNNING.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.PAUSED.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.SETTINGS.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.GAME_END_SCREEN.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.MAIN_MENU.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
+        (GuiStates.QUEUE.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
     }
 
     def defaultFilter(self, request: str, args):
@@ -81,6 +88,9 @@ class GuiManager():
             case GuiStates.MAIN_MENU.value:
                 self.current_ui = MainMenu()
                 self.currently_displayed_gui_state = GuiStates.MAIN_MENU
+            case GuiStates.QUEUE.value:
+                self.current_ui = QueueMenu()
+                self.currently_displayed_gui_state = GuiStates.QUEUE
             case _:
                 self.logger.warning(f"State {target_state} not yet implemented by gui manager. Returning to main menu")
                 self.gui_state_machine.state  = GuiStates.MAIN_MENU.value

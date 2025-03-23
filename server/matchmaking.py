@@ -5,12 +5,7 @@ from typing import Dict, Tuple
 from enum import Enum
 
 from server.match import Match
-
-class PlayerStates(Enum):
-    IN_QUEUE = "in_queue"
-    MATCHED = "matched"
-    IN_GAME = "in_game"
-    UNKNOWN = "unknown"
+from shared.const.queue_status import QueueStatus
 
 class MatchMaker():
     def __init__(self) -> None:
@@ -27,11 +22,13 @@ class MatchMaker():
     def remove_player(self, player_id: str):
         if player_id in self.queued_players:
             self.queued_players.remove(player_id)
+            self.logger.info(f"Player left queue ({player_id}). Currently {len(self.queued_players)} in queue...")
             return
         if player_id in self.player_id_match_lookup:
             match_id = self.player_id_match_lookup[player_id]
+            self.logger.info(f"Player left in limbo between game and queue ({player_id}). Terminating game ({match_id})...")
             del self.player_id_match_lookup[player_id]
-            self.match_overview[match_id].terminate()
+            _ = self.match_overview[match_id].terminate()
 
     def __try_to_match(self):
         # couldnt match
@@ -45,19 +42,19 @@ class MatchMaker():
         self.player_id_match_lookup[player_2] = match.id
         self.logger.info(f"New match created ({match.id}). Currently {len(self.queued_players)} in queue...")
 
-    def get_player_status(self, player_id: str) -> Tuple[PlayerStates, str]:
+    def get_player_status(self, player_id: str) -> Tuple[QueueStatus, str]:
         if player_id in self.queued_players:
-            return (PlayerStates.IN_QUEUE, "")
+            return (QueueStatus.IN_QUEUE, "")
         if player_id in self.player_id_match_lookup:
             player_match = self.match_overview.get(self.player_id_match_lookup[player_id])
             # Initial lobby was terminated
             if player_match is None:
                 del self.player_id_match_lookup[player_id]
-                return (PlayerStates.IN_QUEUE, "")
+                return (QueueStatus.IN_QUEUE, "")
             if player_match.lobby_ready:
-                return (PlayerStates.IN_GAME, player_match.id)
-            return (PlayerStates.MATCHED, player_match.id)
-        return (PlayerStates.UNKNOWN, "")
+                return (QueueStatus.IN_GAME, player_match.id)
+            return (QueueStatus.MATCHED, player_match.id)
+        return (QueueStatus.UNKNOWN, "")
 
     def is_valid_match_id(self, match_id: str) -> bool:
         return match_id in self.match_overview

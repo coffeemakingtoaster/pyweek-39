@@ -1,9 +1,9 @@
 import logging
-from fastapi import FastAPI, Form, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
-from server import player
-from server.matchmaking import MatchMaker, PlayerStates
+from server.matchmaking import MatchMaker
 from server.types.body import JoinQueueBody
+from shared.const.queue_status import QueueStatus
 from shared.utils.validation import is_valid_uuid
 
 LOGGER = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ async def new_queue(new_player: JoinQueueBody):
         )
     matchMaker.add_player(new_player.player_id)
 
-@app.delete("/queue")
+@app.delete("/queue/{player_id}")
 async def remove_player_from_queue(player_id: str):
     if not is_valid_uuid(player_id): 
         raise HTTPException(
@@ -38,7 +38,7 @@ async def get_queue_status(player_id: str):
             detail="Provided player id was invalid"
         )
     status, match_id = matchMaker.get_player_status(player_id)
-    if status in [PlayerStates.MATCHED, PlayerStates.IN_GAME]:
+    if status in [QueueStatus.MATCHED, QueueStatus.IN_GAME]:
         return JSONResponse(content={"status": status.value, "match_id": match_id}, status_code=200)
     return JSONResponse(content={"status": status.value}, status_code=200)
 
