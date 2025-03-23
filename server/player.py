@@ -2,7 +2,6 @@ import json
 from fastapi import WebSocket
 from fastapi.websockets import WebSocketState
 
-
 class Player:
     def __init__(self,player_id: str, websocket: WebSocket) -> None:
         self.ws: WebSocket = websocket

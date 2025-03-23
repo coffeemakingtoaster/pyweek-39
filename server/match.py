@@ -89,7 +89,7 @@ class Match():
             except WebSocketDisconnect: 
                self.logger.info("One player left mid match...the remaining player will be declared the winner")
             except Exception as e:
-                self.logger.warning(f"An error occured when communicating actions between players {e}")
+                self.logger.warning(f"An error occured when communicating actions between players. This likely means a player has disconnected.")
 
         self.logger.debug("Game finished")
 
