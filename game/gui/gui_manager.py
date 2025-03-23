@@ -2,7 +2,9 @@ from enum import Enum
 from direct.fsm.FSM import FSM
 import logging
 
+from game.gui.game_end import GameEnd
 from game.gui.gui_base import GuiBase
+from game.gui.hud import Hud
 from game.gui.main_menu import MainMenu
 from game.gui.queue_menu import QueueMenu
 
@@ -11,7 +13,8 @@ class GuiStates(Enum):
     PAUSED = "PAUSED"
     SETTINGS = "SETTINGS"
     MAIN_MENU = "MAIN_MENU"
-    GAME_END_SCREEN = "GAME_END_SCREEN"
+    GAME_END_SCREEN_WIN = "GAME_END_SCREEN_WIN"
+    GAME_END_SCREEN_DEFEAT = "GAME_END_SCREEN_DEFEAT"
     QUEUE = "QUEUE"
     LIMBO = "LIMBO"
 
@@ -23,6 +26,8 @@ class StateTransitionEvents(Enum):
     QUEUE = "QUEUE"
     PLAY = "PLAY"
     FORCE_MAIN_MENU = "FORCE_GOTO_MAIN_MENU"
+    WIN = "WIN"
+    DEFEAT = "DEFEAT"
 
 # State machine to implement gui state change interactions
 class GuiStateMachine(FSM):
@@ -35,12 +40,16 @@ class GuiStateMachine(FSM):
     nextState = {
         (GuiStates.RUNNING.value, StateTransitionEvents.ESC.value) : GuiStates.PAUSED.value,
         (GuiStates.RUNNING.value, StateTransitionEvents.PLAY.value) : GuiStates.RUNNING.value,
+        (GuiStates.RUNNING.value, StateTransitionEvents.WIN.value) : GuiStates.GAME_END_SCREEN_WIN.value,
+        (GuiStates.RUNNING.value, StateTransitionEvents.DEFEAT.value) : GuiStates.GAME_END_SCREEN_DEFEAT.value,
         (GuiStates.PAUSED.value, StateTransitionEvents.ESC.value) : GuiStates.RUNNING.value,
         (GuiStates.PAUSED.value, StateTransitionEvents.RETURN.value) : GuiStates.RUNNING.value,
         (GuiStates.SETTINGS.value, StateTransitionEvents.ESC.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.SETTINGS.value, StateTransitionEvents.RETURN.value) : GuiStates.MAIN_MENU.value,
-        (GuiStates.GAME_END_SCREEN.value, StateTransitionEvents.ESC.value) : GuiStates.MAIN_MENU.value,
-        (GuiStates.GAME_END_SCREEN.value, StateTransitionEvents.RETURN.value) : GuiStates.MAIN_MENU.value,
+        (GuiStates.GAME_END_SCREEN_WIN.value, StateTransitionEvents.ESC.value) : GuiStates.MAIN_MENU.value,
+        (GuiStates.GAME_END_SCREEN_WIN.value, StateTransitionEvents.RETURN.value) : GuiStates.MAIN_MENU.value,
+        (GuiStates.GAME_END_SCREEN_DEFEAT.value, StateTransitionEvents.ESC.value) : GuiStates.MAIN_MENU.value,
+        (GuiStates.GAME_END_SCREEN_DEFEAT.value, StateTransitionEvents.RETURN.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.MAIN_MENU.value, StateTransitionEvents.PLAY.value) : GuiStates.RUNNING.value,
         (GuiStates.MAIN_MENU.value, StateTransitionEvents.QUEUE.value) : GuiStates.QUEUE.value,
         (GuiStates.MAIN_MENU.value, StateTransitionEvents.SETTINGS.value) : GuiStates.SETTINGS.value,
@@ -50,7 +59,8 @@ class GuiStateMachine(FSM):
         (GuiStates.RUNNING.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.PAUSED.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.SETTINGS.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
-        (GuiStates.GAME_END_SCREEN.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
+        (GuiStates.GAME_END_SCREEN_WIN.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
+        (GuiStates.GAME_END_SCREEN_DEFEAT.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.MAIN_MENU.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.QUEUE.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
     }
@@ -92,6 +102,15 @@ class GuiManager():
             case GuiStates.QUEUE.value:
                 self.current_ui = QueueMenu()
                 self.currently_displayed_gui_state = GuiStates.QUEUE
+            case GuiStates.GAME_END_SCREEN_WIN.value:
+                self.current_ui = GameEnd(True)
+                self.currently_displayed_gui_state = GuiStates.GAME_END_SCREEN_WIN
+            case GuiStates.GAME_END_SCREEN_DEFEAT.value:
+                self.current_ui = GameEnd(False)
+                self.currently_displayed_gui_state = GuiStates.GAME_END_SCREEN_DEFEAT
+            case GuiStates.RUNNING.value:
+                self.current_ui = Hud()
+                self.currently_displayed_gui_state = GuiStates.RUNNING
             case _:
                 self.logger.warning(f"State {target_state} not yet implemented by gui manager. Returning to main menu")
                 self.gui_state_machine.state  = GuiStates.MAIN_MENU.value

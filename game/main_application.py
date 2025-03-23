@@ -1,12 +1,12 @@
 import logging
 from sys import is_stack_trampoline_active
 from time import sleep, time
-from direct.task.Task import Task
+from direct.task.Task import Task, messenger
 from panda3d.core import *
 
 from direct.showbase.ShowBase import ShowBase
 
-from game.const.events import CANCEL_QUEUE, ENTER_QUEUE, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, START_GAME_EVENT
+from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, START_GAME_EVENT, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_MS
 from game.entities.player import Player
 from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
@@ -42,8 +42,10 @@ class MainGame(ShowBase):
 
         # General event handling
         self.accept(START_GAME_EVENT, self.__start_game)
-        self.accept(ENTER_QUEUE, self.__enter_queue)
-        self.accept(CANCEL_QUEUE, self.__cancel_queue)
+        self.accept(ENTER_QUEUE_EVENT, self.__enter_queue)
+        self.accept(CANCEL_QUEUE_EVENT, self.__cancel_queue)
+        self.accept(WIN_EVENT, self.__finish_game, [True])
+        self.accept(DEFEAT_EVENT, self.__finish_game, [False])
 
         self.player_id = str(uuid.uuid4())
 
@@ -54,6 +56,14 @@ class MainGame(ShowBase):
         self.input_buffer = []
 
         self.last_ws_message = None
+
+    def __finish_game(self, is_victory):
+        self.logger.info(f"Received game finish where victory: {is_victory}")
+        self.player.destroy()
+        if is_victory:
+            self.gui_manager.handle_custom(StateTransitionEvents.WIN)
+        else:
+            self.gui_manager.handle_custom(StateTransitionEvents.DEFEAT)
 
     def __enter_queue(self):
         messenger.send(GUI_QUEUE_EVENT)

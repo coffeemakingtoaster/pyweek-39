@@ -1,4 +1,4 @@
-from game.const.events import ENTER_QUEUE, GUI_SETTINGS_EVENT, START_GAME_EVENT
+from game.const.events import ENTER_QUEUE_EVENT, GUI_SETTINGS_EVENT, START_GAME_EVENT
 from game.helpers.config import save_config
 from panda3d.core import TextNode, TransparencyAttrib
 
@@ -108,7 +108,7 @@ class MainMenu(GuiBase):
         messenger.send(GUI_SETTINGS_EVENT)
 
     def queue_up(self):
-        messenger.send(ENTER_QUEUE)
+        messenger.send(ENTER_QUEUE_EVENT)
         
     def quit_game(self):
         save_config('./user_settings.json')
