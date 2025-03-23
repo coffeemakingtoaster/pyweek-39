@@ -1,0 +1,8 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server.Dockerfile
+    container_name: pyweek-39-multiplayer
+    ports:
+      - "3000:3000"
