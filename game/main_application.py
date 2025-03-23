@@ -3,8 +3,8 @@ from panda3d.core import *
 
 from direct.showbase.ShowBase import ShowBase
 
-from src.const.events import GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, START_GAME_EVENT
-from src.gui.gui_manager import GuiManager, StateTransitionEvents
+from game.const.events import GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, START_GAME_EVENT
+from game.gui.gui_manager import GuiManager, StateTransitionEvents
 
 class MainGame(ShowBase):
     def __init__(self) -> None:

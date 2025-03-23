@@ -1,12 +1,12 @@
-from src.const.events import GUI_SETTINGS_EVENT, START_GAME_EVENT
-from src.helpers.config import save_config
+from game.const.events import GUI_SETTINGS_EVENT, START_GAME_EVENT
+from game.helpers.config import save_config
 from panda3d.core import TextNode, TransparencyAttrib
 
 from direct.gui.DirectGui import DirectButton, DirectLabel, DirectFrame, DGG
 
 import sys
 
-from src.gui.gui_base import GuiBase
+from game.gui.gui_base import GuiBase
 
 class MainMenu(GuiBase):
     def __init__(self):

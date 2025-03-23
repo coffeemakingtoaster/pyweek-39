@@ -2,7 +2,7 @@ import os
 from panda3d.core import WindowProperties
 import json
 
-from src.const.settings import GAME_SETTINGS
+from game.const.settings import GAME_SETTINGS
 
 def load_config(path):
     

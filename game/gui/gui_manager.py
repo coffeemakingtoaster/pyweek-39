@@ -2,8 +2,8 @@ from enum import Enum
 from direct.fsm.FSM import FSM
 import logging
 
-from src.gui.gui_base import GuiBase
-from src.gui.main_menu import MainMenu
+from game.gui.gui_base import GuiBase
+from game.gui.main_menu import MainMenu
 
 class GuiStates(Enum):
     RUNNING = "RUNNING"
