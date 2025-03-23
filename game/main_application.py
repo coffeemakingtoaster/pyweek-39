@@ -53,12 +53,12 @@ class MainGame(ShowBase):
         self.ws = None
 
         self.time_since_last_package = 1_000_000
-        self.input_buffer = []
-
-        self.last_ws_message = None
 
     def __finish_game(self, is_victory):
         self.logger.info(f"Received game finish where victory: {is_victory}")
+        if self.ws is not None:
+            self.ws.close()
+        self.is_online = False
         self.player.destroy()
         if is_victory:
             self.gui_manager.handle_custom(StateTransitionEvents.WIN)
@@ -67,8 +67,8 @@ class MainGame(ShowBase):
 
     def __enter_queue(self):
         messenger.send(GUI_QUEUE_EVENT)
-        join_queue(self.player_id)
-        self.queue_task = base.taskMgr.add(self.__check_queue_status, "queue_check")
+        self.queue_task = base.taskMgr.doMethodLater(1, self.__check_queue_status, "queue_check")
+        base.taskMgr.add(join_queue, 'join_queue_task', extraArgs=[self.player_id])
 
     def __cancel_queue(self):
         self.logger.info("Exiting queue and stopping background check.")
@@ -78,7 +78,6 @@ class MainGame(ShowBase):
         self.queue_task = None
 
     def __check_queue_status(self, task):
-        sleep(1)
         success, status, match_id = check_queue_status(self.player_id)
         if not success:
             return Task.again
@@ -93,25 +92,31 @@ class MainGame(ShowBase):
 
     def __start_game(self, match_id="",is_offline=True):
         self.player = Player()
+        self.is_online = is_offline
         if is_offline:
             self.logger.info("Starting game in offline mode...")
         else:
             self.logger.info("Starting online game...")
-            self.is_online = True
+            if self.queue_task is not None:
+                self.queue_task.remove()
+            self.queue_task = None
             self.ws = get_ws_conn(match_id, self.player_id)
-            # TODO: kill this at some point
-            self.ws_handle_task = self.task_mgr.add(ws_producer, "ws_message_receiver", extraArgs=[self.ws, self.__process_ws_message] )
         messenger.send(GUI_PLAY_EVENT)
-        pass
-
-    def __process_ws_message(self, message):
-        self.last_ws_message = message
+        if not is_offline:
+            pass
+            # TODO: kill this at some point
+            # This currently freezes everything
+            #self.ws_handle_task = self.task_mgr.add(ws_producer, "ws_message_receiver", extraArgs=[self.ws, self.__process_ws_message])
 
     def __main_loop_online(self, dt):
         self.time_since_last_package += dt
-        if self.last_ws_message is not None:
-            self.logger.debug("Handling ws message")
-            self.last_ws_message = None
+        try:
+            msg = self.ws.recv(timeout=0.01)
+            self.logger.debug(f"Handling ws message {msg}")
+        except TimeoutError:
+            # No new message
+            pass
+
         if self.time_since_last_package > TIME_BETWEEN_PACKAGES_IN_MS:
             _ = save_send(self.ws, self.player.get_current_state())
             self.time_since_last_package = 0

@@ -1,6 +1,8 @@
 import json
 import logging
 from typing import Tuple
+
+from direct.task.Task import Task
 from game.const.networking import HOST
 import requests
 
@@ -13,11 +15,11 @@ def join_queue(player_id: str) -> bool:
         res = requests.post(url, json = body)
     except Exception as e:
         LOGGER.warning(f"Could not join queue. This may indicate network problems. Either way please play against a bot in the meantime. Error {e}")
-        return False
+        return Task.done
     if res.status_code != 201:
         LOGGER.warning("Could not join queue. This may indicate network problems. Either way please play against a bot in the meantime")
-        return False
-    return True
+        return Task.done
+    return Task.done
 
 def check_queue_status(player_id: str) -> Tuple[ bool, str, str]:
     try:
