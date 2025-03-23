@@ -1,1 +1,3 @@
 HOST = "localhost:3000"
+
+TIME_BETWEEN_PACKAGES_IN_MS = 50

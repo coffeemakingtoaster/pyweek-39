@@ -28,12 +28,16 @@ def observe_queue_status(id: str):
 
 async def match_ws(player_id, match_id):
     print(f"Connecting for {player_id}")
+    ready = False
     async with connect(f"ws://localhost:3000/match/{match_id}/{player_id}") as websocket:
         while True:
             try:
                 message = await websocket.recv()
                 print(message)
+                if ready:
+                    await websocket.send(message)
                 if "Starting" in message:
+                    ready = True
                     print("go!")
             except ConnectionClosedOK:
                 break

@@ -45,6 +45,7 @@ class GuiStateMachine(FSM):
         (GuiStates.MAIN_MENU.value, StateTransitionEvents.QUEUE.value) : GuiStates.QUEUE.value,
         (GuiStates.MAIN_MENU.value, StateTransitionEvents.SETTINGS.value) : GuiStates.SETTINGS.value,
         (GuiStates.QUEUE.value, StateTransitionEvents.RETURN.value) : GuiStates.MAIN_MENU.value,
+        (GuiStates.QUEUE.value, StateTransitionEvents.PLAY.value) : GuiStates.RUNNING.value,
         (GuiStates.QUEUE.value, StateTransitionEvents.ESC.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.RUNNING.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.PAUSED.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
