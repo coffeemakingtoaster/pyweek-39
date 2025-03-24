@@ -9,12 +9,17 @@ from direct.showbase.ShowBase import ShowBase
 from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, START_GAME_EVENT, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_MS
 from game.entities.player import Player
+from direct.actor.Actor import Actor
 from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
 import uuid
 
 from game.networking.queue import check_queue_status, join_queue, leave_queue
 from game.networking.websocket import get_ws_conn, save_send, ws_producer
 from shared.const.queue_status import QueueStatus
+from pandac.PandaModules import WindowProperties
+
+from math import pi, sin, cos
+
 
 class MainGame(ShowBase):
     def __init__(self) -> None:
@@ -27,6 +32,8 @@ class MainGame(ShowBase):
         self.queue_task = None
         self.ws_handle_task = None
         self.logger.debug("Window setup done...")
+        self.mouse_sensitivity = 0.2
+        self.mouse_locked = False
 
         self.player: None | Player = None
 
@@ -90,11 +97,38 @@ class MainGame(ShowBase):
             self.__start_game(match_id, False)
             return Task.done
 
+    def toggle_mouse(self):
+        if self.mouse_locked:
+            self.mouse_locked = False
+            props = WindowProperties()
+            props.setCursorHidden(False)
+            base.win.requestProperties(props)
+        else:
+            self.mouse_locked = True
+            props = WindowProperties()
+            props.setCursorHidden(True)
+            base.win.requestProperties(props)
+    
+    
     def __start_game(self, match_id="",is_offline=True):
-        self.player = Player()
+        base.disableMouse()
+        self.toggle_mouse()
+        
+        
+        alight = AmbientLight('alight')
+        alight.setColor((0.2, 0.2, 0.2, 1))
+        alnp = render.attachNewNode(alight)
+        render.setLight(alnp)
+        self.player = Player(self.camera,self.win)
+        self.camera.reparentTo(self.player.actor)
+        self.map = self.loader.loadModel("assets/models/map.egg")
+        
+        
+        self.map.reparentTo(self.render)
         self.is_online = is_offline
         if is_offline:
             self.logger.info("Starting game in offline mode...")
+            
         else:
             self.logger.info("Starting online game...")
             if self.queue_task is not None:
@@ -123,13 +157,16 @@ class MainGame(ShowBase):
 
     def __main_loop(self, task):
         dt = self.clock.dt
-
-        if not self.gui_manager.gui_state_machine.getCurrentOrNextState() == GuiStates.RUNNING:
+        first = True
+        
+        
+        if not self.gui_manager.gui_state_machine.getCurrentOrNextState() == GuiStates.RUNNING.value:
             return Task.again
+        
+        self.player.update(dt)
 
-        self.player.update()
-
-        if self.is_online:
+        if self.is_online and 1 is 2:
             self.__main_loop_online(dt)
         else:
             pass
+        return Task.cont
