@@ -7,6 +7,9 @@ import time
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedOK
 
+HOST = "pyweek-39.ssh-coffee.dev"
+#HOST = "localhost:3000"
+
 @dataclass
 class Vector:
     x: float 
@@ -30,14 +33,14 @@ class PlayerInfo:
 
 def join_queue():
     id = str(uuid.uuid4())
-    url = 'http://localhost:3000/queue'
+    url = f'http://{HOST}/queue'
     body = {'player_id': id}
     res = requests.post(url, json = body)
     assert res.status_code == 201
     return id
 
 def get_queue_status(id):
-    res = requests.get(f"http://localhost:3000/queue/{id}")
+    res = requests.get(f"http://{HOST}/queue/{id}")
     assert res.status_code == 200
     print(f"Player {id} is {res.json()["status"]}")
     return res.json().get("match_id")
@@ -53,7 +56,7 @@ async def match_ws(player_id, match_id):
     print(f"Connecting for {player_id}")
     ready = False
     proacctive = False
-    async with connect(f"ws://localhost:3000/match/{match_id}/{player_id}") as websocket:
+    async with connect(f"ws://{HOST}/match/{match_id}/{player_id}") as websocket:
         while True:
             try:
                 if proacctive and ready:

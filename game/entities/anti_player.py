@@ -34,7 +34,7 @@ class AntiPlayer(EntityBase):
             return
         self.logger.debug(update)
         # Testing offset
-        update.position.z += 5
+        #update.position.z += 5
         self.actor.setPos(update.position.x, update.position.y, update.position.z)
         # The vector is normalized when sending it
         self.movement_vector = Vec3(update.movement.x , update.movement.y, update.movement.z)
