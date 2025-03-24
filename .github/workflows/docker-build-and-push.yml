@@ -40,7 +40,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./
           push: true
+          dockerfile: ./server.Dockerfile
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ env.image }}:latest
