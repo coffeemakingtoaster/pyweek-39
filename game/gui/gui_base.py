@@ -2,6 +2,7 @@ import logging
 from direct.showbase import DirectObject
 from direct.gui.DirectGui import OnscreenImage
 from os.path import join
+from panda3d.core import Filename
 
 from direct.showbase.PythonUtil import os
 
@@ -26,5 +27,7 @@ class GuiBase(DirectObject.DirectObject):
         self.ui_elements = []
         
     def load_background_image(self):
-        background = OnscreenImage(join(os.getcwd(), "assets", "images","main_menu_background.png"), pos=(-0.1,0,0), scale=(1521 * 0.0012,1,859 * 0.0012)) 
+        file_path = os.path.join(os.getcwd(), "assets", "images", "main_menu_background.png")
+        file_path = Filename.fromOsSpecific(file_path).getFullpath()
+        background = OnscreenImage(file_path, pos=(-0.1, 0, 0), scale=(1521 * 0.0012, 1, 859 * 0.0012))
         self.ui_elements.append(background)
