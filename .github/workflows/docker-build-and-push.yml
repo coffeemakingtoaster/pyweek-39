@@ -2,8 +2,10 @@ name: Docker build and push
 
 on:
   push:
-    tags:        
-      - '*'  
+    branches:
+      - main
+    tags:
+      - '*'
 
 env:
   image: ghcr.io/coffeemakingtoaster/pyweek-39/server
