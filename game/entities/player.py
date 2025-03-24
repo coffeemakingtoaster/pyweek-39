@@ -2,7 +2,7 @@ from game.const.player import BASE_HEALTH, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
 from game.helpers.helpers import *
-from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere
+from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2
 from shared.types.player_info import PlayerInfo, Vector
 
 class Player(EntityBase):
@@ -14,9 +14,10 @@ class Player(EntityBase):
         self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
         self.camera = camera
         self.window = window
-        self.jump_status = 0
+        self.jump_status = "none"
         self.health = BASE_HEALTH
         self.build_player()
+        self.initial_jump_velocity = 100
         
         
         
@@ -31,7 +32,8 @@ class Player(EntityBase):
         self.accept("s", self.set_movement_status, ["backward"])
         self.accept("s-up", self.unset_movement_status, ["backward"])
         self.accept("space",self.set_jump_status)
-        self.accept("space",self.unset_jump_status)
+        self.accept("mouse1",self.stab)
+        
         
 
         '''
@@ -54,12 +56,12 @@ class Player(EntityBase):
         self.movement_status[direction] = 0
 
     def set_jump_status(self):
-        if self.jump_status == 0:
-            self.jump_status = 1
+        if self.jump_status == "none":
             
-    def unset_jump_status(self):
-        if self.jump_status == 1:
-            self.jump_status = 2
+            self.jump_status = "start"
+            
+    def stab(self):
+        self.sword.play("stab")
     
     def build_player(self):
         
@@ -68,8 +70,9 @@ class Player(EntityBase):
         self.head = Actor(getModelPath("head"))
         self.head.reparentTo(self.body)
         self.head.setPos(0,0,0.52)
-        self.sword = Actor(getModelPath("sword"))
+        self.sword = Actor(getModelPath("sword"),{"stab":getModelPath("sword-Stab")})
         self.sword.reparentTo(self.head)
+    
         self.shoes = Actor(getModelPath("shoes"))
         self.shoes.reparentTo(self.body)
         self.body.setPos(0, 0, 0.5)
@@ -84,23 +87,43 @@ class Player(EntityBase):
         self.head.setP(self.head.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
 
-    def __get_movement_vector(self) -> Vec3:
+    def __get_movement_vector(self,dt) -> Vec3:
+        
+        flat_moveVec = Vec2(0,0)
         moveVec = Vec3(0, 0, 0)
+        
+        if self.body.getZ() <= 0.5 and self.jump_status == "start":
+            self.jump_status = "fly"
+            self.vertical_velocity = self.initial_jump_velocity  
+
+        if self.jump_status == "fly" or self.jump_status == "fall":
+            
+            self.vertical_velocity -= 9.81*20 * dt  
+
+            moveVec += Vec3(0, 0, self.vertical_velocity) * dt  
+
+            if self.vertical_velocity < 0:
+                self.jump_status = "fall"
+        if self.body.getZ() <= 0.5 and self.jump_status == "fall":
+            self.jump_status = "none"
+            self.vertical_velocity = 0 
+             
         if self.movement_status["forward"]:
-            moveVec += Vec3(0, 1, 0)
+            flat_moveVec += Vec2(0, 1)
         if self.movement_status["backward"]:
-            moveVec += Vec3(0, -1, 0)
+            flat_moveVec += Vec2(0, -1)
         if self.movement_status["left"]:
-            moveVec += Vec3(-1, 0, 0)
+            flat_moveVec += Vec2(-1, 0)
         if self.movement_status["right"]:
-            moveVec += Vec3(1, 0, 0)
-        moveVec.normalize() if moveVec.length() > 0 else None
+            flat_moveVec += Vec2(1, 0)
+        flat_moveVec.normalize() if flat_moveVec.length() > 0 else None
+        moveVec = Vec3(flat_moveVec.x,flat_moveVec.y,moveVec.z)
         return moveVec
 
     
     def update(self, dt):
         self.update_camera(dt)
-        moveVec = self.__get_movement_vector()
+        moveVec = self.__get_movement_vector(dt)
         moveVec *= self.move_speed * dt
         self.body.setPos(self.body, moveVec)
 

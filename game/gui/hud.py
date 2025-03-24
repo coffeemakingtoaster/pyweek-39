@@ -12,7 +12,7 @@ class Hud(GuiBase):
 
         menu_box = DirectFrame( 
             frameSize=(-0.60, 0.60, -0.50, 0.30),
-            pos=(-0.85, 0, 0), 
+            pos=(-200.85, 0, 0), #AUS MEINEM BLICKFELD
             frameColor = (1,1,1,1),
         )
         menu_box.setTransparency(TransparencyAttrib.MAlpha)

@@ -9,6 +9,7 @@ from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.entities.anti_player import AntiPlayer
 from game.entities.player import Player
 from direct.actor.Actor import Actor
+from game.helpers import *
 from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
 import uuid
 
@@ -123,19 +124,32 @@ class MainGame(ShowBase):
     
     
     def __start_game(self, match_id="", is_offline=True):
+        
+        
+        #cubeMap = loader.loadCubeMap(getImagePath("skybox"))
+        self.spaceSkyBox = loader.loadModel(helpers.getModelPath("cube"))
+        self.spaceSkyBox.setScale(100)
+        self.spaceSkyBox.setBin('background', 0)
+        self.spaceSkyBox.setDepthWrite(0)
+        self.spaceSkyBox.setTwoSided(True)
+        self.spaceSkyBox.setTexGen(TextureStage.getDefault(),TexGenAttrib.MWorldCubeMap)
+        self.spaceSkyBox.reparentTo(render)
+        #self.spaceSkyBox.setTexture(cubeMap, 1)
+        
+        
         self.is_online = not is_offline
         base.disableMouse()
         self.toggle_mouse()
         
         alight = AmbientLight('alight')
-        alight.setColor((0.2, 0.2, 0.2, 1))
+        alight.setColor((0.4, 0.4, 0.4, 1))
         alnp = render.attachNewNode(alight)
         render.setLight(alnp)
         self.player = Player(self.camera,self.win)
         
         self.anti_player = AntiPlayer(self.win, self.is_online)
         self.camera.reparentTo(self.player.head)
-        self.camera.setPos(0,0.1,0.3)
+        self.camera.setPos(0,0.1,0.4)
         
         self.map = self.loader.loadModel("assets/models/map.egg")
         
