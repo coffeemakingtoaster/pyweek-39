@@ -7,6 +7,7 @@ from direct.showbase.ShowBase import ShowBase
 
 from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, START_GAME_EVENT, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
+from game.entities.anti_player import AntiPlayer
 from game.entities.player import Player
 from direct.actor.Actor import Actor
 from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
@@ -18,6 +19,9 @@ from shared.const.queue_status import QueueStatus
 from pandac.PandaModules import WindowProperties
 
 from math import pi, sin, cos
+
+from shared.types import player_info
+from shared.utils.validation import parse_player_info
 
 
 class MainGame(ShowBase):
@@ -35,6 +39,7 @@ class MainGame(ShowBase):
         self.mouse_locked = False
 
         self.player: None | Player = None
+        self.anti_player: None | AntiPlayer  = None
 
         # Setup gui handling
         self.gui_manager = GuiManager()
@@ -72,6 +77,8 @@ class MainGame(ShowBase):
         self.match_id = None
         if self.player is not None:
             self.player.destroy()
+        if self.anti_player is not None:
+            self.anti_player.destroy()
         if is_victory:
             self.gui_manager.handle_custom(StateTransitionEvents.WIN)
         else:
@@ -116,25 +123,23 @@ class MainGame(ShowBase):
     
     
     def __start_game(self, match_id="",is_offline=True):
+        self.is_online = not is_offline
         base.disableMouse()
         self.toggle_mouse()
-        
         
         alight = AmbientLight('alight')
         alight.setColor((0.2, 0.2, 0.2, 1))
         alnp = render.attachNewNode(alight)
         render.setLight(alnp)
         self.player = Player(self.camera,self.win)
+        self.anti_player = AntiPlayer(self.win, self.is_online)
         self.camera.reparentTo(self.player.actor)
         self.map = self.loader.loadModel("assets/models/map.egg")
         
-        
         self.map.reparentTo(self.render)
-        self.is_online = not is_offline
         if is_offline:
             self.logger.info("Starting game in offline mode...")
             self.match_id = None
-            
         else:
             self.logger.info("Starting online game...")
             if self.queue_task is not None:
@@ -147,14 +152,18 @@ class MainGame(ShowBase):
         messenger.send(GUI_PLAY_EVENT)
            
     def __process_ws_message(self, msg):
-        self.logger.info(msg)
+        if self.anti_player is not None:
+            self.logger.debug(f"({type(msg)}){msg}")
+            if (player_info := parse_player_info(msg)) is not None:
+                self.anti_player.set_state(player_info)
+                return
+        self.logger.warning(f"Message was thrown out: {msg}")
 
     def __main_loop_online(self, dt):
         self.time_since_last_package += dt
         if self.time_since_last_package > TIME_BETWEEN_PACKAGES_IN_S:
-            self.ws.send_game_data(
-                self.player.get_current_state()
-            )
+            packet = self.player.get_current_state()
+            self.ws.send_game_data(packet)
             self.time_since_last_package = 0
 
     def __main_loop(self, task):
@@ -164,6 +173,7 @@ class MainGame(ShowBase):
             return Task.cont
 
         self.player.update(dt)
+        self.anti_player.update(dt)
 
         if self.is_online:
             self.__main_loop_online(dt)

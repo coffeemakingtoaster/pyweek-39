@@ -29,11 +29,13 @@ class Match():
             self.player_1_slot = Player(id, websocket)
             await self.player_1_slot.send_message("Joined as player 1")
             self.logger.debug("Player 1 joined")
+            return self.player_1_slot
         else:
             self.player_2_slot = Player(id, websocket)
             await self.player_2_slot.send_message("Joined as player 2")
             self.logger.debug("Player 2 joined")
             self.lobby_ready = True
+            return self.player_2_slot
 
     async def __broadcast(self, message: str):
         if self.player_1_slot is None or self.player_2_slot is None:
@@ -80,23 +82,31 @@ class Match():
                 await self.player_1_slot.declare_victor(False)
                 self.game_finished = True
                 continue
-            self.logger.debug("Communicating actions")
 
             try:
-                # TODO: this is probably not ideal! We will just use this for now until we have a game to test this on
-                await self.player_1_slot.send_data(await self.player_2_slot.receive_data())
-                await self.player_2_slot.send_data(await self.player_1_slot.receive_data())
+                send_tasks = []
+                if (p1_msg:=self.player_1_slot.get_last_message()) is not None:
+                    send_tasks.append(self.player_2_slot.send_text(p1_msg))
+                if (p2_msg:=self.player_2_slot.get_last_message()) is not None:
+                    send_tasks.append(self.player_1_slot.send_text(p2_msg))
+
+                if len(send_tasks) > 0:
+                    self.logger.debug(f"Communicating {len(send_tasks)} actions")
+                    await asyncio.gather(*send_tasks)
+                else:
+                    await asyncio.sleep(0.1)
+
             except WebSocketDisconnect: 
                self.logger.info("One player left mid match...the remaining player will be declared the winner")
             except Exception as e:
-                self.logger.warning(f"An error occured when communicating actions between players. This likely means a player has disconnected.")
+                self.logger.warning(f"An error occured when communicating actions between players. This likely means a player has disconnected. {e}")
 
         self.logger.debug("Game finished")
 
     async def accept_player(self, id: str, websocket: WebSocket):
-        await self.__add_player(id, websocket)
+        player = await self.__add_player(id, websocket)
 
         while not self.game_finished and not self.terminated:
-            await asyncio.sleep(1)
+            await player.receive_data()
 
 

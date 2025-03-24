@@ -1,8 +1,9 @@
-from game.const.player import MOVEMENT_SPEED
+from game.const.player import BASE_HEALTH, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
 from game.helpers.helpers import *
 from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere
+from shared.types.player_info import PlayerInfo, Vector
 
 class Player(EntityBase):
     def __init__(self,camera,window) -> None:
@@ -14,6 +15,7 @@ class Player(EntityBase):
         self.camera = camera
         self.window = window
         self.jump_status = 0
+        self.health = BASE_HEALTH
         
         self.actor = Actor(getModelPath("player"))
         self.actor.reparentTo(render)
@@ -60,8 +62,6 @@ class Player(EntityBase):
         
 
     def update_camera(self,dt):
-        
-        
         md = self.window.getPointer(0)
         x = md.getX() - self.window.getXSize() / 2
         y = md.getY() - self.window.getYSize() / 2
@@ -70,14 +70,8 @@ class Player(EntityBase):
         self.actor.setH(self.actor.getH() - x * self.mouse_sens)
         self.camera.setP(self.camera.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
-        
-    
-             
-    
-    def update(self, dt):
-        self.update_camera(dt)
-        
-        
+
+    def __get_movement_vector(self) -> Vec3:
         moveVec = Vec3(0, 0, 0)
         if self.movement_status["forward"]:
             moveVec += Vec3(0, 1, 0)
@@ -87,12 +81,22 @@ class Player(EntityBase):
             moveVec += Vec3(-1, 0, 0)
         if self.movement_status["right"]:
             moveVec += Vec3(1, 0, 0)
-        
         moveVec.normalize() if moveVec.length() > 0 else None
+        return moveVec
+
+    
+    def update(self, dt):
+        self.update_camera(dt)
+        moveVec = self.__get_movement_vector()
         moveVec *= self.move_speed * dt
         self.actor.setPos(self.actor, moveVec)
-        self.logger.debug(f"tick {dt}")
 
-    def get_current_state(self):
+    def get_current_state(self) -> PlayerInfo:
         """Current state to send via network"""
-        return {"health": "yes"}
+        movement_vec = self.__get_movement_vector()
+        return PlayerInfo(
+            health=self.health,
+            position=Vector(self.actor.getX(),self.actor.getY(),self.actor.getZ(),1),
+            lookDirection=Vector(self.actor.getH(),self.actor.getP(),self.actor.getR(),1),
+            movement=Vector(movement_vec.x,movement_vec.y,movement_vec.z,movement_vec.length()),
+        )
