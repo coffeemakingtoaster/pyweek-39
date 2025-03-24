@@ -31,7 +31,7 @@ class MainGame(ShowBase):
         self.queue_task = None
         self.ws_handle_task = None
         self.logger.debug("Window setup done...")
-        self.mouse_sensitivity = 0.2
+        
         self.mouse_locked = False
 
         self.player: None | Player = None

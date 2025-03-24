@@ -7,13 +7,13 @@ from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere
 class Player(EntityBase):
     def __init__(self,camera,window) -> None:
         super().__init__("Player")
-
         self.id = "player"
         self.move_speed = 10   #MOVEMENT_SPEED
-        self.mouse_sens = 0.2 #MOUSE_SENS
+        self.mouse_sens = 0.1 #MOUSE_SENS
         self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
         self.camera = camera
         self.window = window
+        self.jump_status = 0
         
         self.actor = Actor(getModelPath("player"))
         self.actor.reparentTo(render)
@@ -28,6 +28,9 @@ class Player(EntityBase):
         self.accept("w-up", self.unset_movement_status, ["forward"])
         self.accept("s", self.set_movement_status, ["backward"])
         self.accept("s-up", self.unset_movement_status, ["backward"])
+        self.accept("space",self.set_jump_status)
+        self.accept("space",self.unset_jump_status)
+        
 
         '''
         self.model = Actor("assets/models/MapObjects/Player/Player.bam",
@@ -47,6 +50,15 @@ class Player(EntityBase):
     def unset_movement_status(self, direction):
         self.movement_status[direction] = 0
 
+    def set_jump_status(self):
+        if self.jump_status == 0:
+            self.jump_status = 1
+            
+    def unset_jump_status(self):
+        if self.jump_status == 1:
+            self.jump_status = 2
+        
+
     def update_camera(self,dt):
         
         
@@ -58,9 +70,13 @@ class Player(EntityBase):
         self.actor.setH(self.actor.getH() - x * self.mouse_sens)
         self.camera.setP(self.camera.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
+        
+    
+             
     
     def update(self, dt):
         self.update_camera(dt)
+        
         
         moveVec = Vec3(0, 0, 0)
         if self.movement_status["forward"]:
