@@ -41,6 +41,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          dockerfile: ./server.Dockerfile
+          context: ./
+          file: ./server.Dockerfile
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ env.image }}:latest
