@@ -16,10 +16,10 @@ class Player(EntityBase):
         self.window = window
         self.jump_status = 0
         self.health = BASE_HEALTH
+        self.build_player()
         
-        self.actor = Actor(getModelPath("player"))
-        self.actor.reparentTo(render)
-        self.actor.setPos(0, 0, 1)
+        
+        
 
         # Keybinds for movement
         self.accept("a", self.set_movement_status, ["left"])
@@ -45,6 +45,7 @@ class Player(EntityBase):
         #self.__add_player_collider()
         #self.holding.model.setPos(0, -0.4, 0.76)
         #self.holding.model.reparentTo(self.model)
+        #self.actor.loop("stab")
 
     def set_movement_status(self, direction):
         self.movement_status[direction] = 1
@@ -59,7 +60,19 @@ class Player(EntityBase):
     def unset_jump_status(self):
         if self.jump_status == 1:
             self.jump_status = 2
+    
+    def build_player(self):
         
+        self.body = Actor(getModelPath("body"))
+        self.body.reparentTo(render)
+        self.head = Actor(getModelPath("head"))
+        self.head.reparentTo(self.body)
+        self.head.setPos(0,0,0.52)
+        self.sword = Actor(getModelPath("sword"))
+        self.sword.reparentTo(self.head)
+        self.shoes = Actor(getModelPath("shoes"))
+        self.shoes.reparentTo(self.body)
+        self.body.setPos(0, 0, 0.5)
 
     def update_camera(self,dt):
         md = self.window.getPointer(0)
@@ -67,8 +80,8 @@ class Player(EntityBase):
         y = md.getY() - self.window.getYSize() / 2
         if abs(y) <= 0.5: #Potenziell Fixable
             y = 0
-        self.actor.setH(self.actor.getH() - x * self.mouse_sens)
-        self.camera.setP(self.camera.getP() - y * self.mouse_sens)
+        self.body.setH(self.body.getH() - x * self.mouse_sens)
+        self.head.setP(self.head.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
 
     def __get_movement_vector(self) -> Vec3:
@@ -89,14 +102,14 @@ class Player(EntityBase):
         self.update_camera(dt)
         moveVec = self.__get_movement_vector()
         moveVec *= self.move_speed * dt
-        self.actor.setPos(self.actor, moveVec)
+        self.body.setPos(self.body, moveVec)
 
     def get_current_state(self) -> PlayerInfo:
         """Current state to send via network"""
         movement_vec = self.__get_movement_vector()
         return PlayerInfo(
             health=self.health,
-            position=Vector(self.actor.getX(),self.actor.getY(),self.actor.getZ(),1),
-            lookDirection=Vector(self.actor.getH(),self.actor.getP(),self.actor.getR(),1),
+            position=Vector(self.body.getX(),self.body.getY(),self.body.getZ(),1),
+            lookDirection=Vector(self.head.getH(),self.head.getP(),self.head.getR(),1),
             movement=Vector(movement_vec.x,movement_vec.y,movement_vec.z,movement_vec.length()),
         )

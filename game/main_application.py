@@ -35,6 +35,7 @@ class MainGame(ShowBase):
         self.queue_task = None
         self.ws_handle_task = None
         self.logger.debug("Window setup done...")
+        base.camLens.setNear(0.1) 
         
         self.mouse_locked = False
 
@@ -132,8 +133,11 @@ class MainGame(ShowBase):
         alnp = render.attachNewNode(alight)
         render.setLight(alnp)
         self.player = Player(self.camera,self.win)
+        
         self.anti_player = AntiPlayer(self.win, self.is_online)
-        self.camera.reparentTo(self.player.actor)
+        self.camera.reparentTo(self.player.head)
+        self.camera.setPos(0,0.1,0.3)
+        
         self.map = self.loader.loadModel("assets/models/map.egg")
         
         self.map.reparentTo(self.render)
