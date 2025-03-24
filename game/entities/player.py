@@ -1,4 +1,4 @@
-from game.const.player import MOVEMENT_SPEED
+from game.const.player import BASE_HEALTH, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
 from game.helpers.helpers import *
@@ -15,6 +15,8 @@ class Player(EntityBase):
         self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
         self.camera = camera
         self.window = window
+
+        self.health = BASE_HEALTH
         
         self.actor = Actor(getModelPath("player"))
         self.actor.reparentTo(render)
@@ -57,9 +59,8 @@ class Player(EntityBase):
         self.actor.setH(self.actor.getH() - x * self.mouse_sens)
         self.camera.setP(self.camera.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
-    
-    def update(self, dt):
-        self.update_camera(dt)
+
+    def __get_movement_vector(self) -> Vec3:
         moveVec = Vec3(0, 0, 0)
         if self.movement_status["forward"]:
             moveVec += Vec3(0, 1, 0)
@@ -70,14 +71,21 @@ class Player(EntityBase):
         if self.movement_status["right"]:
             moveVec += Vec3(1, 0, 0)
         moveVec.normalize() if moveVec.length() > 0 else None
+        return moveVec
+
+    
+    def update(self, dt):
+        self.update_camera(dt)
+        moveVec = self.__get_movement_vector()
         moveVec *= self.move_speed * dt
         self.actor.setPos(self.actor, moveVec)
 
     def get_current_state(self) -> PlayerInfo:
         """Current state to send via network"""
+        movement_vec = self.__get_movement_vector()
         return PlayerInfo(
-            health=1.0,
-            position=Vector(1,1,1,1),
-            lookDirection=Vector(1,1,1,1),
-            movement=Vector(1,1,1,1),
+            health=self.health,
+            position=Vector(self.actor.getX(),self.actor.getY(),self.actor.getZ(),1),
+            lookDirection=Vector(self.actor.getH(),self.actor.getP(),self.actor.getR(),1),
+            movement=Vector(movement_vec.x,movement_vec.y,movement_vec.z,movement_vec.length()),
         )

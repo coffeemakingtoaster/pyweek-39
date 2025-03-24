@@ -20,7 +20,7 @@ class MatchWS(WebSocketClient):
         self.connected = True
         
     def closed(self, code, reason=None):
-        self.logger.warning(f"Match connection closed (reason={reason if reason is not None else 'unspecified'})")
+        self.logger.warning(f"Match connection closed (reason={reason if reason is not None else 'unspecified'}, code={code})")
 
     def send_game_data(self, data: PlayerInfo):
         if not self.connected:
@@ -29,4 +29,7 @@ class MatchWS(WebSocketClient):
         self.send(json.dumps(asdict(data)))
 
     def received_message(self, message):
-        self.recv_cb(message)
+        if message.is_text:
+            recvStr = message.data.decode("utf-8")
+            self.logger.debug("Received packet")
+            self.recv_cb(recvStr)

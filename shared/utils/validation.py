@@ -1,4 +1,8 @@
+import json
+from typing import Tuple
 import uuid
+
+from shared.types.player_info import PlayerInfo
 
 def is_valid_uuid(uuid_to_test, version=4) -> bool:
     try:
@@ -7,3 +11,11 @@ def is_valid_uuid(uuid_to_test, version=4) -> bool:
     except ValueError:
         return False
     return True
+
+def parse_player_info(raw: str) -> PlayerInfo | None:
+    try:
+        res = PlayerInfo(**json.loads(raw))
+        return res
+    except Exception:
+        return None
+

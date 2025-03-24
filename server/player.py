@@ -5,6 +5,7 @@ from fastapi import WebSocket
 from fastapi.websockets import WebSocketState
 
 from shared.types.player_info import PlayerInfo
+from shared.utils.validation import parse_player_info
 
 class Player:
     def __init__(self,player_id: str, websocket: WebSocket) -> None:
@@ -23,19 +24,12 @@ class Player:
     async def send_message(self, message: str):
         await self.ws.send_text(json.dumps({"message": message}))
 
-    def __validate_payload_format(self, msg: str):
-        try:
-            PlayerInfo(**json.loads(msg))
-            return True
-        except Exception as e:
-            return False
-
     async def receive_data(self):
         msg = await self.ws.receive()
         if "text" not in msg:
             self.logger.warning("Invalid payload received")
             return None
-        if not self.__validate_payload_format(msg["text"]):
+        if parse_player_info(msg["text"]) is None:
             self.logger.warning("Invalid payload received")
             return None
         self.messages.append(msg["text"])
