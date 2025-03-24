@@ -2,6 +2,9 @@ name: Docker build and push
 
 on:
   push:
+    paths:
+      - 'server/**.py'
+      - 'shared/**.py'
     branches:
       - main
     tags:
