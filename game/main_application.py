@@ -111,12 +111,15 @@ class MainGame(ShowBase):
     def __main_loop_online(self, dt):
         self.time_since_last_package += dt
         try:
-            msg = self.ws.recv(timeout=0.01)
+            msg = self.ws.recv(timeout=float('1e-003'))
             self.logger.debug(f"Handling ws message {msg}")
         except TimeoutError:
             # No new message
             pass
+        except Exception as e:
+            self.logger.error(f"Could not read message from ws {e}")
 
+        self.logger.debug(self.time_since_last_package)
         if self.time_since_last_package > TIME_BETWEEN_PACKAGES_IN_MS:
             _ = save_send(self.ws, self.player.get_current_state())
             self.time_since_last_package = 0
@@ -124,10 +127,10 @@ class MainGame(ShowBase):
     def __main_loop(self, task):
         dt = self.clock.dt
 
-        if not self.gui_manager.gui_state_machine.getCurrentOrNextState() == GuiStates.RUNNING:
+        if self.gui_manager.gui_state_machine.getCurrentOrNextState() != GuiStates.RUNNING.value:
             return Task.again
 
-        self.player.update()
+        self.player.update(dt)
 
         if self.is_online:
             self.__main_loop_online(dt)
