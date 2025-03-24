@@ -42,8 +42,8 @@ async def get_queue_status(player_id: str):
         return JSONResponse(content={"status": status.value, "match_id": match_id}, status_code=200)
     return JSONResponse(content={"status": status.value}, status_code=200)
 
-@app.websocket("/match/{match_id}/{player_id}")
-async def websocket_endpoint(websocket: WebSocket, match_id: str, player_id: str):
+@app.websocket("/match/{match_id}/{player_id}/{player_name}")
+async def websocket_endpoint(websocket: WebSocket, match_id: str, player_id: str, player_name: str):
     if not matchMaker.is_valid_match_id(match_id):
         LOGGER.info(f"Client connected with invalid match id {match_id}")
         await websocket.close()
@@ -56,7 +56,7 @@ async def websocket_endpoint(websocket: WebSocket, match_id: str, player_id: str
     LOGGER.info("New client connected")
     try:
         match = matchMaker.get_match(match_id)
-        await match.accept_player(player_id, websocket)
+        await match.accept_player(player_id, player_name, websocket)
         await websocket.close()
     except WebSocketDisconnect:
         LOGGER.info("Client disconnected")

@@ -83,6 +83,7 @@ class MatchMaker():
 
     def get_player_status(self, player_id: str) -> Tuple[QueueStatus, str]:
         if player_id in self.queued_players:
+            self.queued_players_live[player_id] = time.time()
             return (QueueStatus.IN_QUEUE, "")
         if player_id in self.player_id_match_lookup:
             player_match = self.match_overview.get(self.player_id_match_lookup[player_id])
