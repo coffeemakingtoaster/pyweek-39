@@ -7,8 +7,8 @@ import time
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedOK
 
-HOST = "pyweek-39.ssh-coffee.dev"
-#HOST = "localhost:3000"
+#HOST = "pyweek-39.ssh-coffee.dev"
+HOST = "localhost:3000"
 
 @dataclass
 class Vector:

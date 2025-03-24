@@ -63,6 +63,9 @@ class Match():
         self.lobby_ready = True
         self.terminated = True
 
+    def ready_to_die(self) -> bool:
+        return self.game_finished or self.terminated
+
     async def match_loop(self):
         while not self.lobby_ready:
             await asyncio.sleep(1)
