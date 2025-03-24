@@ -1,20 +1,19 @@
+import asyncio
 import logging
-from sys import is_stack_trampoline_active
-from time import sleep, time
 from direct.task.Task import Task, messenger
 from panda3d.core import *
 
 from direct.showbase.ShowBase import ShowBase
 
 from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, START_GAME_EVENT, WIN_EVENT
-from game.const.networking import TIME_BETWEEN_PACKAGES_IN_MS
+from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.entities.player import Player
 from direct.actor.Actor import Actor
 from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
 import uuid
 
 from game.networking.queue import check_queue_status, join_queue, leave_queue
-from game.networking.websocket import get_ws_conn, save_send, ws_producer
+from game.networking.websocket import MatchWS
 from shared.const.queue_status import QueueStatus
 from pandac.PandaModules import WindowProperties
 
@@ -54,19 +53,25 @@ class MainGame(ShowBase):
         self.accept(WIN_EVENT, self.__finish_game, [True])
         self.accept(DEFEAT_EVENT, self.__finish_game, [False])
 
-        self.player_id = str(uuid.uuid4())
+        self.player_id: str = str(uuid.uuid4())
+        self.match_id: None | str = None
 
-        self.is_online = False
-        self.ws = None
+        self.is_online: bool = False
+        self.ws: None | MatchWS = None
 
-        self.time_since_last_package = 1_000_000
+        self.time_since_last_package: int = 1_000_000
 
     def __finish_game(self, is_victory):
         self.logger.info(f"Received game finish where victory: {is_victory}")
         if self.ws is not None:
-            self.ws.close()
+            self.ws.close(reason="Finished")
+        if self.ws_handle_task is not None:
+            self.ws_handle_task.cancel()
+            self.ws_handle_task = None
         self.is_online = False
-        self.player.destroy()
+        self.match_id = None
+        if self.player is not None:
+            self.player.destroy()
         if is_victory:
             self.gui_manager.handle_custom(StateTransitionEvents.WIN)
         else:
@@ -78,8 +83,9 @@ class MainGame(ShowBase):
         base.taskMgr.add(join_queue, 'join_queue_task', extraArgs=[self.player_id])
 
     def __cancel_queue(self):
-        self.logger.info("Exiting queue and stopping background check.")
-        leave_queue(self.player_id)
+        if self.match_id is None:
+            self.logger.info("Exiting queue and stopping background check.")
+            leave_queue(self.player_id)
         if self.queue_task is not None:
             self.queue_task.remove()
         self.queue_task = None
@@ -88,11 +94,10 @@ class MainGame(ShowBase):
         success, status, match_id = check_queue_status(self.player_id)
         if not success:
             return Task.again
-        self.logger.info(f"{status}")
         if status != QueueStatus.MATCHED.value:
-            self.logger.debug("Not matched yet...")
             return Task.again
         if len(match_id) > 0:
+            self.match_id = match_id
             self.logger.info("Game found! Joining game...")
             self.__start_game(match_id, False)
             return Task.done
@@ -125,48 +130,44 @@ class MainGame(ShowBase):
         
         
         self.map.reparentTo(self.render)
-        self.is_online = is_offline
+        self.is_online = not is_offline
         if is_offline:
             self.logger.info("Starting game in offline mode...")
+            self.match_id = None
             
         else:
             self.logger.info("Starting online game...")
             if self.queue_task is not None:
                 self.queue_task.remove()
             self.queue_task = None
-            self.ws = get_ws_conn(match_id, self.player_id)
+            self.ws = MatchWS(
+                match_id=match_id, 
+                player_id=self.player_id, 
+                recv_callback=self.__process_ws_message)
         messenger.send(GUI_PLAY_EVENT)
-        if not is_offline:
-            pass
-            # TODO: kill this at some point
-            # This currently freezes everything
-            #self.ws_handle_task = self.task_mgr.add(ws_producer, "ws_message_receiver", extraArgs=[self.ws, self.__process_ws_message])
+           
+    def __process_ws_message(self, msg):
+        self.logger.info(msg)
 
     def __main_loop_online(self, dt):
         self.time_since_last_package += dt
-        try:
-            msg = self.ws.recv(timeout=0.01)
-            self.logger.debug(f"Handling ws message {msg}")
-        except TimeoutError:
-            # No new message
-            pass
-
-        if self.time_since_last_package > TIME_BETWEEN_PACKAGES_IN_MS:
-            _ = save_send(self.ws, self.player.get_current_state())
+        if self.time_since_last_package > TIME_BETWEEN_PACKAGES_IN_S:
+            self.ws.send_game_data(
+                self.player.get_current_state()
+            )
             self.time_since_last_package = 0
 
     def __main_loop(self, task):
         dt = self.clock.dt
-        first = True
-        
-        
-        if not self.gui_manager.gui_state_machine.getCurrentOrNextState() == GuiStates.RUNNING.value:
-            return Task.again
-        
+
+        if self.gui_manager.gui_state_machine.getCurrentOrNextState() != GuiStates.RUNNING.value:
+            return Task.cont
+
         self.player.update(dt)
 
-        if self.is_online and 1 is 2:
+        if self.is_online:
             self.__main_loop_online(dt)
+            return Task.cont
         else:
             pass
         return Task.cont

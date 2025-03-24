@@ -8,7 +8,14 @@ import requests
 
 LOGGER = logging.getLogger(__name__)
 
+def __set_logger(lvl=logging.WARN):
+    requests_log = logging.getLogger("requests.packages.urllib3")
+    requests_log.setLevel(lvl)
+    requests_log = logging.getLogger("urllib3.connectionpool")
+    requests_log.setLevel(lvl)
+
 def join_queue(player_id: str) -> bool:
+    __set_logger()
     url = f'http://{HOST}/queue'
     body = {'player_id': player_id}
     try:
@@ -22,6 +29,7 @@ def join_queue(player_id: str) -> bool:
     return Task.done
 
 def check_queue_status(player_id: str) -> Tuple[ bool, str, str]:
+    __set_logger()
     try:
         res = requests.get(f"http://{HOST}/queue/{player_id}")
     except Exception as e:
@@ -34,6 +42,8 @@ def check_queue_status(player_id: str) -> Tuple[ bool, str, str]:
     return (True, res.json()["status"], id)
 
 def leave_queue(player_id: str) -> bool:
+    __set_logger()
+
     url = f'http://{HOST}/queue/{player_id}'
     try:
         res = requests.delete(url)

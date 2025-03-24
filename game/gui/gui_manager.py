@@ -7,6 +7,7 @@ from game.gui.gui_base import GuiBase
 from game.gui.hud import Hud
 from game.gui.main_menu import MainMenu
 from game.gui.queue_menu import QueueMenu
+from game.gui.settings_menu import SettingsMenu
 
 class GuiStates(Enum):
     RUNNING = "RUNNING"
@@ -111,6 +112,9 @@ class GuiManager():
             case GuiStates.RUNNING.value:
                 self.current_ui = Hud()
                 self.currently_displayed_gui_state = GuiStates.RUNNING
+            case GuiStates.SETTINGS.value:
+                self.current_ui = SettingsMenu()
+                self.currently_displayed_gui_state = GuiStates.SETTINGS
             case _:
                 self.logger.warning(f"State {target_state} not yet implemented by gui manager. Returning to main menu")
                 self.gui_state_machine.state  = GuiStates.MAIN_MENU.value
