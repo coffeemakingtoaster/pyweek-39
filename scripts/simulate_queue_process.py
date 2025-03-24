@@ -1,9 +1,32 @@
 import asyncio
+from dataclasses import asdict, dataclass
+import json
 import requests
 import uuid
 import time
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedOK
+
+@dataclass
+class Vector:
+    x: float 
+    y: float
+    z: float
+    length : float
+
+@dataclass
+class PlayerInfo:
+    position: Vector
+    health: float
+    lookDirection: Vector
+    movement: Vector
+    def __post_init__(self):
+        if isinstance(self.position, dict):
+            self.position = Vector(**self.position)
+        if isinstance(self.movement, dict):
+            self.movement = Vector(**self.movement)
+        if isinstance(self.lookDirection, dict):
+            self.lookDirection = Vector(**self.lookDirection)
 
 def join_queue():
     id = str(uuid.uuid4())
@@ -29,11 +52,29 @@ def observe_queue_status(id: str):
 async def match_ws(player_id, match_id):
     print(f"Connecting for {player_id}")
     ready = False
+    proacctive = False
     async with connect(f"ws://localhost:3000/match/{match_id}/{player_id}") as websocket:
         while True:
             try:
+                if proacctive and ready:
+                    print("sending...")
+                    await websocket.send(
+                        json.dumps(
+                            asdict(
+                                PlayerInfo(
+                                    health=1.0,
+                                    position=Vector(1,1,1,1),
+                                    lookDirection=Vector(1,1,1,1),
+                                    movement=Vector(1,1,1,1),
+                                )
+                            )
+                        )
+                    )
+                    proacctive = False
                 message = await websocket.recv()
                 print(message)
+                if "player 1" in message:
+                    proacctive = True
                 if ready:
                     await websocket.send(message)
                 if "Starting" in message:
