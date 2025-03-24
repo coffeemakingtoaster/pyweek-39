@@ -7,8 +7,8 @@ import time
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedOK
 
-HOST = "pyweek-39.ssh-coffee.dev"
-#HOST = "localhost:3000"
+#HOST = "pyweek-39.ssh-coffee.dev"
+HOST = "localhost:3000"
 
 @dataclass
 class Vector:
@@ -56,7 +56,7 @@ async def match_ws(player_id, match_id):
     print(f"Connecting for {player_id}")
     ready = False
     proacctive = False
-    async with connect(f"ws://{HOST}/match/{match_id}/{player_id}") as websocket:
+    async with connect(f"ws://{HOST}/match/{match_id}/{player_id}/Peter") as websocket:
         while True:
             try:
                 if proacctive and ready:
@@ -76,11 +76,11 @@ async def match_ws(player_id, match_id):
                     proacctive = False
                 message = await websocket.recv()
                 print(message)
-                if "player 1" in message:
+                if "player1" in message:
                     proacctive = True
                 if ready:
                     await websocket.send(message)
-                if "Starting" in message:
+                if "lobby_starting" in message:
                     ready = True
                     print("go!")
             except ConnectionClosedOK:

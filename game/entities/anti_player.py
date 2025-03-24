@@ -22,11 +22,16 @@ class AntiPlayer(EntityBase):
         self.actor.setPos(0, 0, 1)
         self.movement_vector = Vec3(0,0,0)
         self.health = BASE_HEALTH
+        self.name = "placeholder"
 
         if self.is_puppet:
             self.logger.info(f"Created enemy for opponent")
         else:
             self.logger.info(f"Created bot enemy")
+
+    def set_name(self, name: str):
+        self.name = name
+        self.logger.info(f"Enemy now named {name}")
 
     def set_state(self, update: PlayerInfo):
         if not self.is_puppet:

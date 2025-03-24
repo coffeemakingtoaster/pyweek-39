@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from direct.task.Task import Task, messenger
 from panda3d.core import *
@@ -15,13 +14,12 @@ import uuid
 
 from game.networking.queue import check_queue_status, join_queue, leave_queue
 from game.networking.websocket import MatchWS
+from game.utils.name_generator import generate_name
 from shared.const.queue_status import QueueStatus
 from pandac.PandaModules import WindowProperties
 
-from math import pi, sin, cos
-
-from shared.types import player_info
-from shared.utils.validation import parse_player_info
+from shared.types.status_message import StatusMessages
+from shared.utils.validation import parse_game_status, parse_player_info
 
 
 class MainGame(ShowBase):
@@ -60,6 +58,7 @@ class MainGame(ShowBase):
         self.accept(DEFEAT_EVENT, self.__finish_game, [False])
 
         self.player_id: str = str(uuid.uuid4())
+        self.player_name = generate_name()
         self.match_id: None | str = None
 
         self.is_online: bool = False
@@ -123,7 +122,7 @@ class MainGame(ShowBase):
             base.win.requestProperties(props)
     
     
-    def __start_game(self, match_id="",is_offline=True):
+    def __start_game(self, match_id="", is_offline=True):
         self.is_online = not is_offline
         base.disableMouse()
         self.toggle_mouse()
@@ -152,16 +151,29 @@ class MainGame(ShowBase):
             self.ws = MatchWS(
                 match_id=match_id, 
                 player_id=self.player_id, 
+                player_name=self.player_name,
                 recv_callback=self.__process_ws_message)
         messenger.send(GUI_PLAY_EVENT)
            
     def __process_ws_message(self, msg):
         if self.anti_player is not None:
             self.logger.debug(f"({type(msg)}){msg}")
+            # Player info package
             if (player_info := parse_player_info(msg)) is not None:
                 self.anti_player.set_state(player_info)
                 return
-        self.logger.warning(f"Message was thrown out: {msg}")
+            if (game_status := parse_game_status(msg)) is not None:
+                match game_status.message:
+                    case StatusMessages.DEFEAT.value:
+                        messenger.send(DEFEAT_EVENT)
+                    case StatusMessages.VICTORY.value:
+                        messenger.send(WIN_EVENT)
+                    case StatusMessages.PLAYER_NAME.value:
+                        self.anti_player.set_name(game_status.detail)
+                    case _:
+                        self.logger.warning(f"Status message contained status {game_status.message} which is not implemented")
+                return
+            self.logger.warning(f"Message was thrown out: {msg}")
 
     def __main_loop_online(self, dt):
         self.time_since_last_package += dt

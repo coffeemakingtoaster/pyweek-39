@@ -13,4 +13,4 @@ logger = logging.getLogger(__name__)
 
 def run():
     logger.info("Starting...")
-    uvicorn.run(server.app, port=PORT, host=HOST, log_config=None)
+    uvicorn.run(server.app, port=PORT, host=HOST, log_level='warning')
