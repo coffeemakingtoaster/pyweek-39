@@ -157,7 +157,7 @@ class MainGame(ShowBase):
         render.setLight(dlnp)     
         render.setLight(ambientnp) 
         
-        testbox = CollisionSphere(0,0,0,3)
+        testbox = CollisionSphere(5,0,0,3)
         testboxNode = render.attachNewNode(CollisionNode("testbox"))
         testboxNode.node().addSolid(testbox)
         testboxNode.show()

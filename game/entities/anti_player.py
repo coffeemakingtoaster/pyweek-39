@@ -1,58 +1,34 @@
-from game.const.events import GUI_UPDATE_LATENCY
+from game.const.events import GUI_UPDATE_LATENCY, NETWORK_SEND_PRIORITY_EVENT
 from game.const.networking import POSITION_DIFF_THRESHOLD
-from game.const.player import BASE_HEALTH, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
+from game.const.player import GRAVITY, JUMP_VELOCITY
 from game.entities.base_entity import EntityBase
-from direct.actor.Actor import Actor
 from game.helpers.helpers import *
-from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere, Vec2, TextNode
+from panda3d.core import Vec3, Vec2, TextNode
 from shared.types.player_info import PlayerInfo
 from game.utils.name_generator import generate_name
 
 class AntiPlayer(EntityBase):
     def __init__(self, window, is_puppet=False) -> None:
-        super().__init__(f"Enemy {'(online)' if is_puppet else '(local)'}")
-        self.id = "enemy"
-        self.move_speed = MOVEMENT_SPEED
-        self.mouse_sens = 0.1 #MOUSE_SENS
-        self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
-        self.window = window
-        self.jump_status = "none"
-        self.health = BASE_HEALTH
-        self.initial_jump_velocity = 100
-        self.is_puppet = is_puppet
-        self.match_timer = 0.0
-        self.vertical_velocity = 0.0
-
         self.name = generate_name()
+        self.id = "enemy"
+
         self.name_tag = None
         self.name_tag_node = None
 
-        self.__build()
+        super().__init__(window, f"Enemy {'(online)' if is_puppet else '(local)'}")
+        self.is_puppet = is_puppet
 
         self.movement_vector = Vec3(0,0,0)
         self.correction_vector = Vec3(0,0,0)
-        self.health = BASE_HEALTH
+        self.accept("q", self.debug_stab)
+
+        self.__add_name_tag()
 
         if self.is_puppet:
             self.logger.info(f"Created enemy for opponent")
         else:
             self.logger.info(f"Created bot enemy")
  
-    def __build(self):
-        self.body = Actor(getModelPath("body"))
-        self.body.reparentTo(render)
-        self.head = Actor(getModelPath("head"))
-        self.head.reparentTo(self.body)
-        self.head.setPos(0,0,0.52)
-        self.sword = Actor(getModelPath("sword"),{"stab":getModelPath("sword-Stab")})
-        self.sword.reparentTo(self.head)
-    
-        self.shoes = Actor(getModelPath("shoes"))
-        self.shoes.reparentTo(self.body)
-        self.body.setPos(0, 0, 0.5)
-
-        self.__add_name_tag()
-
     def __add_name_tag(self):
         self.name_tag = TextNode(f"{self.id}-name")
         self.name_tag_node = self.body.attachNewNode(self.name_tag)
@@ -80,11 +56,30 @@ class AntiPlayer(EntityBase):
         self.vertical_velocity = JUMP_VELOCITY - (GRAVITY * offset)
         self.body.setZ(self.body.getZ() + (self.vertical_velocity * offset))
 
+    def __stab_safe(self, frame_offset=0):
+        total_frames = self.sword.getAnimControl("stab").getNumFrames()
+        if frame_offset > total_frames:
+            self.logger.warning(f"Skipped attack animation because latency exceeded frame count {frame_offset}")
+            return
+        self.sword.play("stab", fromFrame=frame_offset)
+        self.logger.debug(f"Frame offset is {frame_offset}")
+        if frame_offset < 25:
+            base.taskMgr.doMethodLater((25 - frame_offset)/24, self.turnSwordLethal,"makeSwordLethalTask")
+        if frame_offset < 32:
+            base.taskMgr.doMethodLater((32 - frame_offset)/24, self.turnSwordHarmless,"makeSwordLethalTask")
+        base.taskMgr.doMethodLater((total_frames - frame_offset)/24, self.endAttack,"endAttackTask")
+        messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(is_attacking=True, action_offset=self.match_timer)])
+    
+    def handleSwordCollisionEnd(self,entry):
+        self.logger.debug(f"no longer colliding with {entry}")
+
+    def debug_stab(self):
+        self.stab(self.match_timer)
+
     def stab(self, start_time: float = 0.0):
-        self.logger.debug("Starting enemy stab")
         # AI controlled
         if start_time == 0.0 and not self.is_puppet:
-            self.sword.play("stab")
+            self.__stab_safe()
             return
         offset = self.match_timer - start_time
         messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
@@ -92,7 +87,7 @@ class AntiPlayer(EntityBase):
         self.logger.debug(f"Stab started at frame {start_frame}")
         # Animation has 50 frames at 24fps
         # and takes ca. 2sec
-        self.sword.play("stab", fromFrame=start_frame)
+        self.__stab_safe(start_frame)
 
     def set_state(self, update: PlayerInfo):
         if not self.is_puppet:
@@ -128,22 +123,9 @@ class AntiPlayer(EntityBase):
         self.head.setHpr(update.lookDirection.x, update.lookDirection.y, update.lookDirection.z)
         self.body.setHpr(update.bodyRotation.x, update.bodyRotation.y, update.bodyRotation.z)
 
-    def start_match_timer(self):
-        self.match_timer = 0.0
-
-    def __apply_gravity(self, dt):
-        if self.vertical_velocity == 0:
-            return
-        self.vertical_velocity -= (GRAVITY * dt)
-
-        if self.body.getZ() <= 0.5 and self.vertical_velocity < 0:
-            self.vertical_velocity = 0 
-            # This is the base height -> magic number
-            self.body.setZ(0.5)
-            
     def update(self, dt):
         self.match_timer += dt
-        self.__apply_gravity(dt)
+        self.apply_gravity(dt)
         flat_move = Vec2(self.movement_vector.x, self.movement_vector.y) * dt
         flat_move.x += self.correction_vector.x * dt
         flat_move.y += self.correction_vector.y * dt
