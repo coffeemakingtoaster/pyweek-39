@@ -6,7 +6,7 @@ from abc import abstractmethod
 class EntityBase(DirectObject.DirectObject):
     def __init__(self, name="BaseEntity"):
         super().__init__()
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger(name)
 
     @abstractmethod
     def destroy(self):

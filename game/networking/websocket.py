@@ -32,5 +32,4 @@ class MatchWS(WebSocketClient):
     def received_message(self, message):
         if message.is_text:
             recvStr = message.data.decode("utf-8")
-            self.logger.debug("Received packet")
             self.recv_cb(recvStr)

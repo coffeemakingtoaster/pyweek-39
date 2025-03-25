@@ -22,7 +22,10 @@ class PlayerInfo:
     position: Vector
     health: float
     lookDirection: Vector
+    bodyRotation: Vector
     movement: Vector
+    is_attacking: bool
+    attack_offset_from_start: float
     def __post_init__(self):
         if isinstance(self.position, dict):
             self.position = Vector(**self.position)
@@ -30,6 +33,15 @@ class PlayerInfo:
             self.movement = Vector(**self.movement)
         if isinstance(self.lookDirection, dict):
             self.lookDirection = Vector(**self.lookDirection)
+        if isinstance(self.bodyRotation, dict):
+            self.bodyRotation = Vector(**self.bodyRotation)
+
+def parse_player_info(raw: str) -> PlayerInfo | None:
+    try:
+        res = PlayerInfo(**json.loads(raw))
+        return res
+    except Exception:
+        return None
 
 def join_queue():
     id = str(uuid.uuid4())
@@ -69,13 +81,23 @@ async def match_ws(player_id, match_id):
                                     position=Vector(1,1,1,1),
                                     lookDirection=Vector(1,1,1,1),
                                     movement=Vector(1,1,1,1),
+                                    bodyRotation=Vector(1,1,1,1),
+                                    is_attacking=False,
+                                    attack_offset_from_start=0.0
                                 )
                             )
                         )
                     )
                     proacctive = False
                 message = await websocket.recv()
-                print(message)
+                if (parsed := parse_player_info(message)) is not None:
+                    if not parsed.is_attacking:
+                        # Mutation
+                        parsed.position.x += 5
+                        parsed.position.y += 5
+                        message = json.dumps(asdict(parsed))
+                    else:
+                        print(message)
                 if "player1" in message:
                     proacctive = True
                 if ready:

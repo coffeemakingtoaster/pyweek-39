@@ -1,4 +1,5 @@
-from game.const.player import BASE_HEALTH, MOVEMENT_SPEED
+from game.const.events import NETWORK_SEND_ATTACK_EVENT
+from game.const.player import BASE_HEALTH, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
 from game.helpers.helpers import *
@@ -9,7 +10,7 @@ class Player(EntityBase):
     def __init__(self,camera,window) -> None:
         super().__init__("Player")
         self.id = "player"
-        self.move_speed = 10   #MOVEMENT_SPEED
+        self.move_speed = MOVEMENT_SPEED
         self.mouse_sens = 0.1 #MOUSE_SENS
         self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
         self.camera = camera
@@ -17,12 +18,14 @@ class Player(EntityBase):
         self.jump_status = "none"
         self.health = BASE_HEALTH
         self.build_player()
-        self.initial_jump_velocity = 100
+        
         self.inAttack = False
         
         
         
         
+        self.initial_jump_velocity = JUMP_VELOCITY
+        self.match_timer = 0.0
 
         # Keybinds for movement
         self.accept("a", self.set_movement_status, ["left"])
@@ -35,21 +38,6 @@ class Player(EntityBase):
         self.accept("s-up", self.unset_movement_status, ["backward"])
         self.accept("space",self.set_jump_status)
         self.accept("mouse1",self.stab)
-        
-        
-
-        '''
-        self.model = Actor("assets/models/MapObjects/Player/Player.bam",
-                           {"Turn": "assets/models/MapObjects/Player/Player-Turn.bam",
-                            "TurnBack": "assets/models/MapObjects/Player/Player-TurnBack.bam"})
-        self.model.setPos(0, 0, MOVEMENT.PLAYER_FIXED_HEIGHT)
-        self.model.reparentTo(render)
-        '''
-
-        #self.__add_player_collider()
-        #self.holding.model.setPos(0, -0.4, 0.76)
-        #self.holding.model.reparentTo(self.model)
-        #self.actor.loop("stab")
 
     def set_movement_status(self, direction):
         self.movement_status[direction] = 1
@@ -59,7 +47,6 @@ class Player(EntityBase):
 
     def set_jump_status(self):
         if self.jump_status == "none":
-            
             self.jump_status = "start"
             
     def stab(self):
@@ -68,13 +55,16 @@ class Player(EntityBase):
             self.sword.play("stab")
             frames = self.sword.getAnimControl("stab").getNumFrames()
             base.taskMgr.doMethodLater(frames/24,self.endAttack,"endAttackTask")
+            messenger.send(NETWORK_SEND_ATTACK_EVENT, [PlayerInfo(is_attacking=True, attack_offset_from_start=self.match_timer)])
     
     
     def endAttack(self,task):
         self.inAttack = False
+        
+        
+    
     
     def build_player(self):
-        
         self.body = Actor(getModelPath("body"))
         self.body.reparentTo(render)
         self.head = Actor(getModelPath("head"))
@@ -95,7 +85,7 @@ class Player(EntityBase):
         self.shoes.reparentTo(self.body)
         self.body.setPos(0, 0, 0.5)
 
-    def update_camera(self,dt):
+    def update_camera(self, dt):
         md = self.window.getPointer(0)
         x = md.getX() - self.window.getXSize() / 2
         y = md.getY() - self.window.getYSize() / 2
@@ -105,8 +95,7 @@ class Player(EntityBase):
         self.head.setP(self.head.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
 
-    def __get_movement_vector(self,dt) -> Vec3:
-        
+    def __get_movement_vector(self) -> Vec3:
         flat_moveVec = Vec2(0,0)
         moveVec = Vec3(0, 0, 0)
         
@@ -115,16 +104,18 @@ class Player(EntityBase):
             self.vertical_velocity = self.initial_jump_velocity  
 
         if self.jump_status == "fly" or self.jump_status == "fall":
-            
-            self.vertical_velocity -= 9.81*20 * dt  
-
-            moveVec += Vec3(0, 0, self.vertical_velocity) * dt  
+            self.vertical_velocity -= GRAVITY
+            moveVec.z += self.vertical_velocity
 
             if self.vertical_velocity < 0:
                 self.jump_status = "fall"
+
         if self.body.getZ() <= 0.5 and self.jump_status == "fall":
             self.jump_status = "none"
             self.vertical_velocity = 0 
+            moveVec.setZ(0)
+            # This is the base height -> magic number
+            self.body.setZ(0.5)
              
         if self.movement_status["forward"]:
             flat_moveVec += Vec2(0, 1)
@@ -135,15 +126,21 @@ class Player(EntityBase):
         if self.movement_status["right"]:
             flat_moveVec += Vec2(1, 0)
         flat_moveVec.normalize() if flat_moveVec.length() > 0 else None
-        moveVec = Vec3(flat_moveVec.x,flat_moveVec.y,moveVec.z)
+        flat_moveVec *= self.move_speed
+        moveVec.setX(flat_moveVec.x)
+        moveVec.setY(flat_moveVec.y)
         return moveVec
-
     
     def update(self, dt):
+        self.match_timer += dt
         self.update_camera(dt)
-        moveVec = self.__get_movement_vector(dt)
-        moveVec *= self.move_speed * dt
-        self.body.setPos(self.body, moveVec)
+        moveVec = self.__get_movement_vector()
+        stepped_move_vec = Vec3(moveVec.x, moveVec.y, 0)
+        stepped_move_vec *= dt
+        self.body.setPos(self.body, Vec3(stepped_move_vec.x, stepped_move_vec.y, moveVec.z  * dt))
+
+    def start_match_timer(self):
+        self.match_timer = 0.0
 
     def get_current_state(self) -> PlayerInfo:
         """Current state to send via network"""
@@ -152,5 +149,6 @@ class Player(EntityBase):
             health=self.health,
             position=Vector(self.body.getX(),self.body.getY(),self.body.getZ(),1),
             lookDirection=Vector(self.head.getH(),self.head.getP(),self.head.getR(),1),
+            bodyRotation=Vector(self.body.getH(),self.body.getP(),self.body.getR(),1),
             movement=Vector(movement_vec.x,movement_vec.y,movement_vec.z,movement_vec.length()),
         )

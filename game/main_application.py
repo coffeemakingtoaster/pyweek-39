@@ -4,7 +4,7 @@ from panda3d.core import *
 
 from direct.showbase.ShowBase import ShowBase
 
-from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, START_GAME_EVENT, WIN_EVENT
+from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, NETWORK_SEND_ATTACK_EVENT, START_GAME_EVENT, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.entities.anti_player import AntiPlayer
 from game.entities.player import Player
@@ -19,6 +19,7 @@ from game.utils.name_generator import generate_name
 from shared.const.queue_status import QueueStatus
 from pandac.PandaModules import WindowProperties
 
+from shared.types.player_info import PlayerInfo
 from shared.types.status_message import StatusMessages
 from shared.utils.validation import parse_game_status, parse_player_info
 
@@ -61,6 +62,7 @@ class MainGame(ShowBase):
         self.accept(CANCEL_QUEUE_EVENT, self.__cancel_queue)
         self.accept(WIN_EVENT, self.__finish_game, [True])
         self.accept(DEFEAT_EVENT, self.__finish_game, [False])
+        self.accept(NETWORK_SEND_ATTACK_EVENT, self.__priority_ws_send)
 
         self.player_id: str = str(uuid.uuid4())
         self.player_name = generate_name()
@@ -129,18 +131,16 @@ class MainGame(ShowBase):
     
     def __start_game(self, match_id="", is_offline=True):
         
-        
         #cubeMap = loader.loadCubeMap(getImagePath("skybox"))
         self.spaceSkyBox = loader.loadModel(helpers.getModelPath("cube"))
         self.spaceSkyBox.setScale(100)
         self.spaceSkyBox.setBin('background', 0)
         self.spaceSkyBox.setDepthWrite(0)
         self.spaceSkyBox.setTwoSided(True)
-        self.spaceSkyBox.setTexGen(TextureStage.getDefault(),TexGenAttrib.MWorldCubeMap)
+        self.spaceSkyBox.setTexGen(TextureStage.getDefault(), TexGenAttrib.MWorldCubeMap)
         self.spaceSkyBox.reparentTo(render)
         self.spaceSkyBox.setLightOff()
         #self.spaceSkyBox.setTexture(cubeMap, 1)
-        
         
         self.is_online = not is_offline
         base.disableMouse()
@@ -171,6 +171,8 @@ class MainGame(ShowBase):
         if is_offline:
             self.logger.info("Starting game in offline mode...")
             self.match_id = None
+            self.player.start_match_timer()
+            self.anti_player.start_match_timer()
         else:
             self.logger.info("Starting online game...")
             if self.queue_task is not None:
@@ -185,7 +187,6 @@ class MainGame(ShowBase):
            
     def __process_ws_message(self, msg):
         if self.anti_player is not None:
-            self.logger.debug(f"({type(msg)}){msg}")
             # Player info package
             if (player_info := parse_player_info(msg)) is not None:
                 self.anti_player.set_state(player_info)
@@ -198,10 +199,20 @@ class MainGame(ShowBase):
                         messenger.send(WIN_EVENT)
                     case StatusMessages.PLAYER_NAME.value:
                         self.anti_player.set_name(game_status.detail)
+                    case StatusMessages.LOBBY_STARTING.value:
+                        self.player.start_match_timer()
+                        self.anti_player.start_match_timer()
                     case _:
                         self.logger.warning(f"Status message contained status {game_status.message} which is not implemented")
                 return
             self.logger.warning(f"Message was thrown out: {msg}")
+
+    def __priority_ws_send(self, packet: PlayerInfo):
+        if not self.is_online:
+            return
+        if self.ws is not None:
+            self.logger.info("Sending priority")
+            self.ws.send_game_data(packet)
 
     def __main_loop_online(self, dt):
         self.time_since_last_package += dt
