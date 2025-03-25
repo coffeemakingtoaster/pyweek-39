@@ -1,4 +1,4 @@
-from game.const.events import NETWORK_SEND_ATTACK_EVENT
+from game.const.events import NETWORK_SEND_PRIORITY_EVENT
 from game.const.player import BASE_HEALTH, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
@@ -26,18 +26,12 @@ class Player(EntityBase):
         self.collisionHandler.addInPattern("sHbnp-collision-into")
         self.collisionHandler.addOutPattern("sHbnp-collision-out")
 
-        
         self.collisionTraverser = base.cTrav
         self.collisionTraverser.addCollider(self.swordHitBoxNodePath, self.collisionHandler)
 
-        
         self.accept("sHbnp-collision-into", self.handleSwordCollision) 
         #self.accept("sHbnp-collision-out", self.handleSwordCollisionEnd)
 
-        
-        
-        
-        
         self.initial_jump_velocity = JUMP_VELOCITY
         self.vertical_velocity = 0
         self.match_timer = 0.0
@@ -63,6 +57,8 @@ class Player(EntityBase):
     def jump(self):
         if self.vertical_velocity == 0:
             self.vertical_velocity = self.initial_jump_velocity  
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(is_jumping=True, action_offset=self.match_timer)])
+
             
     def stab(self):
         if not self.inAttack:
@@ -72,8 +68,7 @@ class Player(EntityBase):
             base.taskMgr.doMethodLater(25/24,self.turnSwordLethal,"makeSwordLethalTask")
             base.taskMgr.doMethodLater(32/24,self.turnSwordHarmless,"makeSwordLethalTask")
             base.taskMgr.doMethodLater(frames/24,self.endAttack,"endAttackTask")
-            messenger.send(NETWORK_SEND_ATTACK_EVENT, [PlayerInfo(is_attacking=True, attack_offset_from_start=self.match_timer)])
-
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(is_attacking=True, action_offset=self.match_timer)])
     
     def endAttack(self,task):
         self.inAttack = False
@@ -91,8 +86,6 @@ class Player(EntityBase):
     
     def handleSwordCollisionEnd(self,entry):
         print(f"no longer colliding with {entry}")
-        
-        
     
     def build_player(self):
         self.body = Actor(getModelPath("body"))
@@ -131,9 +124,6 @@ class Player(EntityBase):
         self.body.setH(self.body.getH() - x * self.mouse_sens)
         self.head.setP(self.head.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
-        
-    
-        
 
     def __apply_gravity(self, dt):
         if self.vertical_velocity == 0:
@@ -167,9 +157,6 @@ class Player(EntityBase):
         stepped_move_vec = Vec3(moveVec.x, moveVec.y, 0)
         stepped_move_vec *= dt
         self.body.setPos(self.body, Vec3(stepped_move_vec.x, stepped_move_vec.y, moveVec.z  * dt))
-        
-        
-        
 
     def start_match_timer(self):
         self.match_timer = 0.0

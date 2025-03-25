@@ -6,7 +6,7 @@ WIN_EVENT = "win"
 DEFEAT_EVENT = "defeat"
 
 # Networking events
-NETWORK_SEND_ATTACK_EVENT = "network_attack"
+NETWORK_SEND_PRIORITY_EVENT = "network_priority"
 
 # Gui events
 GUI_RETURN_EVENT = "gui_return"
