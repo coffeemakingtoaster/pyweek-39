@@ -7,6 +7,9 @@ class Vector:
     z: float
     length : float
 
+    def __hash__(self) -> int:
+        return int(self.x + self.y + self.z + self.length)
+
 @dataclass
 class PlayerInfo:
     position: Vector | None = None
@@ -26,3 +29,16 @@ class PlayerInfo:
             self.lookDirection = Vector(**self.lookDirection)
         if isinstance(self.bodyRotation, dict):
             self.bodyRotation = Vector(**self.bodyRotation)
+
+    def __safe_hash__(self, val: Vector | None) -> int:
+        if val is None:
+            return 0
+        return val.__hash__()
+
+    def __hash__(self) -> int:
+        hash = int(self.health + self.is_attacking + self.is_jumping + self.action_offset)
+        hash += self.__safe_hash__(self.position)
+        hash += self.__safe_hash__(self.lookDirection)
+        hash += self.__safe_hash__(self.bodyRotation)
+        hash += self.__safe_hash__(self.movement)
+        return hash
