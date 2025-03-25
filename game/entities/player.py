@@ -59,7 +59,7 @@ class Player(EntityBase):
             taskMgr.remove("player-makeSwordLethalTask")
             taskMgr.remove("player-makeSwordHarmlessTask")
             frames = self.sword.getAnimControl("block").getNumFrames()
-            base.taskMgr.doMethodLater(3/24,self.turnSwordBlock,"player-makeSwordBlockTask")
+            base.taskMgr.doMethodLater(1/24,self.turnSwordBlock,"player-makeSwordBlockTask")
             base.taskMgr.doMethodLater(15/24,self.turnSwordSword,"player-makeSwordSword")
             base.taskMgr.doMethodLater(frames/24,self.endBlock,"player-endBlockTask")
             base.taskMgr.doMethodLater(frames/24,self.endAttack,"player-endAttackTask")
