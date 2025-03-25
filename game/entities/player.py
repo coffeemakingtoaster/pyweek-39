@@ -97,11 +97,19 @@ class Player(EntityBase):
     def build_player(self):
         self.body = Actor(getModelPath("body"))
         self.body.reparentTo(render)
+        
+        
+        bodyHitBox = CollisionCapsule(0,0,0.4,0,0,0.3,0.3)
+        self.bodyHitBoxNodePath = self.body.attachNewNode(CollisionNode('bHbnp'))
+        self.bodyHitBoxNodePath.node().addSolid(bodyHitBox)
+        self.bodyHitBoxNodePath.show()
+        
+        
         self.head = Actor(getModelPath("head"))
         self.head.reparentTo(self.body)
         self.head.setPos(0,0,0.52)
         head_joint = self.head.exposeJoint(None, "modelRoot", "Bone")
-        headHitBox = CollisionSphere(0,0.2,0,0.3)
+        headHitBox = CollisionSphere(0,0.2,0,0.1)
         
         self.headHitBoxNodePath = self.head.attachNewNode(CollisionNode("hHbnp"))
         self.headHitBoxNodePath.node().addSolid(headHitBox)
