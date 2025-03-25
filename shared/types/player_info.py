@@ -13,7 +13,7 @@ class Vector:
 @dataclass
 class PlayerInfo:
     position: Vector | None = None
-    health: float = 1.0 # this cannot default to 0 as 0 means defeat :)
+    health: int = 1 # this cannot default to 0 as 0 means defeat :)
     lookDirection: Vector | None = None
     bodyRotation: Vector | None = None
     movement: Vector | None = None

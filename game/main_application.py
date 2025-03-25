@@ -7,7 +7,7 @@ from pandac.PandaModules import TransparencyAttrib
 
 
 
-from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, WIN_EVENT
+from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, NETWORK_SEND_PRIORITY_EVENT, SET_USERNAME_EVENT, START_GAME_EVENT, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.entities.anti_player import AntiPlayer
 from game.entities.player import Player
@@ -64,6 +64,8 @@ class MainGame(ShowBase):
         self.accept(CANCEL_QUEUE_EVENT, self.__cancel_queue)
         self.accept(WIN_EVENT, self.__finish_game, [True])
         self.accept(DEFEAT_EVENT, self.__finish_game, [False])
+        self.accept(SET_USERNAME_EVENT, self.__update_name)
+
         self.accept(NETWORK_SEND_PRIORITY_EVENT, self.__priority_ws_send)
 
         self.player_id: str = str(uuid.uuid4())
@@ -75,6 +77,9 @@ class MainGame(ShowBase):
 
         self.time_since_last_package: int = 1_000_000
         self.buildMap()
+
+    def __update_name(self, name: str):
+        self.player_name = name
 
     def buildMap(self):
         
@@ -202,11 +207,16 @@ class MainGame(ShowBase):
         ambientnp = render.attachNewNode(alight)
         render.setLight(dlnp)     
         render.setLight(ambientnp) 
-        
-        
+       
+        '''
+        testbox = CollisionSphere(0,0,0,3)
+        testboxNode = render.attachNewNode(CollisionNode("testbox"))
+        testboxNode.node().addSolid(testbox)
+        testboxNode.show()
+        '''
         
         render.setLight(dlnp)
-        self.player = Player(self.camera,self.win)
+        self.player = Player(self.camera,self.win, self.is_online)
         
         self.anti_player = AntiPlayer(self.win, self.is_online)
         self.camera.reparentTo(self.player.head)

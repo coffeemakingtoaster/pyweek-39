@@ -3,16 +3,20 @@ from direct.actor.Actor import Actor
 from direct.showbase import DirectObject
 from abc import abstractmethod
 
+from direct.task.Task import messenger
+
 from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, NO_BIT_MASK, PLAYER_BIT_MASK
+from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, WIN_EVENT
 from game.const.player import BASE_HEALTH, GRAVITY, MOVEMENT_SPEED, POST_HIT_INV_DURATION
 from game.helpers.helpers import getModelPath
 from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue, BitMask32
 
 class EntityBase(DirectObject.DirectObject):
-    def __init__(self, window, id, name="BaseEntity"):
+    def __init__(self, window, id: str, online: bool, name="BaseEntity"):
         super().__init__()
         self.logger = logging.getLogger(name)
         self.id = id
+        self.online = online
         self.is_puppet = False
         self.own_collision_mask = PLAYER_BIT_MASK if self.id == "player" else ANTI_PLAYER_BIT_MASK
         self.opposing_collision_mask = ANTI_PLAYER_BIT_MASK if self.id == "player" else PLAYER_BIT_MASK 
@@ -122,6 +126,21 @@ class EntityBase(DirectObject.DirectObject):
         
         #Todo interrupt block when hit anyway
         
+
+    def take_damage(self, damage_value: int):
+        self.health -= damage_value
+        self.logger.debug(f"Now at {self.health} HP")
+        messenger.send(GUI_UPDATE_PLAYER_HP if self.id == "player" else GUI_UPDATE_ANTI_HP, [self.health])
+        # Server handles online win states
+        if self.online:
+            return
+        if self.health == 0:
+            if self.id == "player":
+                messenger.send(DEFEAT_EVENT)
+            else:
+                if not self.is_puppet:
+                    messenger.send(WIN_EVENT)
+
     def handle_body_hit(self, entry):
         if self.hitBlocked:
             return
@@ -137,10 +156,8 @@ class EntityBase(DirectObject.DirectObject):
             return
         if self.inv_phase <= 0.0:
             self.current_hit_has_critted = False
-            self.health -= 1
-            
+            self.take_damage(1)
             self.inv_phase = POST_HIT_INV_DURATION
-            self.logger.debug(f"Now at {self.health} HP")
 
     def handle_head_hit(self, entry):
         if self.hitBlocked:
@@ -158,16 +175,12 @@ class EntityBase(DirectObject.DirectObject):
         # Direct head hit
         if self.inv_phase <= 0:
             self.current_hit_has_critted = True
-            self.health -= 2
-            
+            self.take_damage(2)
             self.inv_phase = POST_HIT_INV_DURATION
-            self.logger.debug(f"Now at {self.health} HP")
         # Hit that hit body first, then head
         elif not self.current_hit_has_critted and self.inv_phase >= 0:
             self.current_hit_has_critted = True
-            self.health -= 1
-            
-            self.logger.debug(f"Now at {self.health} HP {entry}")
+            self.take_damage(1)
     
     def handle_block_event(self):
         

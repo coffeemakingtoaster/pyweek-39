@@ -10,7 +10,7 @@ from game.utils.name_generator import generate_name
 class AntiPlayer(EntityBase):
     def __init__(self, window, is_puppet=False) -> None:
         self.name = generate_name()
-        super().__init__(window, "enemy", f"Enemy {'(online)' if is_puppet else '(local)'}")
+        super().__init__(window, "enemy", is_puppet, f"Enemy {'(online)' if is_puppet else '(local)'}")
 
         self.name_tag = None
         self.name_tag_node = None
@@ -30,15 +30,17 @@ class AntiPlayer(EntityBase):
  
     def __add_name_tag(self):
         self.name_tag = TextNode(f"{self.id}-name")
+        self.name_tag.setAlign(TextNode.ACenter) 
         self.name_tag_node = self.body.attachNewNode(self.name_tag)
         self.name_tag_node.setScale(1.0)
+        self.name_tag_node.setBillboardPointEye()
         self.__update_name()
 
     def __update_name(self):
         if self.name_tag is not None and self.name_tag_node is not None:
             self.name_tag.setText(self.name)
             self.logger.info(f"Enemy now named {self.name}")
-            self.name_tag_node.setPos(-(self.name_tag.getWidth()/2),0,1)
+            self.name_tag_node.setPos(0,0,1)
 
     def set_name(self, name: str):
         self.name = name
@@ -101,6 +103,8 @@ class AntiPlayer(EntityBase):
             self.jump(update.action_offset)
         if update.is_jumping or update.is_attacking:
             return
+        if self.health != update.health:
+            self.take_damage(self.health - update.health)
         # Use the locally calculated z coord to stop slight jittering midair
         networkPos = Vec3(update.position.x, update.position.y, self.body.getZ())
         network_to_local_delta = (networkPos - self.body.getPos())
