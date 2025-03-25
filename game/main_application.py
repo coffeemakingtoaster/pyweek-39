@@ -125,17 +125,15 @@ class MainGame(ShowBase):
     
     def __start_game(self, match_id="", is_offline=True):
         
-        
         #cubeMap = loader.loadCubeMap(getImagePath("skybox"))
         self.spaceSkyBox = loader.loadModel(helpers.getModelPath("cube"))
         self.spaceSkyBox.setScale(100)
         self.spaceSkyBox.setBin('background', 0)
         self.spaceSkyBox.setDepthWrite(0)
         self.spaceSkyBox.setTwoSided(True)
-        self.spaceSkyBox.setTexGen(TextureStage.getDefault(),TexGenAttrib.MWorldCubeMap)
+        self.spaceSkyBox.setTexGen(TextureStage.getDefault(), TexGenAttrib.MWorldCubeMap)
         self.spaceSkyBox.reparentTo(render)
         #self.spaceSkyBox.setTexture(cubeMap, 1)
-        
         
         self.is_online = not is_offline
         base.disableMouse()
@@ -171,7 +169,6 @@ class MainGame(ShowBase):
            
     def __process_ws_message(self, msg):
         if self.anti_player is not None:
-            self.logger.debug(f"({type(msg)}){msg}")
             # Player info package
             if (player_info := parse_player_info(msg)) is not None:
                 self.anti_player.set_state(player_info)
