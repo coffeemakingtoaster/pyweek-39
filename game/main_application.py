@@ -71,7 +71,22 @@ class MainGame(ShowBase):
         self.ws: None | MatchWS = None
 
         self.time_since_last_package: int = 1_000_000
+        self.buildMap()
 
+    def buildMap(self):
+        
+        self.waterfall = loader.loadModel("box")
+        self.waterfall.reparentTo(render)
+        
+
+        #texture = loader.loadTexture("noise.png")
+        #self.waterfall.setTexture(texture)
+        
+    def shiftWaterfallTextureTask(self,task):
+        self.waterfall.setTexOffset(self.textureStage0, 0, (task.time) % 1.0 )
+        self.waterfall.setTexOffset(self.textureStage1, 0, (task.time) % 1.0 )
+        return Task.cont
+    
     def __finish_game(self, is_victory):
         base.enableMouse()
         self.toggle_mouse()
@@ -133,12 +148,13 @@ class MainGame(ShowBase):
     def __start_game(self, match_id="", is_offline=True):
         
         #cubeMap = loader.loadCubeMap(getImagePath("skybox"))
-        self.spaceSkyBox = loader.loadModel(helpers.getModelPath("cube"))
-        self.spaceSkyBox.setScale(100)
+        self.spaceSkyBox = loader.loadModel(helpers.getModelPath("skysphere"))
+        self.spaceSkyBox.setScale(200)
+        self.spaceSkyBox.setZ(-40)
         self.spaceSkyBox.setBin('background', 0)
         self.spaceSkyBox.setDepthWrite(0)
         self.spaceSkyBox.setTwoSided(True)
-        self.spaceSkyBox.setTexGen(TextureStage.getDefault(), TexGenAttrib.MWorldCubeMap)
+        #self.spaceSkyBox.setTexGen(TextureStage.getDefault(), TexGenAttrib.MWorldCubeMap)
         self.spaceSkyBox.reparentTo(render)
         self.spaceSkyBox.setLightOff()
         #self.spaceSkyBox.setTexture(cubeMap, 1)
@@ -167,11 +183,13 @@ class MainGame(ShowBase):
         
         self.anti_player = AntiPlayer(self.win, self.is_online)
         self.camera.reparentTo(self.player.head)
-        self.camera.setPos(0,-2,0.4)
+        self.camera.setPos(0,0.1,0.4)
         
         self.map = self.loader.loadModel("assets/models/map.egg")
         
         self.map.reparentTo(self.render)
+        
+        self.map.setZ(1.5)
         if is_offline:
             self.logger.info("Starting game in offline mode...")
             self.match_id = None

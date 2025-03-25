@@ -1,0 +1,87 @@
+<CoordinateSystem> { Z-up } 
+<Material> Pond.001 {
+  <Scalar> baser { 1.0 }
+  <Scalar> baseg { 1.0 }
+  <Scalar> baseb { 1.0 }
+  <Scalar> basea { 1.0 }
+  <Scalar> ambr { 1.0 }
+  <Scalar> ambg { 1.0 }
+  <Scalar> ambb { 1.0 }
+  <Scalar> amba { 1.0 }
+  <Scalar> emitr { 0.0 }
+  <Scalar> emitg { 0.0 }
+  <Scalar> emitb { 0.0 }
+  <Scalar> emita { 1.0 }
+  <Scalar> specr { 1.0 }
+  <Scalar> specg { 1.0 }
+  <Scalar> specb { 1.0 }
+  <Scalar> speca { 1.0 }
+  <Scalar> shininess { 0.5 }
+  <Scalar> roughness { 1.0 }
+  <Scalar> metallic { 0.0 }
+  <Scalar> ior { 1.4500000476837158 }
+  <Scalar> local { 1 }
+}
+
+<Texture> "Turbulence 10 - 128x128.png" {
+  "./tex/Turbulence 10 - 128x128.png"
+  <Scalar> format { rgb }
+  <Scalar> envtype { modulate }
+  <Scalar> uv-name { UVMap }
+  <Scalar> minfilter { linear_mipmap_linear }
+  <Scalar> magfilter { linear }
+  <Scalar> wrapu { repeat }
+  <Scalar> wrapv { repeat }
+  <Scalar> alpha { off }
+}
+
+  <Group> Plane.001 {
+    <Transform> {
+      <Matrix4> {
+        1.1294279098510742 0.0 0.0 0.0 
+        0.0 1.0 0.0 0.0 
+        0.0 0.0 1.0 0.0 
+        0.0 3.6288459300994873 -1.299385666847229 1.0 
+      }
+    }
+    
+    <VertexPool> Plane.001 {
+    
+      <Vertex> 0 {
+        19.910570 -33.117687 -9.674268
+        <UV> UVMap {
+          -26.328503 -71.332054 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 1 {
+        -19.910570 -33.117687 -9.674268
+        <UV> UVMap {
+          27.328503 -71.332054 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 2 {
+        -19.910570 -33.117687 32.619816
+        <UV> UVMap {
+          27.328503 74.041359 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 3 {
+        19.910570 -33.117687 32.619816
+        <UV> UVMap {
+          -26.328503 74.041359 
+        }
+        <RGBA> { 1 1 1 1 }
+      }}
+    
+    
+    <Polygon> {
+      <TRef> { "Turbulence 10 - 128x128.png" }
+      <MRef> { Pond.001 }
+      <Normal> {0.000000 1.000000 0.000000}
+      <BFace> { 1 }
+      <VertexRef> { 0 1 2 3 <Ref> { Plane.001 }} 
+    }
+  }
