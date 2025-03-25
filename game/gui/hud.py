@@ -26,4 +26,7 @@ class Hud(GuiBase):
         self.accept(GUI_UPDATE_LATENCY, self.__update_latency)
 
     def __update_latency(self, time_ms: float):
-        self.latency_indicator.setText(f"Ping: ~{time_ms:6.2f}ms")
+        try:
+            self.latency_indicator.setText(f"Ping: ~{time_ms:6.2f}ms")
+        except Exception as e:
+            self.logger.error(f"Error occured updating ping display: {e}")

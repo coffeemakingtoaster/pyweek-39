@@ -14,6 +14,7 @@ class MatchWS(WebSocketClient):
         self.logger = logging.getLogger("")
         self.connected = False
         self.connect()
+        self.last_packet: PlayerInfo = PlayerInfo()
 
     def opened(self):
         self.logger.info("Match connection established...")
@@ -27,10 +28,11 @@ class MatchWS(WebSocketClient):
         if not self.connected:
             self.logger.error("Tried to send websocket data but connection was not yet established.")
             return
+        # Don't send duplicate packages
+        if self.last_packet.__hash__() == data.__hash__():
+            return
         self.send(json.dumps(asdict(data)))
-
-    def add_priority(self, packet: PlayerInfo):
-        self.priorioty_packets.append(packet)
+        self.last_packet = data
 
     def received_message(self, message):
         if message.is_text:
