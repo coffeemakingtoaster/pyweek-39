@@ -19,13 +19,14 @@ class Vector:
 
 @dataclass
 class PlayerInfo:
-    position: Vector
-    health: float
-    lookDirection: Vector
-    bodyRotation: Vector
-    movement: Vector
-    is_attacking: bool
-    attack_offset_from_start: float
+    position: Vector | None = None
+    health: float = 1.0 # this cannot default to 0 as 0 means defeat :)
+    lookDirection: Vector | None = None
+    bodyRotation: Vector | None = None
+    movement: Vector | None = None
+    is_attacking: bool = False
+    is_jumping: bool = False
+    action_offset: float = 0.0
     def __post_init__(self):
         if isinstance(self.position, dict):
             self.position = Vector(**self.position)
@@ -83,21 +84,20 @@ async def match_ws(player_id, match_id):
                                     movement=Vector(1,1,1,1),
                                     bodyRotation=Vector(1,1,1,1),
                                     is_attacking=False,
-                                    attack_offset_from_start=0.0
+                                    action_offset=0.0,
                                 )
                             )
                         )
                     )
                     proacctive = False
                 message = await websocket.recv()
+                print(message)
                 if (parsed := parse_player_info(message)) is not None:
-                    if not parsed.is_attacking:
+                    if not parsed.is_attacking and not parsed.is_jumping:
                         # Mutation
                         parsed.position.x += 5
                         parsed.position.y += 5
                         message = json.dumps(asdict(parsed))
-                    else:
-                        print(message)
                 if "player1" in message:
                     proacctive = True
                 if ready:

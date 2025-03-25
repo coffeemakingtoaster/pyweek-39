@@ -34,8 +34,14 @@ class Player:
             return
         if len(self.messages) > 0:
             # Do not overwrite attack package
-            if self.messages[-1].is_attacking:
-                self.logger.debug("Threw package out for priority package")
+            if self.messages[-1].is_attacking or self.messages[-1].is_jumping:
+                if parsed_msg.is_attacking or parsed_msg.is_jumping:
+                    # This obscured the actual timings of the second priority package
+                    # However this is fine for now as this case is very rare and timing changes should be marginal
+                    self.messages[-1].is_attacking = parsed_msg.is_attacking or self.messages[-1].is_attacking
+                    self.messages[-1].is_jumping = parsed_msg.is_jumping or self.messages[-1].is_jumping
+                else:
+                    self.logger.debug("Threw package out for priority package")
                 return
         self.messages.append(parsed_msg)
 

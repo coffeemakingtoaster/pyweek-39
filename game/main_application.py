@@ -4,11 +4,10 @@ from panda3d.core import *
 
 from direct.showbase.ShowBase import ShowBase
 
-from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, NETWORK_SEND_ATTACK_EVENT, START_GAME_EVENT, WIN_EVENT
+from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.entities.anti_player import AntiPlayer
 from game.entities.player import Player
-from direct.actor.Actor import Actor
 from game.helpers import *
 from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
 import uuid
@@ -62,7 +61,7 @@ class MainGame(ShowBase):
         self.accept(CANCEL_QUEUE_EVENT, self.__cancel_queue)
         self.accept(WIN_EVENT, self.__finish_game, [True])
         self.accept(DEFEAT_EVENT, self.__finish_game, [False])
-        self.accept(NETWORK_SEND_ATTACK_EVENT, self.__priority_ws_send)
+        self.accept(NETWORK_SEND_PRIORITY_EVENT, self.__priority_ws_send)
 
         self.player_id: str = str(uuid.uuid4())
         self.player_name = generate_name()

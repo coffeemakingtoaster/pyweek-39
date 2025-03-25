@@ -15,7 +15,8 @@ class PlayerInfo:
     bodyRotation: Vector | None = None
     movement: Vector | None = None
     is_attacking: bool = False
-    attack_offset_from_start: float = 0.0
+    is_jumping: bool = False
+    action_offset: float = 0.0
     def __post_init__(self):
         if isinstance(self.position, dict):
             self.position = Vector(**self.position)

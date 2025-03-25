@@ -1,10 +1,12 @@
 from game.const.events import GUI_UPDATE_LATENCY
-from game.const.player import BASE_HEALTH, MOVEMENT_SPEED
+from game.const.networking import POSITION_DIFF_THRESHOLD
+from game.const.player import BASE_HEALTH, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
 from game.helpers.helpers import *
 from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere, Vec2, TextNode
 from shared.types.player_info import PlayerInfo
+from game.utils.name_generator import generate_name
 
 class AntiPlayer(EntityBase):
     def __init__(self, window, is_puppet=False) -> None:
@@ -19,14 +21,16 @@ class AntiPlayer(EntityBase):
         self.initial_jump_velocity = 100
         self.is_puppet = is_puppet
         self.match_timer = 0.0
+        self.vertical_velocity = 0.0
 
-        self.name = "placeholder"
+        self.name = generate_name()
         self.name_tag = None
         self.name_tag_node = None
 
         self.__build()
 
         self.movement_vector = Vec3(0,0,0)
+        self.correction_vector = Vec3(0,0,0)
         self.health = BASE_HEALTH
 
         if self.is_puppet:
@@ -65,6 +69,17 @@ class AntiPlayer(EntityBase):
         self.name = name
         self.__update_name()
 
+    def jump(self, start_time: float = 0.0):
+        if start_time == 0.0 and not self.is_puppet:
+            self.vertical_velocity = JUMP_VELOCITY
+            return
+        offset = self.match_timer - start_time
+        messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
+        # calc current jump pos based on time offset
+        # base velocity - gravity * offset
+        self.vertical_velocity = JUMP_VELOCITY - (GRAVITY * offset)
+        self.body.setZ(self.body.getZ() + (self.vertical_velocity * offset))
+
     def stab(self, start_time: float = 0.0):
         self.logger.debug("Starting enemy stab")
         # AI controlled
@@ -86,11 +101,27 @@ class AntiPlayer(EntityBase):
         # an attack package does not! contain any other info
         if update.is_attacking:
             self.logger.debug("Received stab packet")
-            self.stab(update.attack_offset_from_start)
+            self.stab(update.action_offset)
+        if update.is_jumping:
+            self.logger.debug("Received jump packet")
+            self.jump(update.action_offset)
+        if update.is_jumping or update.is_attacking:
             return
-        self.body.setFluidPos(update.position.x, update.position.y, update.position.z)
+        # Use the locally calculated z coord to stop slight jittering midair
+        networkPos = Vec3(update.position.x, update.position.y, self.body.getZ())
+        network_to_local_delta = (networkPos - self.body.getPos())
+        # Hard correction
+        if  network_to_local_delta.length() > (POSITION_DIFF_THRESHOLD * 2):
+            self.body.setFluidPos(networkPos)
+            self.correction_vector.set(0,0,0)
+        # Soft correction
+        elif  network_to_local_delta.length() > POSITION_DIFF_THRESHOLD:
+            #self.logger.debug(f"Adjusted position because delta was {network_to_local_delta.length()} (>{POSITION_DIFF_THRESHOLD})")
+            self.correction_vector = network_to_local_delta
+        else:
+            self.correction_vector.set(0,0,0)
         # The vector is normalized when sending it
-        self.movement_vector = Vec3(update.movement.x , update.movement.y, update.movement.z)
+        self.movement_vector = Vec3(update.movement.x , update.movement.y, 0)
         assert (Vec2(update.movement.x , update.movement.y).length() == self.move_speed 
                 or Vec2(update.movement.x , update.movement.y).length() == 0)
         # This is not the correct labelling...I am aware but idc
@@ -99,8 +130,21 @@ class AntiPlayer(EntityBase):
 
     def start_match_timer(self):
         self.match_timer = 0.0
+
+    def __apply_gravity(self, dt):
+        if self.vertical_velocity == 0:
+            return
+        self.vertical_velocity -= (GRAVITY * dt)
+
+        if self.body.getZ() <= 0.5 and self.vertical_velocity < 0:
+            self.vertical_velocity = 0 
+            # This is the base height -> magic number
+            self.body.setZ(0.5)
             
     def update(self, dt):
         self.match_timer += dt
+        self.__apply_gravity(dt)
         flat_move = Vec2(self.movement_vector.x, self.movement_vector.y) * dt
-        self.body.setFluidPos(self.body, Vec3(flat_move.x, flat_move.y, self.movement_vector.z * dt))
+        flat_move.x += self.correction_vector.x * dt
+        flat_move.y += self.correction_vector.y * dt
+        self.body.setFluidPos(self.body, Vec3(flat_move.x, flat_move.y, self.vertical_velocity * dt))

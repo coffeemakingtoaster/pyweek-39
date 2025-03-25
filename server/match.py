@@ -106,10 +106,9 @@ class Match():
                         self.game_finished = True
 
                 if len(send_tasks) > 0:
-                    #self.logger.debug(f"Communicating {len(send_tasks)} actions")
                     await asyncio.gather(*send_tasks)
                 else:
-                    await asyncio.sleep(0.05)
+                    await asyncio.sleep(0.001)
 
             except WebSocketDisconnect: 
                self.logger.info("One player left mid match...the remaining player will be declared the winner")
