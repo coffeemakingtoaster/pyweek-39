@@ -195,7 +195,7 @@ class MainGame(ShowBase):
         testboxNode.show()
         
         render.setLight(dlnp)
-        self.player = Player(self.camera,self.win)
+        self.player = Player(self.camera,self.win, self.is_online)
         
         self.anti_player = AntiPlayer(self.win, self.is_online)
         self.camera.reparentTo(self.player.head)

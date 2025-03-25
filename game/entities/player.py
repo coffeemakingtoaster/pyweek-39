@@ -7,8 +7,8 @@ from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,Colli
 from shared.types.player_info import PlayerInfo, Vector
 
 class Player(EntityBase):
-    def __init__(self,camera,window) -> None:
-        super().__init__(window, "player", "Player")
+    def __init__(self,camera,window,online) -> None:
+        super().__init__(window, "player", online, "Player")
         self.mouse_sens = 0.1 #MOUSE_SENS
         self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
         self.camera = camera
