@@ -26,6 +26,7 @@ class Player(EntityBase):
         self.accept("s-up", self.unset_movement_status, ["backward"])
         self.accept("space",self.jump)
         self.accept("mouse1",self.stab)
+        self.accept("mouse3",self.block)
 
     def set_movement_status(self, direction):
         self.movement_status[direction] = 1
@@ -41,13 +42,28 @@ class Player(EntityBase):
     def stab(self):
         if not self.inAttack:
             self.inAttack = True
+            self.inBlock = False
             self.sword.play("stab")
             frames = self.sword.getAnimControl("stab").getNumFrames()
-            base.taskMgr.doMethodLater(25/24,self.turnSwordLethal,"makeSwordLethalTask")
-            base.taskMgr.doMethodLater(32/24,self.turnSwordHarmless,"makeSwordLethalTask")
-            base.taskMgr.doMethodLater(frames/24,self.endAttack,"endAttackTask")
+            base.taskMgr.doMethodLater(10/24,self.turnSwordLethal,"player-makeSwordLethalTask")
+            base.taskMgr.doMethodLater(32/24,self.turnSwordHarmless,"player-makeSwordHarmlessTask")
+            base.taskMgr.doMethodLater(frames/24,self.endAttack,"player-endAttackTask")
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(is_attacking=True, action_offset=self.match_timer)])
-      
+    
+    def block(self):
+        if not self.inBlock:
+            self.inAttack = True
+            self.inBlock = True
+            self.sword.play("block")
+            taskMgr.remove("player-endAttackTask")
+            taskMgr.remove("player-makeSwordLethalTask")
+            taskMgr.remove("player-makeSwordHarmlessTask")
+            frames = self.sword.getAnimControl("block").getNumFrames()
+            base.taskMgr.doMethodLater(3/24,self.turnSwordBlock,"player-makeSwordBlockTask")
+            base.taskMgr.doMethodLater(15/24,self.turnSwordSword,"player-makeSwordSword")
+            base.taskMgr.doMethodLater(frames/24,self.endBlock,"player-endBlockTask")
+            base.taskMgr.doMethodLater(frames/24,self.endAttack,"player-endAttackTask")
+    
     def update_camera(self, dt):
         md = self.window.getPointer(0)
         x = md.getX() - self.window.getXSize() / 2
@@ -73,6 +89,7 @@ class Player(EntityBase):
         return Vec3(flat_moveVec.x, flat_moveVec.y, self.vertical_velocity)
     
     def update(self, dt):
+        
         super().update(dt)
         self.match_timer += dt
         self.update_camera(dt)

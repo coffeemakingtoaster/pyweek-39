@@ -19,7 +19,9 @@ class EntityBase(DirectObject.DirectObject):
         self.move_speed = MOVEMENT_SPEED
         self.health = BASE_HEALTH
         self.inAttack = False
+        self.inBlock = False
         self.swordLethality = False
+        self.swordIsBlock = False
         self.window = window
 
         self.vertical_velocity = 0
@@ -34,10 +36,12 @@ class EntityBase(DirectObject.DirectObject):
 
         head_damage_event = f"{'enemy' if self.id == 'player' else 'player'}-sHbnp-collision-into-{self.id}-hHbnp"
         body_damage_event = f"{'enemy' if self.id == 'player' else 'player'}-sHbnp-collision-into-{self.id}-bHbnp"
+        block_event = f"{'enemy' if self.id == 'player' else 'player'}-sHbnp-collision-into-{self.id}-blockHbnp"
         self.accept(head_damage_event, self.handle_head_hit) 
         self.accept(body_damage_event, self.handle_body_hit)
+        self.accept(block_event, self.handle_block_event)
         self.logger.debug(f"Listening to {head_damage_event} and {body_damage_event}")
-
+        self.hitBlocked = False
         self.inv_phase = 0.0
         self.current_hit_has_critted = False
 
@@ -63,16 +67,28 @@ class EntityBase(DirectObject.DirectObject):
         self.headHitBoxNodePath.show()
         self.headHitBoxNodePath.reparentTo(head_joint)
         
-        self.sword = Actor(getModelPath("sword"),{"stab":getModelPath("sword-Stab")})
+        self.sword = Actor(getModelPath("sword"),{"stab":getModelPath("sword-Stab"),"block":getModelPath("sword-Block")})
         self.sword.reparentTo(self.head)
-       
+        
         sword_joint = self.sword.exposeJoint(None, "modelRoot", "Bone")
-        swordHitBox = CollisionCapsule(0, 4, 0, 0, 1, 0, 1)
+        swordHitBox = CollisionCapsule(0, 5, 0, 0, 1, 0, 1)
         self.swordHitBoxNodePath = self.sword.attachNewNode(CollisionNode(f"{self.id}-sHbnp"))
         self.swordHitBoxNodePath.node().addSolid(swordHitBox)
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         self.swordHitBoxNodePath.show()
         self.swordHitBoxNodePath.reparentTo(sword_joint)
+        
+        #Potentiell rausfactoren mit der ganzen Blockhitbox logik
+        
+        #self.swordBlockBoxNodePath = self.sword.attach_new_node(CollisionNode(f"{self.id}-blockHbnp"))
+        #blockHitBox = CollisionCapsule(0, 4, 0, 0, 1, 0, 1)
+        #self.swordBlockBoxNodePath.node().addSolid(blockHitBox)
+        #self.swordBlockBoxNodePath.node().setCollideMask(NO_BIT_MASK)
+        #self.swordBlockBoxNodePath.show()
+        
+        #self.swordBlockBoxNodePath.reparentTo(sword_joint)
+        
+        self.sword.setPos(0, 0.2, 0)
     
         self.shoes = Actor(getModelPath("shoes"))
         self.shoes.reparentTo(self.body)
@@ -80,6 +96,9 @@ class EntityBase(DirectObject.DirectObject):
 
     def endAttack(self,task):
         self.inAttack = False
+    
+    def endBlock(self,task):
+        self.inBlock = False
         
     def turnSwordLethal(self,task):
         self.swordLethality = True
@@ -88,19 +107,51 @@ class EntityBase(DirectObject.DirectObject):
     def turnSwordHarmless(self,task):
         self.swordLethality = False
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
-
+        
+    def turnSwordBlock(self,task):
+        print("block")
+        self.swordIsBlock = True
+        
+        #self.swordBlockBoxNodePath.node().setCollideMask(PLAYER_BIT_MASK if self.id == "player" else ANTI_PLAYER_BIT_MASK)
+    
+    def turnSwordSword(self,task):
+        print("unblock")
+        self.swordIsBlock = False
+        self.hitBlocked = False
+        #self.swordBlockBoxNodePath.node().setCollideMask(NO_BIT_MASK)
+        
+        #Todo interrupt block when hit anyway
+        
     def handle_body_hit(self, entry):
+        if self.hitBlocked:
+            return
+        
+        if self.swordIsBlock:
+            self.hitBlocked = True
+            
+            self.handle_block_event()
+            return
         self.logger.info(f"Ouch! My body! ({self.inv_phase})")
+        self.logger.debug(f"Now at {self.health} HP")
         if self.is_puppet:
             return
         if self.inv_phase <= 0.0:
             self.current_hit_has_critted = False
             self.health -= 1
+            
             self.inv_phase = POST_HIT_INV_DURATION
             self.logger.debug(f"Now at {self.health} HP")
 
     def handle_head_hit(self, entry):
+        if self.hitBlocked:
+            return
+        
+        if self.swordIsBlock:
+            self.hitBlocked = True
+            self.handle_block_event()
+            return
         self.logger.info("Ouch! My head!")
+        self.logger.debug(f"Now at {self.health} HP")
         # Do not calculate damage for enemy
         if self.is_puppet:
             return
@@ -108,14 +159,22 @@ class EntityBase(DirectObject.DirectObject):
         if self.inv_phase <= 0:
             self.current_hit_has_critted = True
             self.health -= 2
+            
             self.inv_phase = POST_HIT_INV_DURATION
             self.logger.debug(f"Now at {self.health} HP")
         # Hit that hit body first, then head
         elif not self.current_hit_has_critted and self.inv_phase >= 0:
             self.current_hit_has_critted = True
             self.health -= 1
+            
             self.logger.debug(f"Now at {self.health} HP {entry}")
+    
+    def handle_block_event(self):
         
+        print("blocked")
+        
+        
+       
     def start_match_timer(self):
         self.match_timer = 0.0
 
@@ -136,6 +195,7 @@ class EntityBase(DirectObject.DirectObject):
             self.body.removeNode()
 
     def update(self, dt):
+        
         if self.inv_phase > 0.0:
             self.inv_phase -= dt
         else:

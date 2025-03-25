@@ -3,12 +3,15 @@ from direct.task.Task import Task, messenger
 from panda3d.core import *
 
 from direct.showbase.ShowBase import ShowBase
+from pandac.PandaModules import TransparencyAttrib
+
+
 
 from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.entities.anti_player import AntiPlayer
 from game.entities.player import Player
-from game.helpers import *
+from game.helpers.helpers import *
 from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
 import uuid
 
@@ -75,23 +78,34 @@ class MainGame(ShowBase):
 
     def buildMap(self):
         
+        self.waterfallbackground = loader.loadModel(getModelPath("waterfall"))
+        self.waterfallbackground.reparentTo(render)
+        
+        self.waterfallbackground.setZ(2)
+        self.waterfallbackground.setY(-4)
+        
+    
         self.waterfall = loader.loadModel("box")
         self.waterfall.reparentTo(render)
-        
+        self.waterfall.setTransparency(TransparencyAttrib.MAlpha)
+        self.waterfall.setPos(-20,-34,-3)
+        self.waterfall.setScale(40,0.1,36)
 
-        texture = loader.loadTexture("noise.png")
-        self.waterfall.setTexture(texture,1)
+        texture2 = loader.loadTexture(getImagePath("transWater2"))
+        texture = loader.loadTexture(getImagePath("transWater"))
+        transTexture = loader.loadTexture(getImagePath("blue"))
+        self.waterfall.setTexture(transTexture)
         self.textureStage0 = TextureStage("stage0")
-        self.textureStage0.setMode(TextureStage.MReplace)
-        self.textureStage0.setColor((1,1,1,1))
+        self.textureStage0.setMode(TextureStage.MBlend)
+        
         self.waterfall.setTexture(self.textureStage0,texture,1)
         self.waterfall.setTexScale(self.textureStage0, 2, 2)
 
-        texture2 = loader.loadTexture("noise.png")
+        
         self.textureStage1 = TextureStage("stage1")
-        self.textureStage1.setMode(TextureStage.MBlend)
-        self.textureStage1.setColor((1,1,1,1))
-        self.waterfall.setTexture(self.textureStage1,texture2,1)
+        self.textureStage1.setMode(TextureStage.MAdd)
+        
+        self.waterfall.setTexture(self.textureStage1,texture,1)
         self.waterfall.setTexScale(self.textureStage1, 1, 1)
         
         
@@ -99,8 +113,8 @@ class MainGame(ShowBase):
         taskMgr.add(self.shiftWaterfallTextureTask,"shift Task")
         
     def shiftWaterfallTextureTask(self,task):
-        self.waterfall.setTexOffset(self.textureStage0, 0, (task.time) % 1.0 )
-        self.waterfall.setTexOffset(self.textureStage1, 0, (task.time) % 1.0 )
+        self.waterfall.setTexOffset(self.textureStage0, 0, (task.time*2) % 1.0 )
+        self.waterfall.setTexOffset(self.textureStage1, 0, (task.time*0.4) % 1.0 )
         return Task.cont
     
     def __finish_game(self, is_victory):
@@ -164,7 +178,7 @@ class MainGame(ShowBase):
     def __start_game(self, match_id="", is_offline=True):
         
         #cubeMap = loader.loadCubeMap(getImagePath("skybox"))
-        self.spaceSkyBox = loader.loadModel(helpers.getModelPath("skysphere"))
+        self.spaceSkyBox = loader.loadModel(getModelPath("skysphere"))
         self.spaceSkyBox.setScale(200)
         self.spaceSkyBox.setZ(-40)
         self.spaceSkyBox.setBin('background', 0)
@@ -189,17 +203,14 @@ class MainGame(ShowBase):
         render.setLight(dlnp)     
         render.setLight(ambientnp) 
         
-        testbox = CollisionSphere(0,0,0,3)
-        testboxNode = render.attachNewNode(CollisionNode("testbox"))
-        testboxNode.node().addSolid(testbox)
-        testboxNode.show()
+        
         
         render.setLight(dlnp)
         self.player = Player(self.camera,self.win)
         
         self.anti_player = AntiPlayer(self.win, self.is_online)
         self.camera.reparentTo(self.player.head)
-        self.camera.setPos(0,0.1,0.4)
+        self.camera.setPos(0,-3,0.4)
         
         self.map = self.loader.loadModel("assets/models/map.egg")
         
