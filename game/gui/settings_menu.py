@@ -1,10 +1,10 @@
-from game.const.events import GUI_RETURN_EVENT
+from game.const.events import GUI_RETURN_EVENT, SET_USERNAME_EVENT
 from game.gui.gui_base import GuiBase
 from panda3d.core import TextNode, TransparencyAttrib
 
 from game.helpers.config import set_music_volume, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled
 
-from direct.gui.DirectGui import DirectButton, DirectCheckButton, DirectSlider, DirectLabel, DirectFrame, DGG, OnscreenImage
+from direct.gui.DirectGui import DirectButton, DirectCheckButton, DirectEntry, DirectSlider, DirectLabel, DirectFrame, DGG, OnscreenImage
 
 from os.path import join
 
@@ -94,6 +94,19 @@ class SettingsMenu(GuiBase):
         )
         fps_checkbox.setTransparency(TransparencyAttrib.MAlpha)
         self.menu_elements.append(fps_checkbox)
+
+        self.player_name_input = DirectEntry(
+            parent=menu_box,
+            text = "", 
+            pos = (0.7, 0, 0.05),
+            scale=.05, 
+            command = self.update_player_name,
+            initialText = "Username", 
+            numLines = 1, 
+            focus = 0, 
+            focusInCommand=self.clear_text
+        )
+        self.menu_elements.append(self.player_name_input)
 
         current_music_volume = get_music_volume()
         music_slider_text = DirectLabel(
@@ -201,9 +214,16 @@ class SettingsMenu(GuiBase):
         value = self.music_volume_slider["value"]
         set_music_volume(value/100)
 
+    def update_player_name(self, new_name: str):
+        messenger.send(SET_USERNAME_EVENT, [new_name])
+
     def play_sample_sound(self):
         sample_sfx = base.loader.loadSfx(join("assets", "sfx", "sample.wav"))
         sample_sfx.play()
 
     def update_fps(self, status):
         set_fps_counter_enabled(status == 1)
+
+    def clear_text(self):
+        self.player_name_input.enterText("")
+

@@ -30,15 +30,17 @@ class AntiPlayer(EntityBase):
  
     def __add_name_tag(self):
         self.name_tag = TextNode(f"{self.id}-name")
+        self.name_tag.setAlign(TextNode.ACenter) 
         self.name_tag_node = self.body.attachNewNode(self.name_tag)
         self.name_tag_node.setScale(1.0)
+        self.name_tag_node.setBillboardPointEye()
         self.__update_name()
 
     def __update_name(self):
         if self.name_tag is not None and self.name_tag_node is not None:
             self.name_tag.setText(self.name)
             self.logger.info(f"Enemy now named {self.name}")
-            self.name_tag_node.setPos(-(self.name_tag.getWidth()/2),0,1)
+            self.name_tag_node.setPos(0,0,1)
 
     def set_name(self, name: str):
         self.name = name
