@@ -10,11 +10,11 @@ from game.utils.name_generator import generate_name
 class AntiPlayer(EntityBase):
     def __init__(self, window, is_puppet=False) -> None:
         self.name = generate_name()
+        super().__init__(window, "enemy", f"Enemy {'(online)' if is_puppet else '(local)'}")
 
         self.name_tag = None
         self.name_tag_node = None
 
-        super().__init__(window, "enemy", f"Enemy {'(online)' if is_puppet else '(local)'}")
         self.is_puppet = is_puppet
 
         self.movement_vector = Vec3(0,0,0)
@@ -37,7 +37,7 @@ class AntiPlayer(EntityBase):
     def __update_name(self):
         if self.name_tag is not None and self.name_tag_node is not None:
             self.name_tag.setText(self.name)
-            self.logger.info(f"Enemy now named {self.name} ({self.name_tag.getWidth()})")
+            self.logger.info(f"Enemy now named {self.name}")
             self.name_tag_node.setPos(-(self.name_tag.getWidth()/2),0,1)
 
     def set_name(self, name: str):
@@ -63,10 +63,10 @@ class AntiPlayer(EntityBase):
         self.sword.play("stab", fromFrame=frame_offset)
         self.logger.debug(f"Frame offset is {frame_offset}")
         if frame_offset < 25:
-            base.taskMgr.doMethodLater((25 - frame_offset)/24, self.turnSwordLethal,"makeSwordLethalTask")
+            base.taskMgr.doMethodLater((25 - frame_offset)/24, self.turnSwordLethal, "makeSwordLethalTask")
         if frame_offset < 32:
-            base.taskMgr.doMethodLater((32 - frame_offset)/24, self.turnSwordHarmless,"makeSwordLethalTask")
-        base.taskMgr.doMethodLater((total_frames - frame_offset)/24, self.endAttack,"endAttackTask")
+            base.taskMgr.doMethodLater((32 - frame_offset)/24, self.turnSwordHarmless, "makeSwordLethalTask")
+        base.taskMgr.doMethodLater((total_frames - frame_offset)/24, self.endAttack, "endAttackTask")
         messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(is_attacking=True, action_offset=self.match_timer)])
     
     def handleSwordCollisionEnd(self,entry):
@@ -123,6 +123,7 @@ class AntiPlayer(EntityBase):
         self.body.setHpr(update.bodyRotation.x, update.bodyRotation.y, update.bodyRotation.z)
 
     def update(self, dt):
+        super().update(dt)
         self.match_timer += dt
         self.apply_gravity(dt)
         flat_move = Vec2(self.movement_vector.x, self.movement_vector.y) * dt

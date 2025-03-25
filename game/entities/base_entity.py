@@ -3,8 +3,8 @@ from direct.actor.Actor import Actor
 from direct.showbase import DirectObject
 from abc import abstractmethod
 
-from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, PLAYER_BIT_MASK
-from game.const.player import BASE_HEALTH, GRAVITY, MOVEMENT_SPEED
+from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, NO_BIT_MASK, PLAYER_BIT_MASK
+from game.const.player import BASE_HEALTH, GRAVITY, MOVEMENT_SPEED, POST_HIT_INV_DURATION
 from game.helpers.helpers import getModelPath
 from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue, BitMask32
 
@@ -13,6 +13,7 @@ class EntityBase(DirectObject.DirectObject):
         super().__init__()
         self.logger = logging.getLogger(name)
         self.id = id
+        self.is_puppet = False
         self.own_collision_mask = PLAYER_BIT_MASK if self.id == "player" else ANTI_PLAYER_BIT_MASK
         self.opposing_collision_mask = ANTI_PLAYER_BIT_MASK if self.id == "player" else PLAYER_BIT_MASK 
         self.move_speed = MOVEMENT_SPEED
@@ -28,7 +29,6 @@ class EntityBase(DirectObject.DirectObject):
 
         self.collisionHandler = CollisionHandlerEvent()
         self.collisionHandler.addInPattern("%fn-collision-into-%in")
-        #self.collisionHandler.addOutPattern("%fn-collision-out")
 
         base.cTrav.addCollider(self.swordHitBoxNodePath, self.collisionHandler)
 
@@ -38,14 +38,17 @@ class EntityBase(DirectObject.DirectObject):
         self.accept(body_damage_event, self.handle_body_hit)
         self.logger.debug(f"Listening to {head_damage_event} and {body_damage_event}")
 
+        self.inv_phase = 0.0
+        self.current_hit_has_critted = False
+
     def __construct(self):
         self.body = Actor(getModelPath("body"))
         self.body.reparentTo(render)
         
         bodyHitBox = CollisionCapsule(0,0,0.4,0,0,0.3,0.3)
         self.bodyHitBoxNodePath = self.body.attachNewNode(CollisionNode(f"{self.id}-bHbnp"))
-        self.bodyHitBoxNodePath.setCollideMask(self.own_collision_mask)
         self.bodyHitBoxNodePath.node().addSolid(bodyHitBox)
+        self.bodyHitBoxNodePath.setCollideMask(self.own_collision_mask)
         self.bodyHitBoxNodePath.show()
         
         self.head = Actor(getModelPath("head"))
@@ -55,8 +58,8 @@ class EntityBase(DirectObject.DirectObject):
         headHitBox = CollisionSphere(0,0.2,0,0.1)
         
         self.headHitBoxNodePath = self.head.attachNewNode(CollisionNode(f"{self.id}-hHbnp"))
-        self.headHitBoxNodePath.setCollideMask(self.own_collision_mask)
         self.headHitBoxNodePath.node().addSolid(headHitBox)
+        self.headHitBoxNodePath.setCollideMask(self.own_collision_mask)
         self.headHitBoxNodePath.show()
         self.headHitBoxNodePath.reparentTo(head_joint)
         
@@ -66,8 +69,8 @@ class EntityBase(DirectObject.DirectObject):
         sword_joint = self.sword.exposeJoint(None, "modelRoot", "Bone")
         swordHitBox = CollisionCapsule(0, 4, 0, 0, 1, 0, 1)
         self.swordHitBoxNodePath = self.sword.attachNewNode(CollisionNode(f"{self.id}-sHbnp"))
-        self.swordHitBoxNodePath.setCollideMask(BitMask32(0))
         self.swordHitBoxNodePath.node().addSolid(swordHitBox)
+        self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         self.swordHitBoxNodePath.show()
         self.swordHitBoxNodePath.reparentTo(sword_joint)
     
@@ -80,21 +83,39 @@ class EntityBase(DirectObject.DirectObject):
         
     def turnSwordLethal(self,task):
         self.swordLethality = True
-        self.swordHitBoxNodePath.setCollideMask(self.opposing_collision_mask)
+        self.swordHitBoxNodePath.node().setCollideMask(self.opposing_collision_mask)
         
     def turnSwordHarmless(self,task):
         self.swordLethality = False
-        self.swordHitBoxNodePath.setCollideMask(BitMask32(0))
+        self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
 
     def handle_body_hit(self, entry):
-        self.logger.info("Ouch! My body!")
+        self.logger.info(f"Ouch! My body! ({self.inv_phase})")
+        if self.is_puppet:
+            return
+        if self.inv_phase <= 0.0:
+            self.current_hit_has_critted = False
+            self.health -= 1
+            self.inv_phase = POST_HIT_INV_DURATION
+            self.logger.debug(f"Now at {self.health} HP")
 
     def handle_head_hit(self, entry):
         self.logger.info("Ouch! My head!")
+        # Do not calculate damage for enemy
+        if self.is_puppet:
+            return
+        # Direct head hit
+        if self.inv_phase <= 0:
+            self.current_hit_has_critted = True
+            self.health -= 2
+            self.inv_phase = POST_HIT_INV_DURATION
+            self.logger.debug(f"Now at {self.health} HP")
+        # Hit that hit body first, then head
+        elif not self.current_hit_has_critted and self.inv_phase >= 0:
+            self.current_hit_has_critted = True
+            self.health -= 1
+            self.logger.debug(f"Now at {self.health} HP {entry}")
         
-    def handleSwordCollisionEnd(self, entry):
-        self.logger.debug(f"no longer colliding with {entry}")
-
     def start_match_timer(self):
         self.match_timer = 0.0
 
@@ -114,6 +135,8 @@ class EntityBase(DirectObject.DirectObject):
             self.body.cleanup()
             self.body.removeNode()
 
-    @abstractmethod
     def update(self, dt):
-        pass
+        if self.inv_phase > 0.0:
+            self.inv_phase -= dt
+        else:
+            self.current_hit_has_critted = False

@@ -73,6 +73,7 @@ class Player(EntityBase):
         return Vec3(flat_moveVec.x, flat_moveVec.y, self.vertical_velocity)
     
     def update(self, dt):
+        super().update(dt)
         self.match_timer += dt
         self.update_camera(dt)
         self.apply_gravity(dt)
