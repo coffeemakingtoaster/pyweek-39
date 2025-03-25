@@ -90,12 +90,14 @@ async def match_ws(player_id, match_id):
                     )
                     proacctive = False
                 message = await websocket.recv()
-                print(message)
                 if (parsed := parse_player_info(message)) is not None:
-                    # Mutation
-                    parsed.position.x += 5
-                    parsed.position.y += 5
-                    message = json.dumps(asdict(parsed))
+                    if not parsed.is_attacking:
+                        # Mutation
+                        parsed.position.x += 5
+                        parsed.position.y += 5
+                        message = json.dumps(asdict(parsed))
+                    else:
+                        print(message)
                 if "player1" in message:
                     proacctive = True
                 if ready:

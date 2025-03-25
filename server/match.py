@@ -101,7 +101,7 @@ class Match():
                         self.game_finished = True
 
                 if len(send_tasks) > 0:
-                    self.logger.debug(f"Communicating {len(send_tasks)} actions")
+                    #self.logger.debug(f"Communicating {len(send_tasks)} actions")
                     await asyncio.gather(*send_tasks)
                 else:
                     await asyncio.sleep(0.05)

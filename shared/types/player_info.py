@@ -9,13 +9,13 @@ class Vector:
 
 @dataclass
 class PlayerInfo:
-    position: Vector
-    health: float
-    lookDirection: Vector
-    bodyRotation: Vector
-    movement: Vector
-    is_attacking: bool
-    attack_offset_from_start: float
+    position: Vector | None = None
+    health: float = 1.0 # this cannot default to 0 as 0 means defeat :)
+    lookDirection: Vector | None = None
+    bodyRotation: Vector | None = None
+    movement: Vector | None = None
+    is_attacking: bool = False
+    attack_offset_from_start: float = 0.0
     def __post_init__(self):
         if isinstance(self.position, dict):
             self.position = Vector(**self.position)

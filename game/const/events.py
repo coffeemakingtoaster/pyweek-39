@@ -5,6 +5,9 @@ CANCEL_QUEUE_EVENT = "cancel_queue"
 WIN_EVENT = "win"
 DEFEAT_EVENT = "defeat"
 
+# Networking events
+NETWORK_SEND_ATTACK_EVENT = "network_attack"
+
 # Gui events
 GUI_RETURN_EVENT = "gui_return"
 GUI_SETTINGS_EVENT = "gui_settings"

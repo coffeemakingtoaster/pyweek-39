@@ -1,3 +1,4 @@
+from game.const.events import NETWORK_SEND_ATTACK_EVENT
 from game.const.player import BASE_HEALTH, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
@@ -18,6 +19,7 @@ class Player(EntityBase):
         self.health = BASE_HEALTH
         self.build_player()
         self.initial_jump_velocity = JUMP_VELOCITY
+        self.match_timer = 0.0
 
         # Keybinds for movement
         self.accept("a", self.set_movement_status, ["left"])
@@ -43,6 +45,7 @@ class Player(EntityBase):
             
     def stab(self):
         self.sword.play("stab")
+        messenger.send(NETWORK_SEND_ATTACK_EVENT, [PlayerInfo(is_attacking=True, attack_offset_from_start=self.match_timer)])
     
     def build_player(self):
         self.body = Actor(getModelPath("body"))
@@ -104,11 +107,15 @@ class Player(EntityBase):
         return moveVec
     
     def update(self, dt):
+        self.match_timer += dt
         self.update_camera(dt)
         moveVec = self.__get_movement_vector()
         stepped_move_vec = Vec3(moveVec.x, moveVec.y, 0)
         stepped_move_vec *= dt
         self.body.setPos(self.body, Vec3(stepped_move_vec.x, stepped_move_vec.y, moveVec.z  * dt))
+
+    def start_match_timer(self):
+        self.match_timer = 0.0
 
     def get_current_state(self) -> PlayerInfo:
         """Current state to send via network"""
@@ -119,6 +126,4 @@ class Player(EntityBase):
             lookDirection=Vector(self.head.getH(),self.head.getP(),self.head.getR(),1),
             bodyRotation=Vector(self.body.getH(),self.body.getP(),self.body.getR(),1),
             movement=Vector(movement_vec.x,movement_vec.y,movement_vec.z,movement_vec.length()),
-            is_attacking=self.sword.get_current_anim() == "stab",
-            attack_offset_from_start=0.0
         )
