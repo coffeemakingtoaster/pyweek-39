@@ -3,7 +3,7 @@ from game.const.player import BASE_HEALTH, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEE
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
 from game.helpers.helpers import *
-from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule
+from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue
 from shared.types.player_info import PlayerInfo, Vector
 
 class Player(EntityBase):
@@ -20,6 +20,21 @@ class Player(EntityBase):
         self.build_player()
         
         self.inAttack = False
+        self.swordLethality = False
+        
+        
+        self.collisionHandler = CollisionHandlerEvent()
+        self.collisionHandler.addInPattern("sHbnp-collision-into")
+        self.collisionHandler.addOutPattern("sHbnp-collision-out")
+
+        
+        self.collisionTraverser = base.cTrav
+        self.collisionTraverser.addCollider(self.swordHitBoxNodePath, self.collisionHandler)
+
+        
+        self.accept("sHbnp-collision-into", self.handleSwordCollision) 
+        #self.accept("sHbnp-collision-out", self.handleSwordCollisionEnd)
+
         
         
         
@@ -54,15 +69,30 @@ class Player(EntityBase):
             self.inAttack = True
             self.sword.play("stab")
             frames = self.sword.getAnimControl("stab").getNumFrames()
+            base.taskMgr.doMethodLater(25/24,self.turnSwordLethal,"makeSwordLethalTask")
+            base.taskMgr.doMethodLater(32/24,self.turnSwordHarmless,"makeSwordLethalTask")
             base.taskMgr.doMethodLater(frames/24,self.endAttack,"endAttackTask")
             messenger.send(NETWORK_SEND_ATTACK_EVENT, [PlayerInfo(is_attacking=True, attack_offset_from_start=self.match_timer)])
-    
+
     
     def endAttack(self,task):
         self.inAttack = False
         
+    def turnSwordLethal(self,task):
+        self.swordLethality = True
         
+    def turnSwordHarmless(self,task):
+        self.swordLethality = False
+        
+    def handleSwordCollision(self,entry):
+        #print(f"Collision detected with {entry}")
+        if self.swordLethality:
+            print("dmg")
     
+    def handleSwordCollisionEnd(self,entry):
+        print(f"no longer colliding with {entry}")
+        
+        
     
     def build_player(self):
         self.body = Actor(getModelPath("body"))
@@ -70,6 +100,14 @@ class Player(EntityBase):
         self.head = Actor(getModelPath("head"))
         self.head.reparentTo(self.body)
         self.head.setPos(0,0,0.52)
+        head_joint = self.head.exposeJoint(None, "modelRoot", "Bone")
+        headHitBox = CollisionSphere(0,0.2,0,0.3)
+        
+        self.headHitBoxNodePath = self.head.attachNewNode(CollisionNode("hHbnp"))
+        self.headHitBoxNodePath.node().addSolid(headHitBox)
+        self.headHitBoxNodePath.show()
+        self.headHitBoxNodePath.reparentTo(head_joint)
+        
         self.sword = Actor(getModelPath("sword"),{"stab":getModelPath("sword-Stab")})
         self.sword.reparentTo(self.head)
         
@@ -94,6 +132,9 @@ class Player(EntityBase):
         self.body.setH(self.body.getH() - x * self.mouse_sens)
         self.head.setP(self.head.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
+        
+    
+        
 
     def __get_movement_vector(self) -> Vec3:
         flat_moveVec = Vec2(0,0)
@@ -138,6 +179,9 @@ class Player(EntityBase):
         stepped_move_vec = Vec3(moveVec.x, moveVec.y, 0)
         stepped_move_vec *= dt
         self.body.setPos(self.body, Vec3(stepped_move_vec.x, stepped_move_vec.y, moveVec.z  * dt))
+        
+        
+        
 
     def start_match_timer(self):
         self.match_timer = 0.0
