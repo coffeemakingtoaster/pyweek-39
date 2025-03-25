@@ -2,7 +2,7 @@ from game.const.player import BASE_HEALTH, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
 from game.helpers.helpers import *
-from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2
+from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule
 from shared.types.player_info import PlayerInfo, Vector
 
 class Player(EntityBase):
@@ -18,6 +18,8 @@ class Player(EntityBase):
         self.health = BASE_HEALTH
         self.build_player()
         self.initial_jump_velocity = 100
+        self.inAttack = False
+        
         
         
         
@@ -61,7 +63,15 @@ class Player(EntityBase):
             self.jump_status = "start"
             
     def stab(self):
-        self.sword.play("stab")
+        if not self.inAttack:
+            self.inAttack = True
+            self.sword.play("stab")
+            frames = self.sword.getAnimControl("stab").getNumFrames()
+            base.taskMgr.doMethodLater(frames/24,self.endAttack,"endAttackTask")
+    
+    
+    def endAttack(self,task):
+        self.inAttack = False
     
     def build_player(self):
         
@@ -72,6 +82,14 @@ class Player(EntityBase):
         self.head.setPos(0,0,0.52)
         self.sword = Actor(getModelPath("sword"),{"stab":getModelPath("sword-Stab")})
         self.sword.reparentTo(self.head)
+        
+       
+        sword_joint = self.sword.exposeJoint(None, "modelRoot", "Bone")
+        swordHitBox = CollisionCapsule(0, 4, 0, 0, 1, 0, 1)
+        self.swordHitBoxNodePath = self.sword.attachNewNode(CollisionNode('sHbnp'))
+        self.swordHitBoxNodePath.node().addSolid(swordHitBox)
+        self.swordHitBoxNodePath.show()
+        self.swordHitBoxNodePath.reparentTo(sword_joint)
     
         self.shoes = Actor(getModelPath("shoes"))
         self.shoes.reparentTo(self.body)

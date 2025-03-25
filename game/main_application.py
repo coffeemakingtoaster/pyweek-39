@@ -34,7 +34,11 @@ class MainGame(ShowBase):
         self.queue_task = None
         self.ws_handle_task = None
         self.logger.debug("Window setup done...")
-        base.camLens.setNear(0.1) 
+        base.camLens.setNear(0.1)
+        base.camLens.setFov(120)
+        
+        base.cTrav = CollisionTraverser()
+        base.cTrav.showCollisions(render)
         
         self.mouse_locked = False
 
@@ -134,6 +138,7 @@ class MainGame(ShowBase):
         self.spaceSkyBox.setTwoSided(True)
         self.spaceSkyBox.setTexGen(TextureStage.getDefault(),TexGenAttrib.MWorldCubeMap)
         self.spaceSkyBox.reparentTo(render)
+        self.spaceSkyBox.setLightOff()
         #self.spaceSkyBox.setTexture(cubeMap, 1)
         
         
@@ -141,15 +146,24 @@ class MainGame(ShowBase):
         base.disableMouse()
         self.toggle_mouse()
         
-        alight = AmbientLight('alight')
-        alight.setColor((0.4, 0.4, 0.4, 1))
-        alnp = render.attachNewNode(alight)
-        render.setLight(alnp)
+        dlight = DirectionalLight('my dlight')
+        dlight.color = (1,1,1,1)
+        dlight.setDirection(Vec3(0,-1,-0.2))
+        dlnp = render.attachNewNode(dlight)
+        alight = AmbientLight("ambi light")
+        alight.color = (0.1,0.1,0.1,1)
+        ambientnp = render.attachNewNode(alight)
+        render.setLight(dlnp)     
+        render.setLight(ambientnp) 
+        
+        
+        
+        render.setLight(dlnp)
         self.player = Player(self.camera,self.win)
         
         self.anti_player = AntiPlayer(self.win, self.is_online)
         self.camera.reparentTo(self.player.head)
-        self.camera.setPos(0,0.1,0.4)
+        self.camera.setPos(0,-2,0.4)
         
         self.map = self.loader.loadModel("assets/models/map.egg")
         
