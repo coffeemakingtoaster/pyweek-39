@@ -8,8 +8,7 @@ from shared.types.player_info import PlayerInfo, Vector
 
 class Player(EntityBase):
     def __init__(self,camera,window) -> None:
-        self.id = "player"
-        super().__init__(window, "Player")
+        super().__init__(window, "player", "Player")
         self.mouse_sens = 0.1 #MOUSE_SENS
         self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
         self.camera = camera

@@ -10,12 +10,11 @@ from game.utils.name_generator import generate_name
 class AntiPlayer(EntityBase):
     def __init__(self, window, is_puppet=False) -> None:
         self.name = generate_name()
-        self.id = "enemy"
 
         self.name_tag = None
         self.name_tag_node = None
 
-        super().__init__(window, f"Enemy {'(online)' if is_puppet else '(local)'}")
+        super().__init__(window, "enemy", f"Enemy {'(online)' if is_puppet else '(local)'}")
         self.is_puppet = is_puppet
 
         self.movement_vector = Vec3(0,0,0)

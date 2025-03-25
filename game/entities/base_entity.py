@@ -3,15 +3,18 @@ from direct.actor.Actor import Actor
 from direct.showbase import DirectObject
 from abc import abstractmethod
 
+from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, PLAYER_BIT_MASK
 from game.const.player import BASE_HEALTH, GRAVITY, MOVEMENT_SPEED
 from game.helpers.helpers import getModelPath
-from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue
+from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue, BitMask32
 
 class EntityBase(DirectObject.DirectObject):
-    def __init__(self, window, name="BaseEntity"):
+    def __init__(self, window, id, name="BaseEntity"):
         super().__init__()
-        print(name)
         self.logger = logging.getLogger(name)
+        self.id = id
+        self.own_collision_mask = PLAYER_BIT_MASK if self.id == "player" else ANTI_PLAYER_BIT_MASK
+        self.opposing_collision_mask = ANTI_PLAYER_BIT_MASK if self.id == "player" else PLAYER_BIT_MASK 
         self.move_speed = MOVEMENT_SPEED
         self.health = BASE_HEALTH
         self.inAttack = False
@@ -24,19 +27,24 @@ class EntityBase(DirectObject.DirectObject):
         self.__construct()
 
         self.collisionHandler = CollisionHandlerEvent()
-        self.collisionHandler.addInPattern("sHbnp-collision-into")
-        self.collisionHandler.addOutPattern("sHbnp-collision-out")
+        self.collisionHandler.addInPattern("%fn-collision-into-%in")
+        #self.collisionHandler.addOutPattern("%fn-collision-out")
 
         base.cTrav.addCollider(self.swordHitBoxNodePath, self.collisionHandler)
 
-        self.accept("sHbnp-collision-into", self.handleSwordCollision) 
+        head_damage_event = f"{'enemy' if self.id == 'player' else 'player'}-sHbnp-collision-into-{self.id}-hHbnp"
+        body_damage_event = f"{'enemy' if self.id == 'player' else 'player'}-sHbnp-collision-into-{self.id}-bHbnp"
+        self.accept(head_damage_event, self.handle_head_hit) 
+        self.accept(body_damage_event, self.handle_body_hit)
+        self.logger.debug(f"Listening to {head_damage_event} and {body_damage_event}")
 
     def __construct(self):
         self.body = Actor(getModelPath("body"))
         self.body.reparentTo(render)
         
         bodyHitBox = CollisionCapsule(0,0,0.4,0,0,0.3,0.3)
-        self.bodyHitBoxNodePath = self.body.attachNewNode(CollisionNode('bHbnp'))
+        self.bodyHitBoxNodePath = self.body.attachNewNode(CollisionNode(f"{self.id}-bHbnp"))
+        self.bodyHitBoxNodePath.setCollideMask(self.own_collision_mask)
         self.bodyHitBoxNodePath.node().addSolid(bodyHitBox)
         self.bodyHitBoxNodePath.show()
         
@@ -46,7 +54,8 @@ class EntityBase(DirectObject.DirectObject):
         head_joint = self.head.exposeJoint(None, "modelRoot", "Bone")
         headHitBox = CollisionSphere(0,0.2,0,0.1)
         
-        self.headHitBoxNodePath = self.head.attachNewNode(CollisionNode("hHbnp"))
+        self.headHitBoxNodePath = self.head.attachNewNode(CollisionNode(f"{self.id}-hHbnp"))
+        self.headHitBoxNodePath.setCollideMask(self.own_collision_mask)
         self.headHitBoxNodePath.node().addSolid(headHitBox)
         self.headHitBoxNodePath.show()
         self.headHitBoxNodePath.reparentTo(head_joint)
@@ -56,7 +65,8 @@ class EntityBase(DirectObject.DirectObject):
        
         sword_joint = self.sword.exposeJoint(None, "modelRoot", "Bone")
         swordHitBox = CollisionCapsule(0, 4, 0, 0, 1, 0, 1)
-        self.swordHitBoxNodePath = self.sword.attachNewNode(CollisionNode('sHbnp'))
+        self.swordHitBoxNodePath = self.sword.attachNewNode(CollisionNode(f"{self.id}-sHbnp"))
+        self.swordHitBoxNodePath.setCollideMask(BitMask32(0))
         self.swordHitBoxNodePath.node().addSolid(swordHitBox)
         self.swordHitBoxNodePath.show()
         self.swordHitBoxNodePath.reparentTo(sword_joint)
@@ -70,14 +80,18 @@ class EntityBase(DirectObject.DirectObject):
         
     def turnSwordLethal(self,task):
         self.swordLethality = True
+        self.swordHitBoxNodePath.setCollideMask(self.opposing_collision_mask)
         
     def turnSwordHarmless(self,task):
         self.swordLethality = False
+        self.swordHitBoxNodePath.setCollideMask(BitMask32(0))
+
+    def handle_body_hit(self, entry):
+        self.logger.info("Ouch! My body!")
+
+    def handle_head_hit(self, entry):
+        self.logger.info("Ouch! My head!")
         
-    def handleSwordCollision(self, entry):
-        if self.swordLethality:
-            self.logger.debug("dmg")
-    
     def handleSwordCollisionEnd(self, entry):
         self.logger.debug(f"no longer colliding with {entry}")
 
