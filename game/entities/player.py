@@ -87,20 +87,18 @@ class Player(EntityBase):
         self.head.setP(self.head.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
 
-    def __get_movement_vector(self, dt) -> Vec3:
-        flat_moveVec = Vec2(0,0)
-        moveVec = Vec3(0, 0, 0)
-
-        if self.vertical_velocity != 0:
-            self.vertical_velocity -= (GRAVITY * dt)
-            moveVec.z += self.vertical_velocity
+    def __apply_gravity(self, dt):
+        if self.vertical_velocity == 0:
+            return
+        self.vertical_velocity -= (GRAVITY * dt)
 
         if self.body.getZ() <= 0.5 and self.vertical_velocity < 0:
             self.vertical_velocity = 0 
-            moveVec.setZ(0)
             # This is the base height -> magic number
             self.body.setZ(0.5)
-             
+
+    def __get_movement_vector(self) -> Vec3:
+        flat_moveVec = Vec2(0,0)
         if self.movement_status["forward"]:
             flat_moveVec += Vec2(0, 1)
         if self.movement_status["backward"]:
@@ -111,14 +109,13 @@ class Player(EntityBase):
             flat_moveVec += Vec2(1, 0)
         flat_moveVec.normalize() if flat_moveVec.length() > 0 else None
         flat_moveVec *= self.move_speed
-        moveVec.setX(flat_moveVec.x)
-        moveVec.setY(flat_moveVec.y)
-        return moveVec
+        return Vec3(flat_moveVec.x, flat_moveVec.y, self.vertical_velocity)
     
     def update(self, dt):
         self.match_timer += dt
         self.update_camera(dt)
-        moveVec = self.__get_movement_vector(dt)
+        self.__apply_gravity(dt)
+        moveVec = self.__get_movement_vector()
         stepped_move_vec = Vec3(moveVec.x, moveVec.y, 0)
         stepped_move_vec *= dt
         self.body.setPos(self.body, Vec3(stepped_move_vec.x, stepped_move_vec.y, moveVec.z  * dt))
@@ -128,7 +125,7 @@ class Player(EntityBase):
 
     def get_current_state(self) -> PlayerInfo:
         """Current state to send via network"""
-        movement_vec = self.__get_movement_vector(1)
+        movement_vec = self.__get_movement_vector()
         return PlayerInfo(
             health=self.health,
             position=Vector(self.body.getX(),self.body.getY(),self.body.getZ(),1),
