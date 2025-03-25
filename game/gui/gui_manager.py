@@ -2,6 +2,9 @@ from enum import Enum
 from direct.fsm.FSM import FSM
 import logging
 
+from direct.task.Task import messenger
+
+from game.const.events import DEFEAT_EVENT
 from game.gui.game_end import GameEnd
 from game.gui.gui_base import GuiBase
 from game.gui.hud import Hud
@@ -11,7 +14,6 @@ from game.gui.settings_menu import SettingsMenu
 
 class GuiStates(Enum):
     RUNNING = "RUNNING"
-    PAUSED = "PAUSED"
     SETTINGS = "SETTINGS"
     MAIN_MENU = "MAIN_MENU"
     GAME_END_SCREEN_WIN = "GAME_END_SCREEN_WIN"
@@ -39,12 +41,10 @@ class GuiStateMachine(FSM):
         self.logger = logging.getLogger(__name__)
 
     nextState = {
-        (GuiStates.RUNNING.value, StateTransitionEvents.ESC.value) : GuiStates.PAUSED.value,
+        (GuiStates.RUNNING.value, StateTransitionEvents.ESC.value) : GuiStates.GAME_END_SCREEN_DEFEAT.value,
         (GuiStates.RUNNING.value, StateTransitionEvents.PLAY.value) : GuiStates.RUNNING.value,
         (GuiStates.RUNNING.value, StateTransitionEvents.WIN.value) : GuiStates.GAME_END_SCREEN_WIN.value,
         (GuiStates.RUNNING.value, StateTransitionEvents.DEFEAT.value) : GuiStates.GAME_END_SCREEN_DEFEAT.value,
-        (GuiStates.PAUSED.value, StateTransitionEvents.ESC.value) : GuiStates.RUNNING.value,
-        (GuiStates.PAUSED.value, StateTransitionEvents.RETURN.value) : GuiStates.RUNNING.value,
         (GuiStates.SETTINGS.value, StateTransitionEvents.ESC.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.SETTINGS.value, StateTransitionEvents.RETURN.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.GAME_END_SCREEN_WIN.value, StateTransitionEvents.ESC.value) : GuiStates.MAIN_MENU.value,
@@ -58,7 +58,6 @@ class GuiStateMachine(FSM):
         (GuiStates.QUEUE.value, StateTransitionEvents.PLAY.value) : GuiStates.RUNNING.value,
         (GuiStates.QUEUE.value, StateTransitionEvents.ESC.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.RUNNING.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
-        (GuiStates.PAUSED.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.SETTINGS.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.GAME_END_SCREEN_WIN.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
         (GuiStates.GAME_END_SCREEN_DEFEAT.value, StateTransitionEvents.FORCE_MAIN_MENU.value) : GuiStates.MAIN_MENU.value,
@@ -81,6 +80,9 @@ class GuiManager():
 
     def handle_custom(self, request_input: StateTransitionEvents):
         self.logger.debug(f"Requesting gui state change with event {request_input.value}")
+        if self.gui_state_machine.getCurrentOrNextState() == GuiStates.RUNNING.value and request_input == StateTransitionEvents.ESC:
+            messenger.send(DEFEAT_EVENT)
+            return
         self.gui_state_machine.request(request_input.value)
         self.__update_displayed_gui()
 
