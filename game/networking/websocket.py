@@ -29,6 +29,9 @@ class MatchWS(WebSocketClient):
             return
         self.send(json.dumps(asdict(data)))
 
+    def add_priority(self, packet: PlayerInfo):
+        self.priorioty_packets.append(packet)
+
     def received_message(self, message):
         if message.is_text:
             recvStr = message.data.decode("utf-8")

@@ -74,6 +74,8 @@ class MainGame(ShowBase):
         self.time_since_last_package: int = 1_000_000
 
     def __finish_game(self, is_victory):
+        base.enableMouse()
+        self.toggle_mouse()
         self.logger.info(f"Received game finish where victory: {is_victory}")
         if self.ws is not None:
             self.ws.close(reason="Finished")
@@ -214,7 +216,6 @@ class MainGame(ShowBase):
         if not self.is_online:
             return
         if self.ws is not None:
-            self.logger.info("Sending priority")
             self.ws.send_game_data(packet)
 
     def __main_loop_online(self, dt):

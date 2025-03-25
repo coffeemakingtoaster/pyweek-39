@@ -16,13 +16,11 @@ class Player:
         self.name = player_name
         self.logger = logging.getLogger(f"{__name__}-{self.id}")
         self.messages: List[PlayerInfo] = []
-        # TODO: add properties
 
     async def send_player_info(self, player_info):
         await self.ws.send_text(json.dumps(asdict(player_info)))
 
     async def send_control_message(self, message: GameStatus):
-        self.logger.debug(asdict(message))
         await self.ws.send_text(json.dumps(asdict(message, dict_factory=game_status_factory)))
 
     async def receive_data(self):
@@ -34,6 +32,11 @@ class Player:
         if parsed_msg is None:
             self.logger.warning("Invalid payload received")
             return
+        if len(self.messages) > 0:
+            # Do not overwrite attack package
+            if self.messages[-1].is_attacking:
+                self.logger.debug("Threw package out for priority package")
+                return
         self.messages.append(parsed_msg)
 
     def __has_message(self) -> bool:

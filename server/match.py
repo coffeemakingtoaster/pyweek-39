@@ -88,12 +88,17 @@ class Match():
             try:
                 send_tasks = []
                 if (p1_msg:=self.player_1_slot.get_last_message()) is not None:
+                    if p1_msg.is_attacking:
+                        self.logger.debug("Attack package p1")
                     send_tasks.append(self.player_2_slot.send_player_info(p1_msg))
                     if p1_msg.health <= 0.0:
                         send_tasks.append(self.player_2_slot.declare_victor())
                         send_tasks.append(self.player_1_slot.declare_loser())
                         self.game_finished = True
                 if (p2_msg:=self.player_2_slot.get_last_message()) is not None:
+                    if p2_msg.is_attacking:
+                        self.logger.debug("Attack package p2")
+
                     send_tasks.append(self.player_1_slot.send_player_info(p2_msg))
                     if p2_msg.health <= 0.0:
                         send_tasks.append(self.player_1_slot.declare_victor())
