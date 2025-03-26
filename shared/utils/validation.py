@@ -13,9 +13,9 @@ def is_valid_uuid(uuid_to_test, version=4) -> bool:
         return False
     return True
 
-def parse_player_info(raw: str) -> PlayerInfo | None:
+def parse_player_info(raw: bytes) -> PlayerInfo | None:
     try:
-        res = PlayerInfo(**json.loads(raw))
+        res = PlayerInfo.from_bytes(raw)
         return res
     except Exception:
         return None

@@ -220,7 +220,8 @@ class MainGame(ShowBase):
         
         self.anti_player = AntiPlayer(self.win, self.is_online)
         self.camera.reparentTo(self.player.head)
-        self.camera.setPos(0,-3,0.4)
+        #self.camera.setPos(0,-3,0.4)
+        self.camera.setPos(0,0.1,0.4)
         
         self.map = self.loader.loadModel("assets/models/map.egg")
         

@@ -17,19 +17,19 @@ class Player:
         self.last_message: PlayerInfo | None = None
 
     async def send_player_info(self, player_info: PlayerInfo):
-        await self.ws.send_text(json.dumps(asdict(player_info, dict_factory=enum_friendly_factory)))
+        await self.ws.send_bytes(player_info.to_bytes())
 
     async def send_control_message(self, message: GameStatus):
         await self.ws.send_text(json.dumps(asdict(message, dict_factory=enum_friendly_factory)))
 
     async def receive_data(self):
         msg = await self.ws.receive()
-        if "text" not in msg:
-            self.logger.warning("Invalid payload received")
+        if "bytes" not in msg:
+            self.logger.warning(f"Invalid payload received {msg}")
             return None
-        parsed_msg = parse_player_info(msg["text"]) 
+        parsed_msg = parse_player_info(msg["bytes"]) 
         if parsed_msg is None:
-            self.logger.warning("Invalid payload received")
+            self.logger.warning("Unparseable payload received")
             return
         if self.last_message is None:
             self.last_message = parsed_msg

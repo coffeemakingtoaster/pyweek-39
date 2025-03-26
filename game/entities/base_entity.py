@@ -104,7 +104,7 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath = self.sword.attachNewNode(CollisionNode(f"{self.id}-sHbnp"))
         self.swordHitBoxNodePath.node().addSolid(swordHitBox)
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
-        self.swordHitBoxNodePath.show()
+#        self.swordHitBoxNodePath.show()
         self.swordHitBoxNodePath.reparentTo(sword_joint)
                
         self.sword.setPos(0, 0.2, 0)
