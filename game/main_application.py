@@ -83,18 +83,48 @@ class MainGame(ShowBase):
 
     def buildMap(self):
         
+        
+       
+        
+        dlight = DirectionalLight('my dlight')
+        dlight.color = (1,1,1,1)
+        dlight.setDirection(Vec3(0,-1,-0.2))
+        dlnp = render.attachNewNode(dlight)
+        alight = AmbientLight("ambi light")
+        alight.color = (0.1,0.1,0.1,1)
+        ambientnp = render.attachNewNode(alight)
+        render.setLight(dlnp)     
+        render.setLight(ambientnp) 
+        render.setLight(dlnp)
+        
+        #cubeMap = loader.loadCubeMap(getImagePath("skybox"))
+        self.spaceSkyBox = loader.loadModel(getModelPath("skysphere"))
+        self.spaceSkyBox.setScale(200)
+        self.spaceSkyBox.setZ(-40)
+        self.spaceSkyBox.setBin('background', 0)
+        self.spaceSkyBox.setDepthWrite(0)
+        self.spaceSkyBox.setTwoSided(True)
+        #self.spaceSkyBox.setTexGen(TextureStage.getDefault(), TexGenAttrib.MWorldCubeMap)
+        self.spaceSkyBox.reparentTo(render)
+        self.spaceSkyBox.setLightOff()
+        #self.spaceSkyBox.setTexture(cubeMap, 1)
+       
+        
         self.waterfallbackground = loader.loadModel(getModelPath("waterfall"))
         self.waterfallbackground.reparentTo(render)
         
-        self.waterfallbackground.setZ(1.5)
-        self.waterfallbackground.setY(0)
-        self.waterfallbackground.setScale(0.33)
+        self.waterfallbackground.setZ(-2)
         
+        self.map = self.loader.loadModel("assets/models/map.egg")
+        
+        self.map.reparentTo(self.render)
+        
+        self.map.setZ(-2)
     
         self.waterfall = loader.loadModel("box")
         self.waterfall.reparentTo(render)
         self.waterfall.setTransparency(TransparencyAttrib.MAlpha)
-        self.waterfall.setPos(-5,-10,-3)
+        self.waterfall.setPos(-6,-8.5,-3.5)
         self.waterfall.setScale(13,0.1,13.7)
 
         texture2 = loader.loadTexture(getImagePath("transWater2"))
@@ -183,32 +213,13 @@ class MainGame(ShowBase):
     
     def __start_game(self, match_id="", is_offline=True):
         
-        #cubeMap = loader.loadCubeMap(getImagePath("skybox"))
-        self.spaceSkyBox = loader.loadModel(getModelPath("skysphere"))
-        self.spaceSkyBox.setScale(200)
-        self.spaceSkyBox.setZ(-40)
-        self.spaceSkyBox.setBin('background', 0)
-        self.spaceSkyBox.setDepthWrite(0)
-        self.spaceSkyBox.setTwoSided(True)
-        #self.spaceSkyBox.setTexGen(TextureStage.getDefault(), TexGenAttrib.MWorldCubeMap)
-        self.spaceSkyBox.reparentTo(render)
-        self.spaceSkyBox.setLightOff()
-        #self.spaceSkyBox.setTexture(cubeMap, 1)
+        
         
         self.is_online = not is_offline
         base.disableMouse()
         self.toggle_mouse()
         
-        dlight = DirectionalLight('my dlight')
-        dlight.color = (1,1,1,1)
-        dlight.setDirection(Vec3(0,-1,-0.2))
-        dlnp = render.attachNewNode(dlight)
-        alight = AmbientLight("ambi light")
-        alight.color = (0.1,0.1,0.1,1)
-        ambientnp = render.attachNewNode(alight)
-        render.setLight(dlnp)     
-        render.setLight(ambientnp) 
-       
+        
         '''
         testbox = CollisionSphere(0,0,0,3)
         testboxNode = render.attachNewNode(CollisionNode("testbox"))
@@ -216,7 +227,7 @@ class MainGame(ShowBase):
         testboxNode.show()
         '''
         
-        render.setLight(dlnp)
+        
         self.player = Player(self.camera,self.win, self.is_online)
         
         self.anti_player = AntiPlayer(self.win, self.is_online)
@@ -224,11 +235,7 @@ class MainGame(ShowBase):
         #self.camera.setPos(0,-3,0.4)
         self.camera.setPos(0,0.1,0.4)
         
-        self.map = self.loader.loadModel("assets/models/map.egg")
         
-        self.map.reparentTo(self.render)
-        self.map.setScale(0.3)
-        self.map.setZ(1.5)
         if is_offline:
             self.logger.info("Starting game in offline mode...")
             self.match_id = None

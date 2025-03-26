@@ -238,6 +238,7 @@ class EntityBase(DirectObject.DirectObject):
         self.match_timer = 0.0
 
     def apply_gravity(self, dt):
+        return
         if self.vertical_velocity == 0:
             return
         self.vertical_velocity -= (GRAVITY * dt)
