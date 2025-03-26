@@ -135,11 +135,11 @@ class AntiPlayer(EntityBase):
         for action in actions:
             offset = offsets.pop(0)
             match action:
-                case PlayerAction.JUMP.value:
+                case PlayerAction.JUMP:
                     self.jump(offset)
-                case PlayerAction.ATTACK_1.value:
+                case PlayerAction.ATTACK_1:
                     self.stab(offset)
-                case PlayerAction.BLOCK.value:
+                case PlayerAction.BLOCK:
                     self.block(offset)
                 case _:
                     self.logger.debug(f"Code {action} not implemented")
@@ -170,8 +170,6 @@ class AntiPlayer(EntityBase):
         if update.movement is not None:
             # The vector is normalized when sending it
             self.movement_vector = Vec3(update.movement.x , update.movement.y, 0)
-            #assert (Vec2(update.movement.x , update.movement.y).length() == self.move_speed 
-            #        or Vec2(update.movement.x , update.movement.y).length() == 0)
             # This is not the correct labelling...I am aware but idc
         if update.lookRotation is not None:
             self.head.setP(update.lookRotation)
