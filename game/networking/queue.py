@@ -1,16 +1,18 @@
 import logging
+import httpx
 from typing import Tuple
 
 from direct.task.Task import Task
 from game.const.networking import HOST
-import requests
 
 LOGGER = logging.getLogger(__name__)
 
 def __set_logger(lvl=logging.WARN):
-    requests_log = logging.getLogger("requests.packages.urllib3")
+    requests_log = logging.getLogger("httpcore.http11")
     requests_log.setLevel(lvl)
-    requests_log = logging.getLogger("urllib3.connectionpool")
+    requests_log = logging.getLogger("httpx")
+    requests_log.setLevel(lvl)
+    requests_log = logging.getLogger("httpcore.connection")
     requests_log.setLevel(lvl)
 
 def join_queue(player_id: str) -> bool:
@@ -18,7 +20,7 @@ def join_queue(player_id: str) -> bool:
     url = f'http://{HOST}/queue'
     body = {'player_id': player_id}
     try:
-        res = requests.post(url, json = body)
+        res = httpx.post(url, json = body)
     except Exception as e:
         LOGGER.warning(f"Could not join queue. This may indicate network problems. Either way please play against a bot in the meantime. Error {e}")
         return Task.done
@@ -30,7 +32,7 @@ def join_queue(player_id: str) -> bool:
 def check_queue_status(player_id: str) -> Tuple[ bool, str, str]:
     __set_logger()
     try:
-        res = requests.get(f"http://{HOST}/queue/{player_id}")
+        res = httpx.get(f"http://{HOST}/queue/{player_id}")
     except Exception as e:
         LOGGER.warning(f"Could not join queue. This may indicate network problems. Either way please play against a bot in the meantime. Error {e}")
         return (False, "", "")
@@ -45,7 +47,7 @@ def leave_queue(player_id: str) -> bool:
 
     url = f'http://{HOST}/queue/{player_id}'
     try:
-        res = requests.delete(url)
+        res = httpx.delete(url)
     except Exception as e:
         LOGGER.warning(f"Could not leave queue. This may indicate network problems. Either way please play against a bot in the meantime. Error {e}")
         return False
