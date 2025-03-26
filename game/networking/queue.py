@@ -1,9 +1,9 @@
 import logging
+import requests
 from typing import Tuple
 
 from direct.task.Task import Task
 from game.const.networking import HOST
-import requests
 
 LOGGER = logging.getLogger(__name__)
 
