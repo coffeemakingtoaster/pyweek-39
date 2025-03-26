@@ -1,4 +1,7 @@
 import logging
+import traceback
+import truststore
+import ssl
 import httpx
 from typing import Tuple
 
@@ -6,6 +9,8 @@ from direct.task.Task import Task
 from game.const.networking import HOST
 
 LOGGER = logging.getLogger(__name__)
+
+CTX = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
 def __set_logger(lvl=logging.WARN):
     requests_log = logging.getLogger("httpcore.http11")
@@ -20,9 +25,11 @@ def join_queue(player_id: str) -> bool:
     url = f'http://{HOST}/queue'
     body = {'player_id': player_id}
     try:
-        res = httpx.post(url, json = body)
+        res = httpx.post(url, json = body, verify=CTX)
     except Exception as e:
-        LOGGER.warning(f"Could not join queue. This may indicate network problems. Either way please play against a bot in the meantime. Error {e}")
+        e = e.with_traceback
+        tb = traceback.format_exc()
+        LOGGER.warning(f"Could not join queue. This may indicate network problems. Either way please play against a bot in the meantime. Error {tb}")
         return Task.done
     if res.status_code != 201:
         LOGGER.warning("Could not join queue. This may indicate network problems. Either way please play against a bot in the meantime")
@@ -32,7 +39,7 @@ def join_queue(player_id: str) -> bool:
 def check_queue_status(player_id: str) -> Tuple[ bool, str, str]:
     __set_logger()
     try:
-        res = httpx.get(f"http://{HOST}/queue/{player_id}")
+        res = httpx.get(f"http://{HOST}/queue/{player_id}", verify=CTX)
     except Exception as e:
         LOGGER.warning(f"Could not join queue. This may indicate network problems. Either way please play against a bot in the meantime. Error {e}")
         return (False, "", "")
