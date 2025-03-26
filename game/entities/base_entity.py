@@ -12,6 +12,8 @@ from game.const.player import BASE_HEALTH, BLOCK_RANGE_DEG, GRAVITY, MOVEMENT_SP
 from game.helpers.helpers import getModelPath
 from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule, CollisionHandlerEvent, LineSegs, NodePath
 
+from game.utils.scene_graph import traverse_parents_until_name_is_matched
+
 class EntityBase(DirectObject.DirectObject):
     def __init__(self, window, id: str, online: bool, name="BaseEntity"):
         super().__init__()
@@ -60,6 +62,7 @@ class EntityBase(DirectObject.DirectObject):
 
     def __construct(self):
         self.body = Actor(getModelPath("body"))
+        self.body.setName("body")
         self.body.reparentTo(render)
         
         bodyHitBox = CollisionCapsule(0,0,0.4,0,0,0.3,0.3)
@@ -145,7 +148,7 @@ class EntityBase(DirectObject.DirectObject):
         self.bodyHitBoxNodePath.node().setCollideMask(self.own_collision_mask)
         self.headHitBoxNodePath.node().setCollideMask(self.own_collision_mask)
 
-        #TODO: interrupt block when hit anyway -> this still applicable? @Heuser
+        #TODO: interrupt block when hit anyway -> this still applicable? @Heuserus
 
     def take_damage(self, damage_value: int):
         self.health -= damage_value
@@ -168,7 +171,7 @@ class EntityBase(DirectObject.DirectObject):
         # ensure that this is the sword in case any topology is changed at some point
         assert entry.getFromNodePath().getName().endswith("-sHbnp")
 
-        if not self.__was_from_behind(render.getRelativeVector(entry.getFromNodePath(), Vec3.back())):
+        if not self.__collision_into_was_from_behind(entry.getFromNodePath()):
             if self.hitBlocked:
                 return
             if self.swordIsBlock:
@@ -189,7 +192,7 @@ class EntityBase(DirectObject.DirectObject):
         # ensure that this is the sword in case any topology is changed at some point
         assert entry.getFromNodePath().getName().endswith("-sHbnp")
 
-        if not self.__was_from_behind(render.getRelativeVector(entry.getFromNodePath(), Vec3.back())):
+        if not self.__collision_into_was_from_behind(entry.getFromNodePath()):
             if self.hitBlocked:
                 return
         
@@ -212,7 +215,9 @@ class EntityBase(DirectObject.DirectObject):
         self.logger.debug("I blocked an attack")
         
     def handle_blocked_hit(self,entry):
-        self.logger.debug("Hit Yer HEad")
+        if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
+            self.logger.debug("Was from behind, no block occured")
+            return
         self.play_blocked_animation()
            
     def play_blocked_animation(self):
@@ -238,17 +243,19 @@ class EntityBase(DirectObject.DirectObject):
             self.body.cleanup()
             self.body.removeNode()
 
-    def __was_from_behind(self, attack_point_normal: Vec3) -> bool:
-        orientation_hor = render.getRelativeVector(self.body, Vec3.forward())
-        # We ignore vertical orientation
-        orientation_hor.setZ(0)
-        attack_point_normal.setZ(0)
-        self.draw_debug_ray(self.body.getPos(), self.body.getPos() + orientation_hor)
-        self.draw_debug_ray(self.body.getPos(), self.body.getPos() + attack_point_normal, color=(0,1,0,1))
-        deg_delta = abs(orientation_hor.normalized().angleDeg(attack_point_normal.normalized()))
-        self.logger.debug(f"Hit was at a degree of {deg_delta}")
+    def __collision_into_was_from_behind(self, into_node_path: NodePath) -> bool:
+        """ 2D calculation if own sword is coming from behind the stabbed/attacked entity"""
+        into_body_node_path = traverse_parents_until_name_is_matched(into_node_path, "body")
+        if into_body_node_path is None:
+            return False
+        enemy_body_orientation_hor = render.getRelativeVector(into_body_node_path, Vec3.forward())
+        enemy_body_orientation_hor.setZ(0)
+        own_back_hor = render.getRelativeVector(self.body, Vec3.back())
+        own_back_hor.setZ(0)
+        deg_delta = abs(enemy_body_orientation_hor.normalized().angleDeg(own_back_hor.normalized()))
+        self.draw_debug_ray(self.body.getPos(), self.body.getPos() + own_back_hor)
+        self.draw_debug_ray(self.body.getPos(), self.body.getPos() + enemy_body_orientation_hor, color=(0,1,0,1))
         return deg_delta > (BLOCK_RANGE_DEG/2)
-
 
     def draw_debug_ray(self, start, end, color=(1, 0, 0, 1)):
         """Draws a debug ray from start to end with the given color."""
