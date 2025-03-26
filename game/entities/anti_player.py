@@ -128,7 +128,8 @@ class AntiPlayer(EntityBase):
     def __schedule_or_run(self, offset_frame: int, wanted_frame: int, fn, name: str):
         # Already happended -> do now
         if offset_frame >= wanted_frame:
-            fn()
+            # Pass none as tasks expect 
+            fn(None)
             return
         base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name)
     
