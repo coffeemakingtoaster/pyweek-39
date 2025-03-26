@@ -61,6 +61,34 @@ class AntiPlayer(EntityBase):
         self.vertical_velocity = JUMP_VELOCITY - (GRAVITY * offset)
         self.body.setZ(self.body.getZ() + (self.vertical_velocity * offset))
 
+    def __block_safe(self, frame_offset=0):
+        total_frames = self.sword.getAnimControl("block").getNumFrames()
+        if frame_offset > total_frames:
+            self.logger.warning(f"Skipped block animation because latency exceeded frame count {frame_offset}")
+            return
+        self.sword.play("block")
+        self.inAttack = True
+        self.inBlock = True
+        taskMgr.remove("antiplayer-endAttackTask")
+        taskMgr.remove("antiplayer-makeSwordLethalTask")
+        taskMgr.remove("antiplayer-makeSwordHarmlessTask")
+        frames = self.sword.getAnimControl("block").getNumFrames()
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=1, fn=self.turnSwordBlock, name="antiplayer-makeSwordBlockTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turnSwordSword, name="antiplayer-makeSwordSwordTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turnSwordSword, name="antiplayer-makeSwordSwordTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endBlock, name="antiplayer-endBlockTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endBlock, name="antiplayer-endAttackTask")
+
+    def block(self, start_time=0.0):
+        if not self.is_puppet:
+            self.__block_safe()
+            return
+        offset = self.match_timer - start_time
+        messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
+        start_frame = int(offset * 24)
+        self.logger.debug(f"Block started at frame {start_frame}")
+        self.__block_safe(start_frame)
+
     def __stab_safe(self, frame_offset=0):
         total_frames = self.sword.getAnimControl("stab").getNumFrames()
         if frame_offset > total_frames:
@@ -68,24 +96,29 @@ class AntiPlayer(EntityBase):
             return
         self.sword.play("stab", fromFrame=frame_offset)
         self.logger.debug(f"Frame offset is {frame_offset}")
-        if frame_offset < 25:
-            base.taskMgr.doMethodLater((25 - frame_offset)/24, self.turnSwordLethal, "makeSwordLethalTask")
-        if frame_offset < 32:
-            base.taskMgr.doMethodLater((32 - frame_offset)/24, self.turnSwordHarmless, "makeSwordLethalTask")
-        base.taskMgr.doMethodLater((total_frames - frame_offset)/24, self.endAttack, "endAttackTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.turnSwordLethal, name="antiplayer-makeSwordLethalTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.turnSwordHarmless, name="antiplayer-makeSwordHarmlessTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name="antiplayer-endAttackTask")
+
+    def __schedule_or_run(self, offset_frame: int, wanted_frame: int, fn, name: str):
+        # Already happended -> do now
+        if offset_frame >= wanted_frame:
+            fn()
+            return
+        base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name)
     
     def handleSwordCollisionEnd(self,entry):
         self.logger.debug(f"no longer colliding with {entry}")
 
     def debug_stab(self):
-        self.stab(self.match_timer)
+        self.stab()
 
     def debug_block(self):
-        self.logger.info("Debug block")
+        self.block()
 
     def stab(self, start_time: float = 0.0):
         # AI controlled
-        if start_time == 0.0 and not self.is_puppet:
+        if not self.is_puppet:
             self.__stab_safe()
             return
         offset = self.match_timer - start_time
@@ -106,6 +139,8 @@ class AntiPlayer(EntityBase):
                     self.jump(offset)
                 case PlayerAction.ATTACK_1.value:
                     self.stab(offset)
+                case PlayerAction.BLOCK.value:
+                    self.block(offset)
                 case _:
                     self.logger.debug(f"Code {action} not implemented")
 

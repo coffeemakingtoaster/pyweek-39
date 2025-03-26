@@ -48,12 +48,19 @@ class HpBar(GuiBase):
 
         self.accept(event, self.update_value)
 
-    def update_value(self, hp_val: int):
-        hp_value = max(0, hp_val)
-        self.hp_bar_text["text"] =  "{}: {}".format(self.name, hp_value)
-        x_scale = (self.scale * min((hp_value/BASE_HEALTH),1))
-        self.hp_display_bar.setScale(x_scale,1,0.05)
-        self.hp_display_bar.setX(-self.scale + x_scale)
+    def update_value(self, hp_val: int, depth=0):
+        if depth == 2:
+            self.logger.warning("Could not update HP count due to internal gui errors")
+            return
+        try:
+            hp_value = max(0, hp_val)
+            self.hp_bar_text["text"] =  "{}: {}".format(self.name, hp_value)
+            x_scale = (self.scale * min((hp_value/BASE_HEALTH),1))
+            self.hp_display_bar.setScale(x_scale,1,0.05)
+            self.hp_display_bar.setX(-self.scale + x_scale)
+        except:
+            # Try again -> there is a weird _optionInfo bug in direct gui that we cannot fix
+            self.update_value(hp_val,depth+1)
 
     # Overwrite to make cleanup easier
     def removeNode(self):
