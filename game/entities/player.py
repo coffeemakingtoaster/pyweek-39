@@ -1,5 +1,5 @@
 from game.const.events import NETWORK_SEND_PRIORITY_EVENT
-from game.const.player import BASE_HEALTH, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
+from game.const.player import BASE_HEALTH, DASH_SPEED, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
 from game.helpers.helpers import *
@@ -12,12 +12,7 @@ class Player(EntityBase):
         self.mouse_sens = 0.1 #MOUSE_SENS
         self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
         self.camera = camera
-        self.sweep2 = False
-        
-        self.is_dashing = False
-        
-        #self.accept("sHbnp-collision-out", self.handleSwordCollisionEnd)
-
+                
         # Keybinds for movement
         self.accept("a", self.set_movement_status, ["left"])
         self.accept("a-up", self.unset_movement_status, ["left"])
@@ -70,7 +65,7 @@ class Player(EntityBase):
             base.taskMgr.doMethodLater(14/24,self.turnSwordLethal,"player-makeSwordLethalTask")
             base.taskMgr.doMethodLater(21/24,self.turnSwordHarmless,"player-makeSwordHarmlessTask")
             base.taskMgr.doMethodLater(frames/24,self.endAttack,"player-endAttackTask")
-            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.ATTACK_1], action_offsets=[self.match_timer], health=self.health)])
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.SWEEP_1 if self.sweep else PlayerAction.SWEEP_2], action_offsets=[self.match_timer], health=self.health)])
     
     def block(self):
         if not self.inBlock:
@@ -99,8 +94,6 @@ class Player(EntityBase):
         self.body.setH(self.body.getH() - x * self.mouse_sens)
         self.head.setP(self.head.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
-
-    
     
     def __get_movement_vector(self) -> Vec3:
         flat_moveVec = Vec2(0,0)
@@ -117,9 +110,9 @@ class Player(EntityBase):
         move_vec = Vec3(flat_moveVec.x, flat_moveVec.y, self.vertical_velocity)
         if self.is_dashing:
             direction = self.body.getRelativeVector(self.head, Vec3.forward())
-            self.vertical_velocity = direction.z* 20
+            self.vertical_velocity = direction.z * DASH_SPEED
             direction.z = 0
-            move_vec += direction * 20
+            move_vec += direction * DASH_SPEED
             
         return move_vec
     

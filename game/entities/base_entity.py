@@ -20,6 +20,7 @@ class EntityBase(DirectObject.DirectObject):
         self.logger = logging.getLogger(name)
         self.id = id
         self.online = online
+        self.window = window
         self.is_puppet = False
         self.own_collision_mask = PLAYER_BIT_MASK if self.id == "player" else ANTI_PLAYER_BIT_MASK
         self.opposing_collision_mask = ANTI_PLAYER_BIT_MASK if self.id == "player" else PLAYER_BIT_MASK 
@@ -29,7 +30,9 @@ class EntityBase(DirectObject.DirectObject):
         self.inBlock = False
         self.swordLethality = False
         self.swordIsBlock = False
-        self.window = window
+        self.sweep2 = False
+        self.is_dashing = False
+
 
         self.vertical_velocity = 0
         self.match_timer = 0.0
@@ -48,7 +51,6 @@ class EntityBase(DirectObject.DirectObject):
         self.accept(body_damage_event, self.handle_body_damage)
         self.accept(f"{head_damage_event}-blocked", self.handle_head_damage) 
         self.accept(f"{body_damage_event}-blocked", self.handle_body_damage)
-
 
         # Deal damage event -> hitting someone
         head_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-hHbnp-blocked"
@@ -69,7 +71,6 @@ class EntityBase(DirectObject.DirectObject):
         self.bodyHitBoxNodePath = self.body.attachNewNode(CollisionNode(f"{self.id}-bHbnp"))
         self.bodyHitBoxNodePath.node().addSolid(bodyHitBox)
         self.bodyHitBoxNodePath.setCollideMask(self.own_collision_mask)
-        #self.bodyHitBoxNodePath.show()
         
         self.head = Actor(getModelPath("head"))
         self.head.reparentTo(self.body)
@@ -80,7 +81,6 @@ class EntityBase(DirectObject.DirectObject):
         self.headHitBoxNodePath = self.head.attachNewNode(CollisionNode(f"{self.id}-hHbnp"))
         self.headHitBoxNodePath.node().addSolid(headHitBox)
         self.headHitBoxNodePath.setCollideMask(self.own_collision_mask)
-        #self.headHitBoxNodePath.show()
         self.headHitBoxNodePath.reparentTo(head_joint)
 
         # Blocked hitbox
@@ -106,7 +106,6 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath = self.sword.attachNewNode(CollisionNode(f"{self.id}-sHbnp"))
         self.swordHitBoxNodePath.node().addSolid(swordHitBox)
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
-        #self.swordHitBoxNodePath.show()
         self.swordHitBoxNodePath.reparentTo(sword_joint)
                
         self.sword.setPos(0, 0.2, 0)

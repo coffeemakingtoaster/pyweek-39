@@ -1,7 +1,7 @@
 from typing import List
 from game.const.events import GUI_UPDATE_LATENCY, NETWORK_SEND_PRIORITY_EVENT
 from game.const.networking import POSITION_DIFF_THRESHOLD
-from game.const.player import GRAVITY, JUMP_VELOCITY
+from game.const.player import DASH_SPEED, GRAVITY, JUMP_VELOCITY
 from game.entities.base_entity import EntityBase
 from game.helpers.helpers import *
 from panda3d.core import Vec3, Vec2, TextNode
@@ -21,9 +21,9 @@ class AntiPlayer(EntityBase):
         self.movement_vector = Vec3(0,0,0)
         self.correction_vector = Vec3(0,0,0)
 
-        # TODO: add anti_player_block
         self.accept("q", self.debug_stab)
         self.accept("e", self.debug_block)
+        self.accept("f", self.debug_sweep)
 
         self.__add_name_tag()
 
@@ -61,6 +61,29 @@ class AntiPlayer(EntityBase):
         self.vertical_velocity = JUMP_VELOCITY - (GRAVITY * offset)
         self.body.setZ(self.body.getZ() + (self.vertical_velocity * offset))
 
+    def __sweep_safe(self, is_alternate_sweep=False, frame_offset=0):
+        # sweep and sweep2 have the same duration
+        total_frames = self.sword.getAnimControl("sweep").getNumFrames()
+        if frame_offset > total_frames:
+            self.logger.warning(f"Skipped sweep animation because latency exceeded frame count {frame_offset}")
+            return
+        self.sword.play("sweep2" if is_alternate_sweep else "sweep")
+        self.inAttack = True
+        self.inBlock = False
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.turnSwordLethal, name="antiplayer-makeSwordLethalTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=21, fn=self.turnSwordHarmless, name="antiplayer-makeSwordHarmlessTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name="antiplayer-endAttackTask")
+
+    def sweep(self, is_alternate_sweep=False, start_time=0.0):
+        if not self.is_puppet:
+            self.__sweep_safe(is_alternate_sweep=is_alternate_sweep)
+            return
+        offset = self.match_timer - start_time
+        messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
+        start_frame = int(offset * 24)
+        self.logger.debug(f"Block started at frame {start_frame}")
+        self.__sweep_safe(is_alternate_sweep=is_alternate_sweep, frame_offset=start_frame)
+
     def __block_safe(self, frame_offset=0):
         total_frames = self.sword.getAnimControl("block").getNumFrames()
         if frame_offset > total_frames:
@@ -97,7 +120,9 @@ class AntiPlayer(EntityBase):
         self.sword.play("stab", fromFrame=frame_offset)
         self.logger.debug(f"Frame offset is {frame_offset}")
         self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.turnSwordLethal, name="antiplayer-makeSwordLethalTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.start_dash, name="antiplayer-startDashingTask")
         self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.turnSwordHarmless, name="antiplayer-makeSwordHarmlessTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.end_dash, name="antiplayer-endDashingTask")
         self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name="antiplayer-endAttackTask")
 
     def __schedule_or_run(self, offset_frame: int, wanted_frame: int, fn, name: str):
@@ -115,6 +140,9 @@ class AntiPlayer(EntityBase):
 
     def debug_block(self):
         self.block()
+
+    def debug_sweep(self):
+        self.sweep()
 
     def stab(self, start_time: float = 0.0):
         # AI controlled
@@ -141,6 +169,10 @@ class AntiPlayer(EntityBase):
                     self.stab(offset)
                 case PlayerAction.BLOCK:
                     self.block(offset)
+                case PlayerAction.SWEEP_1:
+                    self.sweep(start_time=offset)
+                case PlayerAction.SWEEP_2:
+                    self.sweep(is_alternate_sweep=True, start_time=offset)
                 case _:
                     self.logger.debug(f"Code {action} not implemented")
 
@@ -180,7 +212,16 @@ class AntiPlayer(EntityBase):
         super().update(dt)
         self.match_timer += dt
         self.apply_gravity(dt)
-        flat_move = Vec2(self.movement_vector.x, self.movement_vector.y) * dt
+        flat_move = Vec2(self.movement_vector.x, self.movement_vector.y)
+        if self.is_dashing:
+            direction = self.body.getRelativeVector(self.head, Vec3.forward())
+            self.vertical_velocity = direction.z * DASH_SPEED
+            flat_move.x += direction.x * DASH_SPEED
+            flat_move.y += direction.y * DASH_SPEED
+        flat_move = flat_move * dt
+
+        # network desync soft correction
         flat_move.x += self.correction_vector.x * dt
         flat_move.y += self.correction_vector.y * dt
+         
         self.body.setFluidPos(self.body, Vec3(flat_move.x, flat_move.y, self.vertical_velocity * dt))
