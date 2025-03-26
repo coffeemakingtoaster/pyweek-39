@@ -220,11 +220,19 @@ class EntityBase(DirectObject.DirectObject):
         if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
             self.logger.debug("Was from behind, no block occured")
             return
+        self.end_dash(None)
         self.play_blocked_animation()
            
     def play_blocked_animation(self):
         self.logger.debug("My attack was blocked")
         self.sword.play("being-blocked")
+        
+    def start_dash(self,task):
+        self.is_dashing = True
+    
+    def end_dash(self,task):
+        self.is_dashing = False
+        self.vertical_velocity = -0.01
         
     def start_match_timer(self):
         self.match_timer = 0.0

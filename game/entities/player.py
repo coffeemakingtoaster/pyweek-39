@@ -100,11 +100,7 @@ class Player(EntityBase):
         self.head.setP(self.head.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
 
-    def start_dash(self,task):
-        self.is_dashing = True
     
-    def end_dash(self,task):
-        self.is_dashing = False
     
     def __get_movement_vector(self) -> Vec3:
         flat_moveVec = Vec2(0,0)
@@ -120,10 +116,15 @@ class Player(EntityBase):
         flat_moveVec *= self.move_speed
         move_vec = Vec3(flat_moveVec.x, flat_moveVec.y, self.vertical_velocity)
         if self.is_dashing:
-            move_vec += Vec3(0, 10,0)
+            direction = self.body.getRelativeVector(self.head, Vec3.forward())
+            self.vertical_velocity = direction.z* 20
+            direction.z = 0
+            move_vec += direction * 20
+            
         return move_vec
     
     def update(self, dt):
+        #self.draw_debug_ray(self.head.getPos(),(self.head.getPos()+render.getRelativeVector(self.head, Vec3.forward())))
         super().update(dt)
         self.match_timer += dt
         self.update_camera(dt)
