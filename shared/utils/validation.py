@@ -1,3 +1,4 @@
+from enum import Enum
 import json
 import uuid
 
@@ -26,3 +27,13 @@ def parse_game_status(raw: str) -> GameStatus | None:
     except Exception:
         return None
 
+def enum_friendly_factory(data):
+    def convert_value(obj):
+        # Resolve instance value to actual literal value
+        if isinstance(obj, Enum):
+            return obj.value
+        if isinstance(obj, list):
+            return [convert_value(val) for val in obj]
+        return obj
+
+    return dict((key, convert_value(val)) for key, val in data)

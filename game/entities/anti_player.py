@@ -1,10 +1,11 @@
+from typing import List
 from game.const.events import GUI_UPDATE_LATENCY, NETWORK_SEND_PRIORITY_EVENT
 from game.const.networking import POSITION_DIFF_THRESHOLD
 from game.const.player import GRAVITY, JUMP_VELOCITY
 from game.entities.base_entity import EntityBase
 from game.helpers.helpers import *
 from panda3d.core import Vec3, Vec2, TextNode
-from shared.types.player_info import PlayerInfo
+from shared.types.player_info import PlayerAction, PlayerInfo
 from game.utils.name_generator import generate_name
 
 class AntiPlayer(EntityBase):
@@ -23,7 +24,6 @@ class AntiPlayer(EntityBase):
         # TODO: add anti_player_block
         self.accept("q", self.debug_stab)
         self.accept("e", self.debug_block)
-
 
         self.__add_name_tag()
 
@@ -73,7 +73,6 @@ class AntiPlayer(EntityBase):
         if frame_offset < 32:
             base.taskMgr.doMethodLater((32 - frame_offset)/24, self.turnSwordHarmless, "makeSwordLethalTask")
         base.taskMgr.doMethodLater((total_frames - frame_offset)/24, self.endAttack, "endAttackTask")
-        messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(is_attacking=True, action_offset=self.match_timer)])
     
     def handleSwordCollisionEnd(self,entry):
         self.logger.debug(f"no longer colliding with {entry}")
@@ -97,41 +96,52 @@ class AntiPlayer(EntityBase):
         # and takes ca. 2sec
         self.__stab_safe(start_frame)
 
+    def __handle_actions(self, actions: List[PlayerAction], offsets: List[float]):
+        assert len(actions) == len(offsets)
+        self.logger.debug(f"Handling {len(actions)} remote actions")
+        for action in actions:
+            offset = offsets.pop(0)
+            match action:
+                case PlayerAction.JUMP.value:
+                    self.jump(offset)
+                case PlayerAction.ATTACK_1.value:
+                    self.stab(offset)
+                case _:
+                    self.logger.debug(f"Code {action} not implemented")
+
     def set_state(self, update: PlayerInfo):
         if not self.is_puppet:
             self.logger.error("Tried to update enemy that is not controlled by other player")
             return
         # an attack package does not! contain any other info
-        if update.is_attacking:
-            self.logger.debug("Received stab packet")
-            self.stab(update.action_offset)
-        if update.is_jumping:
-            self.logger.debug("Received jump packet")
-            self.jump(update.action_offset)
-        if update.is_jumping or update.is_attacking:
-            return
+        if len(update.actions) > 0:
+            self.__handle_actions(update.actions, update.action_offsets)
         if self.health != update.health:
             self.take_damage(self.health - update.health)
-        # Use the locally calculated z coord to stop slight jittering midair
-        networkPos = Vec3(update.position.x, update.position.y, self.body.getZ())
-        network_to_local_delta = (networkPos - self.body.getPos())
-        # Hard correction
-        if  network_to_local_delta.length() > (POSITION_DIFF_THRESHOLD * 2):
-            self.body.setFluidPos(networkPos)
-            self.correction_vector.set(0,0,0)
-        # Soft correction
-        elif  network_to_local_delta.length() > POSITION_DIFF_THRESHOLD:
-            #self.logger.debug(f"Adjusted position because delta was {network_to_local_delta.length()} (>{POSITION_DIFF_THRESHOLD})")
-            self.correction_vector = network_to_local_delta
-        else:
-            self.correction_vector.set(0,0,0)
-        # The vector is normalized when sending it
-        self.movement_vector = Vec3(update.movement.x , update.movement.y, 0)
-        assert (Vec2(update.movement.x , update.movement.y).length() == self.move_speed 
-                or Vec2(update.movement.x , update.movement.y).length() == 0)
-        # This is not the correct labelling...I am aware but idc
-        self.head.setHpr(update.lookDirection.x, update.lookDirection.y, update.lookDirection.z)
-        self.body.setHpr(update.bodyRotation.x, update.bodyRotation.y, update.bodyRotation.z)
+        if update.position is not None:
+            # Use the locally calculated z coord to stop slight jittering midair
+            networkPos = Vec3(update.position.x, update.position.y, self.body.getZ())
+            network_to_local_delta = (networkPos - self.body.getPos())
+            # Hard correction
+            if  network_to_local_delta.length() > (POSITION_DIFF_THRESHOLD * 2):
+                self.body.setFluidPos(networkPos)
+                self.correction_vector.set(0,0,0)
+            # Soft correction
+            elif  network_to_local_delta.length() > POSITION_DIFF_THRESHOLD:
+                #self.logger.debug(f"Adjusted position because delta was {network_to_local_delta.length()} (>{POSITION_DIFF_THRESHOLD})")
+                self.correction_vector = network_to_local_delta
+            else:
+                self.correction_vector.set(0,0,0)
+        if update.movement is not None:
+            # The vector is normalized when sending it
+            self.movement_vector = Vec3(update.movement.x , update.movement.y, 0)
+            assert (Vec2(update.movement.x , update.movement.y).length() == self.move_speed 
+                    or Vec2(update.movement.x , update.movement.y).length() == 0)
+            # This is not the correct labelling...I am aware but idc
+        if update.lookRotation is not None:
+            self.head.setP(update.lookRotation)
+        if update.bodyRotation is not None:
+            self.body.setH(update.bodyRotation)
 
     def update(self, dt):
         super().update(dt)

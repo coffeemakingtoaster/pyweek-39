@@ -4,7 +4,7 @@ from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
 from game.helpers.helpers import *
 from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue
-from shared.types.player_info import PlayerInfo, Vector
+from shared.types.player_info import PlayerAction, PlayerInfo, Vector
 
 class Player(EntityBase):
     def __init__(self,camera,window,online) -> None:
@@ -24,9 +24,9 @@ class Player(EntityBase):
         self.accept("w-up", self.unset_movement_status, ["forward"])
         self.accept("s", self.set_movement_status, ["backward"])
         self.accept("s-up", self.unset_movement_status, ["backward"])
-        self.accept("space",self.jump)
-        self.accept("mouse1",self.stab)
-        self.accept("mouse3",self.block)
+        self.accept("space", self.jump)
+        self.accept("mouse1", self.stab)
+        self.accept("mouse3", self.block)
 
     def set_movement_status(self, direction):
         self.movement_status[direction] = 1
@@ -37,7 +37,7 @@ class Player(EntityBase):
     def jump(self):
         if self.vertical_velocity == 0:
             self.vertical_velocity = JUMP_VELOCITY
-            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(is_jumping=True, action_offset=self.match_timer)])
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.JUMP], action_offsets=[self.match_timer], health=self.health)])
             
     def stab(self):
         if not self.inAttack:
@@ -48,7 +48,7 @@ class Player(EntityBase):
             base.taskMgr.doMethodLater(10/24,self.turnSwordLethal,"player-makeSwordLethalTask")
             base.taskMgr.doMethodLater(32/24,self.turnSwordHarmless,"player-makeSwordHarmlessTask")
             base.taskMgr.doMethodLater(frames/24,self.endAttack,"player-endAttackTask")
-            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(is_attacking=True, action_offset=self.match_timer)])
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.ATTACK_1], action_offsets=[self.match_timer], health=self.health)])
     
     def block(self):
         if not self.inBlock:
@@ -63,6 +63,7 @@ class Player(EntityBase):
             base.taskMgr.doMethodLater(15/24, self.turnSwordSword,"player-makeSwordSword")
             base.taskMgr.doMethodLater(frames/24, self.endBlock,"player-endBlockTask")
             base.taskMgr.doMethodLater(frames/24, self.endAttack,"player-endAttackTask")
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.BLOCK], action_offsets=[self.match_timer], health=self.health)])
     
     def update_camera(self, dt):
         md = self.window.getPointer(0)
@@ -89,7 +90,6 @@ class Player(EntityBase):
         return Vec3(flat_moveVec.x, flat_moveVec.y, self.vertical_velocity)
     
     def update(self, dt):
-        
         super().update(dt)
         self.match_timer += dt
         self.update_camera(dt)
@@ -105,7 +105,7 @@ class Player(EntityBase):
         return PlayerInfo(
             health=self.health,
             position=Vector(self.body.getX(),self.body.getY(),self.body.getZ(),1),
-            lookDirection=Vector(self.head.getH(),self.head.getP(),self.head.getR(),1),
-            bodyRotation=Vector(self.body.getH(),self.body.getP(),self.body.getR(),1),
+            lookRotation=self.head.getP(),
+            bodyRotation=self.body.getH(),
             movement=Vector(movement_vec.x, movement_vec.y, movement_vec.z, movement_vec.length()),
         )

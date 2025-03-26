@@ -17,11 +17,4 @@ class GameStatus:
     """Contain name when player_name"""
     detail: str = ""
 
-def game_status_factory(data):
-    def convert_value(obj):
-        # Resolve instance value to actual literal value
-        if isinstance(obj, Enum):
-            return obj.value
-        return obj
 
-    return dict((k, convert_value(v)) for k, v in data)

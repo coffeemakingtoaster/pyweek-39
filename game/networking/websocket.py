@@ -3,6 +3,7 @@ import logging
 from game.const.networking import HOST
 from ws4py.client.threadedclient import WebSocketClient
 import json
+from shared.utils.validation import enum_friendly_factory
 
 from shared.types.player_info import PlayerInfo
 
@@ -31,7 +32,7 @@ class MatchWS(WebSocketClient):
         # Don't send duplicate packages
         if self.last_packet.__hash__() == data.__hash__():
             return
-        self.send(json.dumps(asdict(data)))
+        self.send(json.dumps(asdict(data, dict_factory=enum_friendly_factory)))
         self.last_packet = data
 
     def received_message(self, message):
