@@ -37,18 +37,19 @@ class EntityBase(DirectObject.DirectObject):
         self.collisionHandler.addInPattern("%fn-collision-into-%in")
 
         base.cTrav.addCollider(self.swordHitBoxNodePath, self.collisionHandler)
-
+        
+        # Receive damage event -> being hit
         head_damage_event = f"{'enemy' if self.id == 'player' else 'player'}-sHbnp-collision-into-{self.id}-hHbnp"
         body_damage_event = f"{'enemy' if self.id == 'player' else 'player'}-sHbnp-collision-into-{self.id}-bHbnp"
-        #block_event = f"{'enemy' if self.id == 'player' else 'player'}-sHbnp-collision-into-{self.id}-blockHbnp"
-        head_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-hHbnp"
-        body_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-bHbnp"
         self.accept(head_damage_event, self.handle_head_damage) 
         self.accept(body_damage_event, self.handle_body_damage)
-        #self.accept(block_event, self.handle_block_event)
-        self.accept(head_hit_event, self.handle_head_hit)
-        self.accept(body_hit_event, self.handle_body_hit)
-        self.logger.debug(f"Listening to {head_damage_event} and {body_damage_event}")
+
+        # Deal damage event -> hitting someone
+        head_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-hHbnp-blocked"
+        body_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-bHbnp-blocked"
+        self.accept(head_hit_event, self.handle_blocked_hit)
+        self.accept(body_hit_event, self.handle_blocked_hit)
+
         self.hitBlocked = False
         self.inv_phase = 0.0
         self.current_hit_has_critted = False
@@ -74,6 +75,17 @@ class EntityBase(DirectObject.DirectObject):
         self.headHitBoxNodePath.setCollideMask(self.own_collision_mask)
         #self.headHitBoxNodePath.show()
         self.headHitBoxNodePath.reparentTo(head_joint)
+
+        # Blocked hitbox
+        bodyBlockedHitBox = CollisionCapsule(0,0,0.4,0,0,0.3,0.3)
+        self.bodyHitBoxBlockedNodePath = self.body.attachNewNode(CollisionNode(f"{self.id}-bHbnp-blocked"))
+        self.bodyHitBoxBlockedNodePath.node().addSolid(bodyBlockedHitBox)
+        self.bodyHitBoxBlockedNodePath.setCollideMask(NO_BIT_MASK)
+        
+        self.headHitBoxBlockedNodePath = self.head.attachNewNode(CollisionNode(f"{self.id}-hHbnp-blocked"))
+        self.headHitBoxBlockedNodePath.node().addSolid(headHitBox)
+        self.headHitBoxBlockedNodePath.setCollideMask(NO_BIT_MASK)
+        self.headHitBoxBlockedNodePath.reparentTo(head_joint)
         
         self.sword = Actor(getModelPath("sword"),{"stab":getModelPath("sword-Stab"),
                                                   "block":getModelPath("sword-Block"),
@@ -85,19 +97,9 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath = self.sword.attachNewNode(CollisionNode(f"{self.id}-sHbnp"))
         self.swordHitBoxNodePath.node().addSolid(swordHitBox)
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
-        #self.swordHitBoxNodePath.show()
+        self.swordHitBoxNodePath.show()
         self.swordHitBoxNodePath.reparentTo(sword_joint)
-        
-        #Potentiell rausfactoren mit der ganzen Blockhitbox logik
-        
-        #self.swordBlockBoxNodePath = self.sword.attach_new_node(CollisionNode(f"{self.id}-blockHbnp"))
-        #blockHitBox = CollisionCapsule(0, 4, 0, 0, 1, 0, 1)
-        #self.swordBlockBoxNodePath.node().addSolid(blockHitBox)
-        #self.swordBlockBoxNodePath.node().setCollideMask(NO_BIT_MASK)
-        #self.swordBlockBoxNodePath.show()
-        
-        #self.swordBlockBoxNodePath.reparentTo(sword_joint)
-        
+               
         self.sword.setPos(0, 0.2, 0)
     
         self.shoes = Actor(getModelPath("shoes"))
@@ -119,19 +121,27 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         
     def turnSwordBlock(self,task):
-        print("block")
+        self.logger.debug("block")
         self.swordIsBlock = True
+        # Enable block body
+        self.bodyHitBoxBlockedNodePath.node().setCollideMask(self.own_collision_mask)
+        self.headHitBoxBlockedNodePath.node().setCollideMask(self.own_collision_mask)
+        # Disable normal body
+        self.bodyHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
+        self.headHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         
-        #self.swordBlockBoxNodePath.node().setCollideMask(PLAYER_BIT_MASK if self.id == "player" else ANTI_PLAYER_BIT_MASK)
-    
     def turnSwordSword(self,task):
-        print("unblock")
+        self.logger.debug("unblock")
         self.swordIsBlock = False
         self.hitBlocked = False
-        #self.swordBlockBoxNodePath.node().setCollideMask(NO_BIT_MASK)
-        
-        #Todo interrupt block when hit anyway
-        
+        # Disable block body
+        self.bodyHitBoxBlockedNodePath.node().setCollideMask(NO_BIT_MASK)
+        self.headHitBoxBlockedNodePath.node().setCollideMask(NO_BIT_MASK)
+        # Enable normal body
+        self.bodyHitBoxNodePath.node().setCollideMask(self.own_collision_mask)
+        self.headHitBoxNodePath.node().setCollideMask(self.own_collision_mask)
+
+        #TODO: interrupt block when hit anyway -> this still applicable? @Heuser
 
     def take_damage(self, damage_value: int):
         self.health -= damage_value
@@ -153,7 +163,6 @@ class EntityBase(DirectObject.DirectObject):
         
         if self.swordIsBlock:
             self.hitBlocked = True
-            
             self.handle_block()
             return
         
@@ -187,22 +196,14 @@ class EntityBase(DirectObject.DirectObject):
             self.take_damage(1)
     
     def handle_block(self):
+        self.logger.debug("I blocked an attack")
         
-        print("blocked")
-        
-        
-    def handle_head_hit(self,entry):
-        print("Hit Yer HEad")
-        #TODO test if enemy is blocking
-        self.handle_being_blocked()
-        
-    def handle_body_hit(self,entry):
-        print("Hit Yer body")
-        #TODO test if enemy is blocking
-        self.handle_being_blocked()
-    
-    def handle_being_blocked(self):
-        print("being blocked")
+    def handle_blocked_hit(self,entry):
+        self.logger.debug("Hit Yer HEad")
+        self.play_blocked_animation()
+           
+    def play_blocked_animation(self):
+        self.logger.debug("My attack was blocked")
         self.sword.play("being-blocked")
         
     def start_match_timer(self):
