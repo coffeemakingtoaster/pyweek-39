@@ -54,7 +54,7 @@ def leave_queue(player_id: str) -> bool:
 
     url = f'http://{HOST}/queue/{player_id}'
     try:
-        res = httpx.delete(url)
+        res = httpx.delete(url, verify=CTX)
     except Exception as e:
         LOGGER.warning(f"Could not leave queue. This may indicate network problems. Either way please play against a bot in the meantime. Error {e}")
         return False

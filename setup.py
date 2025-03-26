@@ -12,8 +12,7 @@ setup(
             'log_filename': './logs/output.log',
             'log_append': False,
             'include_modules': [
-                    'pip_system_certs',
-                    'certifi',
+                'certifi',
             ],
             # Specify which files are included with the distribution
             'include_patterns': [
