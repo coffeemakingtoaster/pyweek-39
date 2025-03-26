@@ -93,6 +93,7 @@ class MainGame(ShowBase):
         
         dlight = DirectionalLight('my dlight')
         dlight.color = (0.6,0.6,1.3,1)
+        #dlight.color = (2,2,1.3,1)
         dlight.setDirection(Vec3(0,-1,-0.5))
         dlnp = render.attachNewNode(dlight)
         #alight = AmbientLight("ambi light")

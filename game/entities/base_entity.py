@@ -10,9 +10,11 @@ from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, NO_BIT_MASK, PLAYER_BIT_M
 from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, WIN_EVENT
 from game.const.player import BASE_HEALTH, BLOCK_RANGE_DEG, GRAVITY, MOVEMENT_SPEED, POST_HIT_INV_DURATION
 from game.helpers.helpers import getModelPath
-from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule, CollisionHandlerEvent, LineSegs, NodePath
+from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule, CollisionHandlerEvent, LineSegs, NodePath, Mat3,Quat
 
 from game.utils.scene_graph import traverse_parents_until_name_is_matched
+from direct.particles.ParticleEffect import ParticleEffect
+from game.helpers.helpers import *
 
 class EntityBase(DirectObject.DirectObject):
     def __init__(self, window, id: str, online: bool, name="BaseEntity"):
@@ -32,6 +34,7 @@ class EntityBase(DirectObject.DirectObject):
         self.swordIsBlock = False
         self.sweep2 = False
         self.is_dashing = False
+        self.hit_handled = False
 
 
         self.vertical_velocity = 0
@@ -52,11 +55,19 @@ class EntityBase(DirectObject.DirectObject):
         self.accept(f"{head_damage_event}-blocked", self.handle_head_damage) 
         self.accept(f"{body_damage_event}-blocked", self.handle_body_damage)
 
-        # Deal damage event -> hitting someone
+        # Deal damage event -> hitting someone and being blocked
         blocked_head_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-hHbnp-blocked"
         blocked_body_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-bHbnp-blocked"
         self.accept(blocked_head_hit_event, self.handle_blocked_hit)
         self.accept(blocked_body_hit_event, self.handle_blocked_hit)
+        
+        # Deal damage event -> hitting someone and being blocked
+        head_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-hHbnp"
+        body_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-bHbnp"
+        self.accept(head_hit_event, self.handle_hit)
+        self.accept(body_hit_event, self.handle_hit)
+        
+        
         
         
 
@@ -123,6 +134,7 @@ class EntityBase(DirectObject.DirectObject):
         self.inBlock = False
         
     def turnSwordLethal(self,task):
+        
         self.swordLethality = True
         self.swordHitBoxNodePath.node().setCollideMask(self.opposing_collision_mask)
         
@@ -152,6 +164,43 @@ class EntityBase(DirectObject.DirectObject):
         self.headHitBoxNodePath.node().setCollideMask(self.own_collision_mask)
 
         #TODO: interrupt block when hit anyway -> this still applicable? @Heuserus
+        
+    def handle_hit(self,event):
+        print("hit enemy")
+        if not self.hit_handled:
+            
+            
+            self.hit_handled = True
+            animName = self.sword.getCurrentAnim()
+            
+            anim = self.sword.getAnimControl(animName)
+            frame = anim.getFrame()
+            anim.pose(frame)
+            p = ParticleEffect()
+            p.loadConfig(getParticlePath("blood2"))
+            p.setPos(event.getSurfacePoint(render))
+            normal = event.getSurfaceNormal(render)
+            
+            p0 = p.getParticlesList()[0]  # Get the first particle system
+            emitter = p0.getEmitter()
+            
+            emitter.setExplicitLaunchVector(normal)
+            
+            print(emitter.getEmissionType())
+            
+            p.setScale(1)
+            p.start(parent = render, renderParent = render)
+            taskMgr.doMethodLater(2/24,self.continueStrike,"continueStrike",extraArgs=[animName,frame],appendTask=True)
+            taskMgr.doMethodLater(1,self.hitOver,"hitOver",extraArgs=[p],appendTask=True)
+            
+
+    def continueStrike(self,animName,frame,task):
+        self.sword.play(animName,fromFrame=frame)
+        
+    def hitOver(self,blood,task):
+        self.hit_handled = False
+        blood.cleanup()
+        blood.removeNode()
 
     def take_damage(self, damage_value: int):
         self.health -= damage_value
@@ -218,11 +267,14 @@ class EntityBase(DirectObject.DirectObject):
         self.logger.debug("I blocked an attack")
         
     def handle_blocked_hit(self,entry):
-        if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
-            self.logger.debug("Was from behind, no block occured")
-            return
-        self.end_dash(None)
-        self.play_blocked_animation()
+        print("hit got blocked")
+        print(self.hit_handled)
+        if not self.hit_handled:
+            if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
+                self.logger.debug("Was from behind, no block occured")
+                return
+            self.end_dash(None)
+            self.play_blocked_animation()
            
     def play_blocked_animation(self):
         self.logger.debug("My attack was blocked")
