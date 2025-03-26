@@ -47,4 +47,5 @@ class PlayerInfo:
         hash += self.__safe_hash__(self.movement)
         hash += sum([val.value for val in self.actions])
         hash += int(sum(self.action_offsets))
+        hash += int(self.health)
         return hash
