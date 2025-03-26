@@ -45,7 +45,7 @@ class Player(EntityBase):
             self.inBlock = False
             self.sword.play("stab")
             frames = self.sword.getAnimControl("stab").getNumFrames()
-            base.taskMgr.doMethodLater(10/24,self.turnSwordLethal,"player-makeSwordLethalTask")
+            base.taskMgr.doMethodLater(25/24,self.turnSwordLethal,"player-makeSwordLethalTask")
             base.taskMgr.doMethodLater(32/24,self.turnSwordHarmless,"player-makeSwordHarmlessTask")
             base.taskMgr.doMethodLater(frames/24,self.endAttack,"player-endAttackTask")
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.ATTACK_1], action_offsets=[self.match_timer], health=self.health)])
