@@ -86,15 +86,16 @@ class MainGame(ShowBase):
         self.waterfallbackground = loader.loadModel(getModelPath("waterfall"))
         self.waterfallbackground.reparentTo(render)
         
-        self.waterfallbackground.setZ(2)
-        self.waterfallbackground.setY(-4)
+        self.waterfallbackground.setZ(1.5)
+        self.waterfallbackground.setY(0)
+        self.waterfallbackground.setScale(0.33)
         
     
         self.waterfall = loader.loadModel("box")
         self.waterfall.reparentTo(render)
         self.waterfall.setTransparency(TransparencyAttrib.MAlpha)
-        self.waterfall.setPos(-20,-34,-3)
-        self.waterfall.setScale(40,0.1,36)
+        self.waterfall.setPos(-5,-10,-3)
+        self.waterfall.setScale(13,0.1,13.7)
 
         texture2 = loader.loadTexture(getImagePath("transWater2"))
         texture = loader.loadTexture(getImagePath("transWater"))
@@ -220,12 +221,12 @@ class MainGame(ShowBase):
         
         self.anti_player = AntiPlayer(self.win, self.is_online)
         self.camera.reparentTo(self.player.head)
-        self.camera.setPos(0,-3,0.4)
+        self.camera.setPos(0,0.1,0.4)
         
         self.map = self.loader.loadModel("assets/models/map.egg")
         
         self.map.reparentTo(self.render)
-        
+        self.map.setScale(0.3)
         self.map.setZ(1.5)
         if is_offline:
             self.logger.info("Starting game in offline mode...")

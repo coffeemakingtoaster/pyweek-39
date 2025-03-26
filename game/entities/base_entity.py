@@ -96,7 +96,9 @@ class EntityBase(DirectObject.DirectObject):
         
         self.sword = Actor(getModelPath("sword"),{"stab":getModelPath("sword-Stab"),
                                                   "block":getModelPath("sword-Block"),
-                                                  "being-blocked":getModelPath("sword-being-blocked")})
+                                                  "being-blocked":getModelPath("sword-being-blocked"),
+                                                  "sweep":getModelPath("sword-Sweep"),
+                                                  "sweep2":getModelPath("sword-Sweep2")})
         self.sword.reparentTo(self.head)
         
         sword_joint = self.sword.exposeJoint(None, "modelRoot", "Bone")
@@ -104,7 +106,7 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath = self.sword.attachNewNode(CollisionNode(f"{self.id}-sHbnp"))
         self.swordHitBoxNodePath.node().addSolid(swordHitBox)
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
-        self.swordHitBoxNodePath.show()
+        #self.swordHitBoxNodePath.show()
         self.swordHitBoxNodePath.reparentTo(sword_joint)
                
         self.sword.setPos(0, 0.2, 0)

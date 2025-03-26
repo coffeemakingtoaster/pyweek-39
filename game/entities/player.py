@@ -12,6 +12,9 @@ class Player(EntityBase):
         self.mouse_sens = 0.1 #MOUSE_SENS
         self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
         self.camera = camera
+        self.sweep2 = False
+        
+        self.is_dashing = False
         
         #self.accept("sHbnp-collision-out", self.handleSwordCollisionEnd)
 
@@ -25,7 +28,8 @@ class Player(EntityBase):
         self.accept("s", self.set_movement_status, ["backward"])
         self.accept("s-up", self.unset_movement_status, ["backward"])
         self.accept("space", self.jump)
-        self.accept("mouse1", self.stab)
+        self.accept("lshift", self.stab)
+        self.accept("mouse1",self.sweep)
         self.accept("mouse3", self.block)
 
     def set_movement_status(self, direction):
@@ -47,6 +51,24 @@ class Player(EntityBase):
             frames = self.sword.getAnimControl("stab").getNumFrames()
             base.taskMgr.doMethodLater(25/24,self.turnSwordLethal,"player-makeSwordLethalTask")
             base.taskMgr.doMethodLater(32/24,self.turnSwordHarmless,"player-makeSwordHarmlessTask")
+            base.taskMgr.doMethodLater(25/24,self.start_dash,"player-startDashingTask")
+            base.taskMgr.doMethodLater(32/24,self.end_dash,"player-endDashingTask")
+            base.taskMgr.doMethodLater(frames/24,self.endAttack,"player-endAttackTask")
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.ATTACK_1], action_offsets=[self.match_timer], health=self.health)])
+    
+    def sweep(self):
+        if not self.inAttack:
+            self.inAttack = True
+            self.inBlock = False
+            if self.sweep2:
+                self.sword.play("sweep2")
+                self.sweep2 = False
+            else:
+                self.sword.play("sweep")
+                self.sweep2 = True
+            frames = self.sword.getAnimControl("sweep").getNumFrames()
+            base.taskMgr.doMethodLater(14/24,self.turnSwordLethal,"player-makeSwordLethalTask")
+            base.taskMgr.doMethodLater(21/24,self.turnSwordHarmless,"player-makeSwordHarmlessTask")
             base.taskMgr.doMethodLater(frames/24,self.endAttack,"player-endAttackTask")
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.ATTACK_1], action_offsets=[self.match_timer], health=self.health)])
     
@@ -55,9 +77,12 @@ class Player(EntityBase):
             self.inAttack = True
             self.inBlock = True
             self.sword.play("block")
+            
             taskMgr.remove("player-endAttackTask")
             taskMgr.remove("player-makeSwordLethalTask")
             taskMgr.remove("player-makeSwordHarmlessTask")
+            taskMgr.remove("player-startDashingTask")
+            
             frames = self.sword.getAnimControl("block").getNumFrames()
             base.taskMgr.doMethodLater(1/24, self.turnSwordBlock,"player-makeSwordBlockTask")
             base.taskMgr.doMethodLater(15/24, self.turnSwordSword,"player-makeSwordSword")
@@ -75,6 +100,12 @@ class Player(EntityBase):
         self.head.setP(self.head.getP() - y * self.mouse_sens)
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
 
+    def start_dash(self,task):
+        self.is_dashing = True
+    
+    def end_dash(self,task):
+        self.is_dashing = False
+    
     def __get_movement_vector(self) -> Vec3:
         flat_moveVec = Vec2(0,0)
         if self.movement_status["forward"]:
@@ -87,7 +118,10 @@ class Player(EntityBase):
             flat_moveVec += Vec2(1, 0)
         flat_moveVec.normalize() if flat_moveVec.length() > 0 else None
         flat_moveVec *= self.move_speed
-        return Vec3(flat_moveVec.x, flat_moveVec.y, self.vertical_velocity)
+        move_vec = Vec3(flat_moveVec.x, flat_moveVec.y, self.vertical_velocity)
+        if self.is_dashing:
+            move_vec += Vec3(0, 10,0)
+        return move_vec
     
     def update(self, dt):
         super().update(dt)
