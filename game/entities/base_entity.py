@@ -1,4 +1,5 @@
 import logging
+from typing import ForwardRef
 from direct.actor.Actor import Actor
 from direct.showbase import DirectObject
 from abc import abstractmethod
@@ -7,9 +8,9 @@ from direct.task.Task import messenger
 
 from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, NO_BIT_MASK, PLAYER_BIT_MASK
 from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, WIN_EVENT
-from game.const.player import BASE_HEALTH, GRAVITY, MOVEMENT_SPEED, POST_HIT_INV_DURATION
+from game.const.player import BASE_HEALTH, BLOCK_RANGE_DEG, GRAVITY, MOVEMENT_SPEED, POST_HIT_INV_DURATION
 from game.helpers.helpers import getModelPath
-from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue, BitMask32
+from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule, CollisionHandlerEvent, LineSegs, NodePath
 
 class EntityBase(DirectObject.DirectObject):
     def __init__(self, window, id: str, online: bool, name="BaseEntity"):
@@ -43,6 +44,9 @@ class EntityBase(DirectObject.DirectObject):
         body_damage_event = f"{'enemy' if self.id == 'player' else 'player'}-sHbnp-collision-into-{self.id}-bHbnp"
         self.accept(head_damage_event, self.handle_head_damage) 
         self.accept(body_damage_event, self.handle_body_damage)
+        self.accept(f"{head_damage_event}-blocked", self.handle_head_damage) 
+        self.accept(f"{body_damage_event}-blocked", self.handle_body_damage)
+
 
         # Deal damage event -> hitting someone
         head_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-hHbnp-blocked"
@@ -158,33 +162,42 @@ class EntityBase(DirectObject.DirectObject):
                     messenger.send(WIN_EVENT)
 
     def handle_body_damage(self, entry):
-        if self.hitBlocked:
-            return
-        
-        if self.swordIsBlock:
-            self.hitBlocked = True
-            self.handle_block()
-            return
-        
         if self.is_puppet:
             return
+
+        # ensure that this is the sword in case any topology is changed at some point
+        assert entry.getFromNodePath().getName().endswith("-sHbnp")
+
+        if not self.__was_from_behind(render.getRelativeVector(entry.getFromNodePath(), Vec3.back())):
+            if self.hitBlocked:
+                return
+            if self.swordIsBlock:
+                self.hitBlocked = True
+                self.handle_block()
+                return
+        
         if self.inv_phase <= 0.0:
             self.current_hit_has_critted = False
             self.take_damage(1)
             self.inv_phase = POST_HIT_INV_DURATION
 
     def handle_head_damage(self, entry):
-        if self.hitBlocked:
-            return
-        
-        if self.swordIsBlock:
-            self.hitBlocked = True
-            self.handle_block()
-            return
-        
-        # Do not calculate damage for enemy
+         # Do not calculate damage for enemy
         if self.is_puppet:
             return
+
+        # ensure that this is the sword in case any topology is changed at some point
+        assert entry.getFromNodePath().getName().endswith("-sHbnp")
+
+        if not self.__was_from_behind(render.getRelativeVector(entry.getFromNodePath(), Vec3.back())):
+            if self.hitBlocked:
+                return
+        
+            if self.swordIsBlock:
+                self.hitBlocked = True
+                self.handle_block()
+                return
+       
         # Direct head hit
         if self.inv_phase <= 0:
             self.current_hit_has_critted = True
@@ -225,8 +238,31 @@ class EntityBase(DirectObject.DirectObject):
             self.body.cleanup()
             self.body.removeNode()
 
+    def __was_from_behind(self, attack_point_normal: Vec3) -> bool:
+        orientation_hor = render.getRelativeVector(self.body, Vec3.forward())
+        # We ignore vertical orientation
+        orientation_hor.setZ(0)
+        attack_point_normal.setZ(0)
+        self.draw_debug_ray(self.body.getPos(), self.body.getPos() + orientation_hor)
+        self.draw_debug_ray(self.body.getPos(), self.body.getPos() + attack_point_normal, color=(0,1,0,1))
+        deg_delta = abs(orientation_hor.normalized().angleDeg(attack_point_normal.normalized()))
+        self.logger.debug(f"Hit was at a degree of {deg_delta}")
+        return deg_delta > (BLOCK_RANGE_DEG/2)
+
+
+    def draw_debug_ray(self, start, end, color=(1, 0, 0, 1)):
+        """Draws a debug ray from start to end with the given color."""
+        lines = LineSegs()
+        lines.setColor(*color)  # Set color (RGBA)
+        lines.setThickness(2.0)  # Set line thickness
+        lines.moveTo(start)
+        lines.drawTo(end)
+
+        # Convert to a NodePath and attach it to the render tree
+        line_node = NodePath(lines.create())
+        line_node.reparentTo(render)
+
     def update(self, dt):
-        
         if self.inv_phase > 0.0:
             self.inv_phase -= dt
         else:

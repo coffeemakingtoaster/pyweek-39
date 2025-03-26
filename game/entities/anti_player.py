@@ -19,7 +19,11 @@ class AntiPlayer(EntityBase):
 
         self.movement_vector = Vec3(0,0,0)
         self.correction_vector = Vec3(0,0,0)
+
+        # TODO: add anti_player_block
         self.accept("q", self.debug_stab)
+        self.accept("e", self.debug_block)
+
 
         self.__add_name_tag()
 
@@ -76,6 +80,9 @@ class AntiPlayer(EntityBase):
 
     def debug_stab(self):
         self.stab(self.match_timer)
+
+    def debug_block(self):
+        self.logger.info("Debug block")
 
     def stab(self, start_time: float = 0.0):
         # AI controlled
