@@ -43,7 +43,7 @@ class MainGame(ShowBase):
         base.camLens.setFov(120)
         
         base.cTrav = CollisionTraverser()
-        base.cTrav.showCollisions(render)
+        #base.cTrav.showCollisions(render)
         base.enableParticles()
         
         self.mouse_locked = False
@@ -130,7 +130,7 @@ class MainGame(ShowBase):
         
         self.map.setZ(-2)
     
-        self.waterfall = loader.loadModel("box")
+        self.waterfall = loader.loadModel("assets/models/box.egg")
         self.waterfall.reparentTo(render)
         self.waterfall.setTransparency(TransparencyAttrib.MAlpha)
         self.waterfall.setPos(-6,-8.5,-3.5)
