@@ -11,3 +11,7 @@ def getModelPath(name):
 def getImagePath(name):
     file_path = os.path.join(os.getcwd(), "assets", "images", name+".png")
     return Filename.fromOsSpecific(file_path).getFullpath()
+
+def getParticlePath(name):
+    file_path = os.path.join(os.getcwd(), "assets", "particles", name+".ptf")
+    return Filename.fromOsSpecific(file_path).getFullpath()

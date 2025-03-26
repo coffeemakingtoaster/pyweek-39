@@ -25,6 +25,8 @@ from shared.types.player_info import PlayerInfo
 from shared.types.status_message import StatusMessages
 from shared.utils.validation import parse_game_status, parse_player_info
 
+from direct.particles.ParticleEffect import ParticleEffect
+
 
 class MainGame(ShowBase):
     def __init__(self) -> None:
@@ -42,6 +44,7 @@ class MainGame(ShowBase):
         
         base.cTrav = CollisionTraverser()
         base.cTrav.showCollisions(render)
+        base.enableParticles()
         
         self.mouse_locked = False
 
@@ -77,6 +80,8 @@ class MainGame(ShowBase):
 
         self.time_since_last_package: int = 1_000_000
         self.buildMap()
+        
+        
 
     def __update_name(self, name: str):
         self.player_name = name
@@ -87,20 +92,25 @@ class MainGame(ShowBase):
        
         
         dlight = DirectionalLight('my dlight')
-        dlight.color = (1,1,1,1)
-        dlight.setDirection(Vec3(0,-1,-0.2))
+        dlight.color = (0.6,0.6,1.3,1)
+        dlight.setDirection(Vec3(0,-1,-0.5))
         dlnp = render.attachNewNode(dlight)
-        alight = AmbientLight("ambi light")
-        alight.color = (0.1,0.1,0.1,1)
-        ambientnp = render.attachNewNode(alight)
+        #alight = AmbientLight("ambi light")
+        #alight.color = (0.1,0.1,0.1,1)
+        #ambientnp = render.attachNewNode(alight)
+        # Use a 512x512 resolution shadow map
+        dlight.setShadowCaster(True, 512, 512)
+        # Enable the shader generator for the receiving nodes
+        render.setShaderAuto()
         render.setLight(dlnp)     
-        render.setLight(ambientnp) 
+        #render.setLight(ambientnp) 
         render.setLight(dlnp)
         
         #cubeMap = loader.loadCubeMap(getImagePath("skybox"))
         self.spaceSkyBox = loader.loadModel(getModelPath("skysphere"))
         self.spaceSkyBox.setScale(200)
         self.spaceSkyBox.setZ(-40)
+        self.spaceSkyBox.setH(90)
         self.spaceSkyBox.setBin('background', 0)
         self.spaceSkyBox.setDepthWrite(0)
         self.spaceSkyBox.setTwoSided(True)
@@ -110,10 +120,9 @@ class MainGame(ShowBase):
         #self.spaceSkyBox.setTexture(cubeMap, 1)
        
         
-        self.waterfallbackground = loader.loadModel(getModelPath("waterfall"))
-        self.waterfallbackground.reparentTo(render)
         
-        self.waterfallbackground.setZ(-2)
+        
+        
         
         self.map = self.loader.loadModel("assets/models/map.egg")
         
@@ -130,6 +139,7 @@ class MainGame(ShowBase):
         texture2 = loader.loadTexture(getImagePath("transWater2"))
         texture = loader.loadTexture(getImagePath("transWater"))
         transTexture = loader.loadTexture(getImagePath("blue"))
+        
         self.waterfall.setTexture(transTexture)
         self.textureStage0 = TextureStage("stage0")
         self.textureStage0.setMode(TextureStage.MBlend)
@@ -147,6 +157,14 @@ class MainGame(ShowBase):
         
         
         taskMgr.add(self.shiftWaterfallTextureTask,"shift Task")
+        
+        
+        
+        for i in range(15):
+            p = ParticleEffect()
+            p.loadConfig(getParticlePath("spray"))
+            p.start(parent = render, renderParent = render)
+            p.setPos(-5.5+i*0.8,-8,0.4)
         
     def shiftWaterfallTextureTask(self,task):
         self.waterfall.setTexOffset(self.textureStage0, 0, (task.time*2) % 1.0 )

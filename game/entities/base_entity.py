@@ -53,10 +53,12 @@ class EntityBase(DirectObject.DirectObject):
         self.accept(f"{body_damage_event}-blocked", self.handle_body_damage)
 
         # Deal damage event -> hitting someone
-        head_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-hHbnp-blocked"
-        body_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-bHbnp-blocked"
-        self.accept(head_hit_event, self.handle_blocked_hit)
-        self.accept(body_hit_event, self.handle_blocked_hit)
+        blocked_head_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-hHbnp-blocked"
+        blocked_body_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-bHbnp-blocked"
+        self.accept(blocked_head_hit_event, self.handle_blocked_hit)
+        self.accept(blocked_body_hit_event, self.handle_blocked_hit)
+        
+        
 
         self.hitBlocked = False
         self.inv_phase = 0.0
@@ -113,7 +115,7 @@ class EntityBase(DirectObject.DirectObject):
         self.shoes = Actor(getModelPath("shoes"))
         self.shoes.reparentTo(self.body)
         self.body.setPos(0, 0, 0.5)
-
+        
     def endAttack(self,task):
         self.inAttack = False
     
