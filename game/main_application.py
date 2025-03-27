@@ -7,10 +7,11 @@ from pandac.PandaModules import TransparencyAttrib
 
 
 
-from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, NETWORK_SEND_PRIORITY_EVENT, SET_USERNAME_EVENT, START_GAME_EVENT, WIN_EVENT
+from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.entities.anti_player import AntiPlayer
 from game.entities.player import Player
+from game.helpers.config import get_player_name
 from game.helpers.helpers import *
 from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
 import uuid
@@ -69,12 +70,10 @@ class MainGame(ShowBase):
         self.accept(CANCEL_QUEUE_EVENT, self.__cancel_queue)
         self.accept(WIN_EVENT, self.__finish_game, [True])
         self.accept(DEFEAT_EVENT, self.__finish_game, [False])
-        self.accept(SET_USERNAME_EVENT, self.__update_name)
 
         self.accept(NETWORK_SEND_PRIORITY_EVENT, self.__priority_ws_send)
 
         self.player_id: str = str(uuid.uuid4())
-        self.player_name = generate_name()
         self.match_id: None | str = None
 
         self.is_online: bool = False
@@ -82,16 +81,9 @@ class MainGame(ShowBase):
 
         self.time_since_last_package: int = 1_000_000
         self.buildMap()
-        
-        
-
-    def __update_name(self, name: str):
-        self.player_name = name
 
     def buildMap(self):
-        
-        
-       
+        """ Build map and place dummy player for main menu """
         
         dlight = DirectionalLight('my dlight')
         dlight.color = (0.6,0.6,1.3,1)
@@ -121,11 +113,6 @@ class MainGame(ShowBase):
         self.spaceSkyBox.reparentTo(render)
         self.spaceSkyBox.setLightOff()
         #self.spaceSkyBox.setTexture(cubeMap, 1)
-       
-        
-        
-        
-        
         
         self.map = self.loader.loadModel("assets/models/map.egg")
         
@@ -157,17 +144,23 @@ class MainGame(ShowBase):
         self.waterfall.setTexture(self.textureStage1,texture,1)
         self.waterfall.setTexScale(self.textureStage1, 1, 1)
         
-        
-        
         taskMgr.add(self.shiftWaterfallTextureTask,"shift Task")
-        
-        
         
         for i in range(15):
             p = ParticleEffect()
             p.loadConfig(getParticlePath("spray"))
             p.start(parent = render, renderParent = render)
             p.setPos(-5.5+i*0.8,-8,0.4)
+
+        self.__add_and_focus_main_menu_player()
+
+    def __add_and_focus_main_menu_player(self):
+        self.logger.info("Place camera and player")
+        if self.player is not None:
+            self.player.destroy()
+        self.player = Player(self.camera, self.win, False, non_interactive=True)
+        self.player.body.setPos(0.2, -7, 0.5)
+        self.camera.reparentTo(render)
         
     def shiftWaterfallTextureTask(self,task):
         self.waterfall.setTexOffset(self.textureStage0, 0, (task.time*2) % 1.0 )
@@ -187,6 +180,7 @@ class MainGame(ShowBase):
         self.match_id = None
         if self.player is not None:
             self.player.destroy()
+        self.__add_and_focus_main_menu_player()
         if self.anti_player is not None:
             self.anti_player.destroy()
         if is_victory:
@@ -248,15 +242,18 @@ class MainGame(ShowBase):
         testboxNode.show()
         '''
         
-        
+       
+        if self.player is not None:
+            self.player.destroy()
         self.player = Player(self.camera,self.win, self.is_online)
         
         self.anti_player = AntiPlayer(self.win, self.is_online)
+        # Reset rotation after main menu 
+        self.camera.setHpr(0,0,0)
         self.camera.reparentTo(self.player.head)
         #self.camera.setPos(0,-1,3)
         #self.camera.setHpr(0,-60,0)
         self.camera.setPos(0,0.1,0.4)
-        
         
         if is_offline:
             self.logger.info("Starting game in offline mode...")
@@ -271,7 +268,7 @@ class MainGame(ShowBase):
             self.ws = MatchWS(
                 match_id=match_id, 
                 player_id=self.player_id, 
-                player_name=self.player_name,
+                player_name=get_player_name(),
                 recv_callback=self.__process_ws_message)
         messenger.send(GUI_PLAY_EVENT)
            
@@ -314,6 +311,9 @@ class MainGame(ShowBase):
         dt = self.clock.dt
 
         if self.gui_manager.gui_state_machine.getCurrentOrNextState() != GuiStates.RUNNING.value:
+            # This is a bit hacky...but oh well :)
+            self.camera.setPos(0, 9, 5)
+            self.camera.lookAt(self.player.body)
             return Task.cont
 
         self.player.update(dt)

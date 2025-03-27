@@ -1,42 +1,31 @@
+import logging
 import os
 from panda3d.core import WindowProperties
 import json
 
 from game.const.settings import GAME_SETTINGS
+from game.utils.name_generator import generate_name
+
+PLAYER_NAME_ENV_VAR = "PLAYER_NAME"
+LOGGER = logging.getLogger(__name__)
 
 def load_config(path):
-    
-    if not os.path.isfile(path):
-        # Volume values default to 1
-        # Default to windowed in given dimensions
-        setup_windowed() 
-        # no config file
-        return
-    
-    with open(path) as config_file:
-        config = json.load(config_file)
-    
-    if "sfx_volume" in config:
-       set_sfx_volume(config["sfx_volume"]) 
-    else:
-        set_sfx_volume(1.0) 
 
-       
-    if "music_volume" in config:
-       set_music_volume(config["music_volume"]) 
-    else:
-        set_music_volume(1.0)
+    config = {}
     
-    if "fullscreen" in config:
-        if config["fullscreen"]:
-            set_fullscreen_value(config["fullscreen"])
-        else:
-            setup_windowed()
-    else:
-      setup_windowed() 
+    if os.path.isfile(path):
+        with open(path) as config_file:
+            config = json.load(config_file)
+
+    set_sfx_volume(config.get("sfx_volume", 0.5)) 
+       
+    set_music_volume(config.get("music_volume", 0.5)) 
+
+    set_fullscreen_value(config.get("fullscreen", False))
       
-    if "show_fps" in config:
-        base.setFrameRateMeter(config["show_fps"])
+    base.setFrameRateMeter(config.get("show_fps", False))
+
+    os.environ[PLAYER_NAME_ENV_VAR] = config.get("user_name", generate_name())
         
 def setup_windowed():
     wp = WindowProperties(base.win.getProperties()) 
@@ -46,7 +35,13 @@ def setup_windowed():
     base.win.requestProperties(wp) 
             
 def save_config(path):
-    config = {"sfx_volume": float(get_sfx_volume()), "music_volume": float(get_music_volume()), "fullscreen": get_fullscreen_value(), "show_fps": get_fps_counter_enabled() }
+    config = {
+            "sfx_volume": float(get_sfx_volume()), 
+            "music_volume": float(get_music_volume()), 
+            "fullscreen": get_fullscreen_value(), 
+            "show_fps": get_fps_counter_enabled(), 
+            "user_name" : os.getenv(PLAYER_NAME_ENV_VAR, generate_name())
+    }
     
     with open(path, "w+") as config_file:
         config_file.write(json.dumps(config))
@@ -85,3 +80,12 @@ def get_fps_counter_enabled():
 
 def set_fps_counter_enabled(val):
     base.setFrameRateMeter(val)
+
+def get_player_name():
+    name = os.getenv(PLAYER_NAME_ENV_VAR, generate_name())
+    LOGGER.info(f"Saved name was: {name}")
+    return name
+
+def set_player_name(val: str):
+    LOGGER.info(f"New name set: {val}")
+    os.environ[PLAYER_NAME_ENV_VAR] = val
