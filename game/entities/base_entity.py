@@ -85,6 +85,7 @@ class EntityBase(DirectObject.DirectObject):
         self.bodyHitBoxNodePath.node().addSolid(bodyHitBox)
         self.bodyHitBoxNodePath.setCollideMask(self.own_collision_mask)
         
+        
         self.head = Actor(getModelPath("head"))
         self.head.reparentTo(self.body)
         self.head.setPos(0,0,0.52)
@@ -120,6 +121,8 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath.node().addSolid(swordHitBox)
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         self.swordHitBoxNodePath.reparentTo(sword_joint)
+        
+        
                
         self.sword.setPos(0, 0.2, 0)
     

@@ -46,6 +46,8 @@ class MainGame(ShowBase):
         #base.cTrav.showCollisions(render)
         base.enableParticles()
         
+        loadPrcFileData("", "interpolate-frames 1")
+        
         self.mouse_locked = False
 
         self.player: None | Player = None
@@ -251,7 +253,8 @@ class MainGame(ShowBase):
         
         self.anti_player = AntiPlayer(self.win, self.is_online)
         self.camera.reparentTo(self.player.head)
-        #self.camera.setPos(0,-3,0.4)
+        #self.camera.setPos(0,-1,3)
+        #self.camera.setHpr(0,-60,0)
         self.camera.setPos(0,0.1,0.4)
         
         
