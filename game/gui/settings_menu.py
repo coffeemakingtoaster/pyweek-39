@@ -2,7 +2,7 @@ from game.const.events import GUI_RETURN_EVENT
 from game.gui.gui_base import GuiBase
 from panda3d.core import TextNode, TransparencyAttrib
 
-from game.helpers.config import get_player_name, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled
+from game.helpers.config import get_player_name, save_config, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled
 
 from direct.gui.DirectGui import DirectButton, DirectCheckButton, DirectEntry, DirectSlider, DirectLabel, DirectFrame, DGG, OnscreenImage
 

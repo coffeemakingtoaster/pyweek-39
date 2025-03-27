@@ -35,8 +35,12 @@ class AntiPlayer(EntityBase):
     def __add_name_tag(self):
         self.name_tag = TextNode(f"{self.id}-name")
         self.name_tag.setAlign(TextNode.ACenter) 
+        self.name_tag.set_card_color(1,1,1,0.5)
+        self.name_tag.set_text_color(1,1,1,1)
+        self.name_tag.setCardDecal(True)
+        self.name_tag.setCardAsMargin(0, 0, 0, 0)
         self.name_tag_node = self.body.attachNewNode(self.name_tag)
-        self.name_tag_node.setScale(1.0)
+        self.name_tag_node.setScale(0.3)
         self.name_tag_node.setBillboardPointEye()
         self.__update_name()
 

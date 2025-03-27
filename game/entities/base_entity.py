@@ -3,12 +3,15 @@ from typing import ForwardRef
 from direct.actor.Actor import Actor
 from direct.showbase import DirectObject
 from abc import abstractmethod
+import math
 
+from direct.stdpy.threading import current_thread
 from direct.task.Task import messenger
 
+from game.const import player
 from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, NO_BIT_MASK, PLAYER_BIT_MASK
 from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, WIN_EVENT
-from game.const.player import BASE_HEALTH, BLOCK_RANGE_DEG, GRAVITY, MOVEMENT_SPEED, POST_HIT_INV_DURATION
+from game.const.player import ALLOWED_WORD_CENTER_DISTANCE, BASE_HEALTH, BLOCK_RANGE_DEG, GRAVITY, MOVEMENT_SPEED, PLAYER_1_SPAWN, PLAYER_2_SPAWN, POST_HIT_INV_DURATION, WORLD_CENTER_POINT
 from game.helpers.helpers import getModelPath
 from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule, CollisionHandlerEvent, LineSegs, NodePath, Mat3,Quat
 
@@ -16,6 +19,8 @@ from game.utils.scene_graph import traverse_parents_until_name_is_matched
 from direct.particles.ParticleEffect import ParticleEffect
 from game.helpers.helpers import *
 import random
+
+from shared.types.status_message import StatusMessages
 
 class EntityBase(DirectObject.DirectObject):
     def __init__(self, window, id: str, online: bool, name="BaseEntity"):
@@ -39,7 +44,6 @@ class EntityBase(DirectObject.DirectObject):
         self.dashParticles = []
         
         self.setupSounds()
-
 
         self.vertical_velocity = 0
         self.match_timer = 0.0
@@ -70,10 +74,6 @@ class EntityBase(DirectObject.DirectObject):
         body_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-bHbnp"
         self.accept(head_hit_event, self.handle_hit)
         self.accept(body_hit_event, self.handle_hit)
-        
-        
-        
-        
 
         self.hitBlocked = False
         self.inv_phase = 0.0
@@ -86,7 +86,16 @@ class EntityBase(DirectObject.DirectObject):
             self.sweepingSounds.append(base.loader.loadSfx(getSoundPath("swipe"+str(i+1))))
         for i in range(4):
             self.hitSounds.append(base.loader.loadSfx(getSoundPath("hit"+str(i+1))))
-    
+
+    def set_player(self, playerId: StatusMessages):
+        assert playerId in [StatusMessages.PLAYER_1, StatusMessages.PLAYER_2]
+        if playerId == StatusMessages.PLAYER_1:
+            self.body.setX(PLAYER_1_SPAWN[0])
+            self.body.setY(PLAYER_1_SPAWN[1])
+            return
+        self.body.setX(PLAYER_2_SPAWN[0])
+        self.body.setY(PLAYER_2_SPAWN[1])
+        self.body.setH(180)
     
     def __construct(self):
         self.body = Actor(getModelPath("body"))
@@ -351,6 +360,17 @@ class EntityBase(DirectObject.DirectObject):
         if self.body is not None:
             self.body.cleanup()
             self.body.removeNode()
+
+    def apply_world_border_correction(self, wanted_movement_vector: Vec3) -> Vec3:
+        """ Transform vector to stop at world border. Ignores z coord """
+        current_pos = self.body.getPos()
+        current_pos.setZ(0)
+        current_delta_to_center = (current_pos - Vec3(WORLD_CENTER_POINT[0], WORLD_CENTER_POINT[1], 0))
+        if current_delta_to_center.length() > (ALLOWED_WORD_CENTER_DISTANCE):
+            closest_valid_position = Vec3(WORLD_CENTER_POINT[0], WORLD_CENTER_POINT[1],0) + (current_delta_to_center.normalized() * (ALLOWED_WORD_CENTER_DISTANCE * 0.95))
+            self.body.setFluidPos(closest_valid_position.getX(), closest_valid_position.getY(), self.body.getZ())
+            return Vec3(0,0,0)
+        return wanted_movement_vector
 
     def __collision_into_was_from_behind(self, into_node_path: NodePath) -> bool:
         """ 2D calculation if own sword is coming from behind the stabbed/attacked entity"""
