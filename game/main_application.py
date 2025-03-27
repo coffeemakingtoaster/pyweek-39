@@ -234,8 +234,8 @@ class MainGame(ShowBase):
     
     def __start_game(self, match_id="", is_offline=True):
         
-        
-        
+        self.background_music = base.loader.loadMusic(getImagePath("music_start"))
+        self.background_music.play()
         self.is_online = not is_offline
         base.disableMouse()
         self.toggle_mouse()

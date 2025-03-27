@@ -18,6 +18,10 @@ def getParticlePath(name):
     file_path = os.path.join(os.getcwd(), "assets", "particles", name+".ptf")
     return Filename.fromOsSpecific(file_path).getFullpath()
 
+def getMusicPath(name):
+    file_path = os.path.join(os.getcwd(), "assets", "music", name+".mp3")
+    return Filename.fromOsSpecific(file_path).getFullpath()
+
 def normal_to_hpr(normal):
     # Normalize the normal vector
     normal = normal.normalized()
