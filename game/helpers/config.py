@@ -9,7 +9,7 @@ from game.utils.name_generator import generate_name
 PLAYER_NAME_ENV_VAR = "PLAYER_NAME"
 LOGGER = logging.getLogger(__name__)
 
-def load_config(path):
+def load_config(path='./user_settings.json'):
 
     config = {}
     
@@ -34,7 +34,8 @@ def setup_windowed():
     wp.set_origin(-2, -2)
     base.win.requestProperties(wp) 
             
-def save_config(path):
+def save_config(path='./user_settings.json'):
+    LOGGER.info(f"{get_music_volume()}")
     config = {
             "sfx_volume": float(get_sfx_volume()), 
             "music_volume": float(get_music_volume()), 
@@ -58,6 +59,7 @@ def get_music_volume():
     return base.musicManager.getVolume()
             
 def set_music_volume(value):
+    LOGGER.info(f"settings {value}")
     base.musicManager.setVolume(value)
     
 def get_fullscreen_value():

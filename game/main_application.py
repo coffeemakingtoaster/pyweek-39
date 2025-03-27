@@ -11,7 +11,7 @@ from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVEN
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.entities.anti_player import AntiPlayer
 from game.entities.player import Player
-from game.helpers.config import get_player_name
+from game.helpers.config import get_player_name, load_config
 from game.helpers.helpers import *
 from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
 import uuid
@@ -48,6 +48,7 @@ class MainGame(ShowBase):
         base.enableParticles()
         
         loadPrcFileData("", "interpolate-frames 1")
+        load_config()
         
         self.mouse_locked = False
 
