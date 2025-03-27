@@ -399,7 +399,7 @@ class EntityBase(DirectObject.DirectObject):
         line_node.reparentTo(render)
 
     def update(self, dt):
-        print(self.body.getPos())
+        
         if self.is_dashing and self.body.getZ() < 0.8 and self.body.getX() > -5.5 and self.body.getX() < 6 and self.body.getY() < 16 and self.body.getY() > -8:
             # -5,5 16
             # 6 16
