@@ -41,6 +41,7 @@ class EntityBase(DirectObject.DirectObject):
         self.sweep2 = False
         self.is_dashing = False
         self.hit_handled = False
+        self.is_block_stunned = False
         self.dashParticles = []
         
         self.setupSounds()
@@ -107,7 +108,6 @@ class EntityBase(DirectObject.DirectObject):
         self.bodyHitBoxNodePath.node().addSolid(bodyHitBox)
         self.bodyHitBoxNodePath.setCollideMask(self.own_collision_mask)
         
-        
         self.head = Actor(getModelPath("head"))
         self.head.reparentTo(self.body)
         self.head.setPos(0,0,0.52)
@@ -145,8 +145,6 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath.reparentTo(sword_joint)
         
         self.sword.setShaderOff()
-        
-        
                
         self.sword.setPos(0, 0.2, 0)
     
@@ -168,12 +166,10 @@ class EntityBase(DirectObject.DirectObject):
         else:
             base.loader.loadSfx(getSoundPath(name)).play()
     
-    def playSoundLater(self,task):
-        self.playSound(task.name)
+    def playSoundLater(self, name):
+        self.playSound(name)
         
     def turnSwordLethal(self,task):
-        
-        
         self.swordLethality = True
         self.swordHitBoxNodePath.node().setCollideMask(self.opposing_collision_mask)
         
@@ -207,8 +203,6 @@ class EntityBase(DirectObject.DirectObject):
     def handle_hit(self,event):
         print("hit enemy")
         if not self.hit_handled and self.sword.getCurrentAnim() is not None:
-            
-            
             self.hit_handled = True
             animName = self.sword.getCurrentAnim()
             
@@ -225,13 +219,10 @@ class EntityBase(DirectObject.DirectObject):
             
             emitter.setExplicitLaunchVector(normal)
             
-            print(emitter.getEmissionType())
-            
             p.setScale(1)
             p.start(parent = render, renderParent = render)
             taskMgr.doMethodLater(2/24,self.continueStrike,"continueStrike",extraArgs=[animName,frame],appendTask=True)
             taskMgr.doMethodLater(1,self.hitOver,"hitOver",extraArgs=[p],appendTask=True)
-            
 
     def continueStrike(self,animName,frame,task):
         self.sword.play(animName,fromFrame=frame)
@@ -242,7 +233,6 @@ class EntityBase(DirectObject.DirectObject):
         blood.removeNode()
 
     def take_damage(self, damage_value: int):
-        
         self.playSound("hit")
         self.health -= damage_value
         self.logger.debug(f"Now at {self.health} HP")
@@ -305,28 +295,34 @@ class EntityBase(DirectObject.DirectObject):
             #self.take_damage(1)
     
     def handle_block(self):
-    
         self.logger.debug("I blocked an attack")
         self.inBlock = False
         self.inAttack = False
         self.playSound("blocked_hit")
         base.taskMgr.doMethodLater(0, self.turnSwordSword,f"{self.id}-makeSwordSword")
-
         
     def handle_blocked_hit(self,entry):
         print("hit got blocked")
-        print(self.hit_handled)
         if not self.hit_handled:
             if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
                 self.logger.debug("Was from behind, no block occured")
                 return
             self.end_dash(None)
+            self.endAttack(None)
+            taskMgr.remove(f"{self.id}-endAttackTask")
             self.play_blocked_animation()
            
     def play_blocked_animation(self):
         self.logger.debug("My attack was blocked")
-        
         self.sword.play("being-blocked")
+        self.is_block_stunned = True
+        total_frames = self.sword.getAnimControl("stab").getNumFrames()
+        taskMgr.doMethodLater(total_frames/24, self.cleanse_block_stun, f"{self.id}-cleanseBlockStun")
+
+    def cleanse_block_stun(self, task):
+        self.is_block_stunned = False
+        self.is_dashing = False
+        self.inAttack = False
         
     def start_dash(self,task):
         self.is_dashing = True
@@ -334,8 +330,7 @@ class EntityBase(DirectObject.DirectObject):
     def end_dash(self,task):
         self.is_dashing = False
         self.vertical_velocity = -0.01
-        taskMgr.doMethodLater(1,self.cleanUpParticles,"cleanUpSplashTask")
-        
+        taskMgr.doMethodLater(1, self.cleanUpParticles, "cleanUpSplashTask")
     
     def cleanUpParticles(self,task):
         for p in self.dashParticles:
@@ -345,7 +340,6 @@ class EntityBase(DirectObject.DirectObject):
         self.match_timer = 0.0
 
     def apply_gravity(self, dt):
-        
         if self.vertical_velocity == 0:
             return
         self.vertical_velocity -= (GRAVITY * dt)

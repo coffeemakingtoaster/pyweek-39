@@ -74,9 +74,10 @@ class AntiPlayer(EntityBase):
         self.sword.play("sweep2" if is_alternate_sweep else "sweep")
         self.inAttack = True
         self.inBlock = False
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.turnSwordLethal, name="antiplayer-makeSwordLethalTask")
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=21, fn=self.turnSwordHarmless, name="antiplayer-makeSwordHarmlessTask")
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name="antiplayer-endAttackTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.playSoundLater, name=f"{self.id}-playSoundSweep", extraArgs=["sweep"])
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.turnSwordLethal, name=f"{self.id}-makeSwordLethalTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=21, fn=self.turnSwordHarmless, name=f"{self.id}-makeSwordHarmlessTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name=f"{self.id}-endAttackTask")
 
     def sweep(self, is_alternate_sweep=False, start_time=0.0):
         if not self.is_puppet:
@@ -96,15 +97,15 @@ class AntiPlayer(EntityBase):
         self.sword.play("block")
         self.inAttack = True
         self.inBlock = True
-        taskMgr.remove("antiplayer-endAttackTask")
-        taskMgr.remove("antiplayer-makeSwordLethalTask")
-        taskMgr.remove("antiplayer-makeSwordHarmlessTask")
+        taskMgr.remove(f"{self.id}-endAttackTask")
+        taskMgr.remove(f"{self.id}-makeSwordLethalTask")
+        taskMgr.remove(f"{self.id}-makeSwordHarmlessTask")
         frames = self.sword.getAnimControl("block").getNumFrames()
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=1, fn=self.turnSwordBlock, name="antiplayer-makeSwordBlockTask")
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turnSwordSword, name="antiplayer-makeSwordSwordTask")
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turnSwordSword, name="antiplayer-makeSwordSwordTask")
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endBlock, name="antiplayer-endBlockTask")
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endBlock, name="antiplayer-endAttackTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=5, fn=self.turnSwordBlock, name=f"{self.id}-makeSwordBlockTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turnSwordSword, name=f"{self.id}-makeSwordSwordTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turnSwordSword, name=f"{self.id}-makeSwordSwordTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endBlock, name=f"{self.id}-endBlockTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endBlock, name=f"{self.id}-endAttackTask")
 
     def block(self, start_time=0.0):
         if not self.is_puppet:
@@ -123,19 +124,24 @@ class AntiPlayer(EntityBase):
             return
         self.sword.play("stab", fromFrame=frame_offset)
         self.logger.debug(f"Frame offset is {frame_offset}")
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.turnSwordLethal, name="antiplayer-makeSwordLethalTask")
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.start_dash, name="antiplayer-startDashingTask")
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.turnSwordHarmless, name="antiplayer-makeSwordHarmlessTask")
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.end_dash, name="antiplayer-endDashingTask")
-        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name="antiplayer-endAttackTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=5, fn=self.playSoundLater, name=f"{self.id}-playSoundStab", extraArgs=["stab"])
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.turnSwordLethal, name=f"{self.id}-makeSwordLethalTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.start_dash, name=f"{self.id}-startDashingTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.turnSwordHarmless, name=f"{self.id}-makeSwordHarmlessTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.end_dash, name=f"{self.id}-endDashingTask")
+        self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name=f"{self.id}-endAttackTask")
 
-    def __schedule_or_run(self, offset_frame: int, wanted_frame: int, fn, name: str):
+    def __schedule_or_run(self, offset_frame: int, wanted_frame: int, fn, name: str, extraArgs=[None]):
         # Already happended -> do now
         if offset_frame >= wanted_frame:
             # Pass none as tasks expect 
-            fn(None)
+            fn(*extraArgs)
+            return
+        if len(extraArgs) > 0:
+            base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name,extraArgs=extraArgs)
             return
         base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name)
+
     
     def handleSwordCollisionEnd(self,entry):
         self.logger.debug(f"no longer colliding with {entry}")
@@ -158,8 +164,6 @@ class AntiPlayer(EntityBase):
         messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
         start_frame = int(offset * 24)
         self.logger.debug(f"Stab started at frame {start_frame}")
-        # Animation has 50 frames at 24fps
-        # and takes ca. 2sec
         self.__stab_safe(start_frame)
 
     def __handle_actions(self, actions: List[PlayerAction], offsets: List[float]):

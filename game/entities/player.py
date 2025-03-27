@@ -17,6 +17,7 @@ class Player(EntityBase):
         # Keybinds for movement
         if non_interactive:
             return
+
         self.accept("a", self.set_movement_status, ["left"])
         self.accept("a-up", self.unset_movement_status, ["left"])
         self.accept("d", self.set_movement_status, ["right"])
@@ -37,30 +38,38 @@ class Player(EntityBase):
         self.movement_status[direction] = 0
 
     def jump(self):
+        if self.is_block_stunned:
+            return
+
         if self.vertical_velocity == 0:
             self.vertical_velocity = JUMP_VELOCITY
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.JUMP], action_offsets=[self.match_timer], health=self.health)])
             
     def stab(self):
+        if self.is_block_stunned:
+            return
+
         if not self.inAttack:
             self.inAttack = True
             self.inBlock = False
-            base.taskMgr.doMethodLater(5/24,self.playSoundLater,"stab")
+            base.taskMgr.doMethodLater(5/24,self.playSoundLater,f"{self.id}-playSoundStab", extraArgs=["stab"])
             self.sword.play("stab")
             frames = self.sword.getAnimControl("stab").getNumFrames()
-            base.taskMgr.doMethodLater(25/24,self.turnSwordLethal,"player-makeSwordLethalTask")
-            base.taskMgr.doMethodLater(32/24,self.turnSwordHarmless,"player-makeSwordHarmlessTask")
-            base.taskMgr.doMethodLater(25/24,self.start_dash,"player-startDashingTask")
-            base.taskMgr.doMethodLater(32/24,self.end_dash,"player-endDashingTask")
-            base.taskMgr.doMethodLater(frames/24,self.endAttack,"player-endAttackTask")
+            base.taskMgr.doMethodLater(25/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
+            base.taskMgr.doMethodLater(32/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
+            base.taskMgr.doMethodLater(25/24,self.start_dash,f"{self.id}-startDashingTask")
+            base.taskMgr.doMethodLater(32/24,self.end_dash,f"{self.id}-endDashingTask")
+            base.taskMgr.doMethodLater(frames/24,self.endAttack,f"{self.id}-endAttackTask")
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.ATTACK_1], action_offsets=[self.match_timer], health=self.health)])
     
     def sweep(self):
+        if self.is_block_stunned:
+            return
+
         if not self.inAttack:
             self.inAttack = True
             self.inBlock = False
-            base.taskMgr.doMethodLater(14/24,self.playSoundLater,"sweep")
-            
+            base.taskMgr.doMethodLater(14/24, self.playSoundLater, f"{self.id}-playSoundSweep", extraArgs=["sweep"])
             if self.sweep2:
                 self.sword.play("sweep2")
                 self.sweep2 = False
@@ -68,27 +77,30 @@ class Player(EntityBase):
                 self.sword.play("sweep")
                 self.sweep2 = True
             frames = self.sword.getAnimControl("sweep").getNumFrames()
-            base.taskMgr.doMethodLater(10/24,self.turnSwordLethal,"player-makeSwordLethalTask")
-            base.taskMgr.doMethodLater(30/24,self.turnSwordHarmless,"player-makeSwordHarmlessTask")
-            base.taskMgr.doMethodLater(frames/24,self.endAttack,"player-endAttackTask")
+            base.taskMgr.doMethodLater(10/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
+            base.taskMgr.doMethodLater(30/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
+            base.taskMgr.doMethodLater(frames/24,self.endAttack,f"{self.id}-endAttackTask")
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.SWEEP_1 if self.sweep else PlayerAction.SWEEP_2], action_offsets=[self.match_timer], health=self.health)])
     
     def block(self):
+        if self.is_block_stunned:
+            return
+
         if not self.inBlock:
             self.inAttack = True
             self.inBlock = True
             self.sword.play("block")
             
-            taskMgr.remove("player-endAttackTask")
-            taskMgr.remove("player-makeSwordLethalTask")
-            taskMgr.remove("player-makeSwordHarmlessTask")
-            taskMgr.remove("player-startDashingTask")
+            taskMgr.remove(f"{self.id}-endAttackTask")
+            taskMgr.remove(f"{self.id}-makeSwordLethalTask")
+            taskMgr.remove(f"{self.id}-makeSwordHarmlessTask")
+            taskMgr.remove(f"{self.id}-startDashingTask")
             
             frames = self.sword.getAnimControl("block").getNumFrames()
-            base.taskMgr.doMethodLater(1/24, self.turnSwordBlock,"player-makeSwordBlockTask")
-            base.taskMgr.doMethodLater(15/24, self.turnSwordSword,"player-makeSwordSword")
-            base.taskMgr.doMethodLater(frames/24, self.endBlock,"player-endBlockTask")
-            base.taskMgr.doMethodLater(frames/24, self.endAttack,"player-endAttackTask")
+            base.taskMgr.doMethodLater(1/24, self.turnSwordBlock,f"{self.id}-makeSwordBlockTask")
+            base.taskMgr.doMethodLater(15/24, self.turnSwordSword,f"{self.id}-makeSwordSword")
+            base.taskMgr.doMethodLater(frames/24, self.endBlock,f"{self.id}-endBlockTask")
+            base.taskMgr.doMethodLater(frames/24, self.endAttack,f"{self.id}-endAttackTask")
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.BLOCK], action_offsets=[self.match_timer], health=self.health)])
     
     def update_camera(self, dt):
