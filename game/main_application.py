@@ -102,7 +102,9 @@ class MainGame(ShowBase):
         # Use a 512x512 resolution shadow map
         #dlight.setShadowCaster(True,1028,1028)
         # Enable the shader generator for the receiving nodes
-        render.setShaderAuto()
+
+        # @Heuserus do we need this? This is the loc that was causing the particle issues 
+        # render.setShaderAuto()
         
         #render.setLight(ambientnp) 
         #render.setLight(dlnp)
@@ -136,23 +138,16 @@ class MainGame(ShowBase):
         
         self.map = self.loader.loadModel("assets/models/map.egg")
         
-        
-        
         self.map.reparentTo(self.render)
         
         self.map.setZ(-2)
         self.map.setShaderAuto()
-        
-        
         
         self.treeTops = self.loader.loadModel(getModelPath("treeTops"))
         self.treeTops.reparentTo(self.render)
         self.treeTops.setZ(-2)
         self.treeTops.setShaderOff()
         self.treeTops.setLightOff()
-        
-        
-        
     
         self.waterfall = loader.loadModel("assets/models/box.egg")
         self.waterfall.reparentTo(render)
@@ -170,7 +165,6 @@ class MainGame(ShowBase):
         
         self.waterfall.setTexture(self.textureStage0,texture,1)
         self.waterfall.setTexScale(self.textureStage0, 2, 2)
-
         
         self.textureStage1 = TextureStage("stage1")
         self.textureStage1.setMode(TextureStage.MAdd)
