@@ -29,8 +29,6 @@ class Player(EntityBase):
         self.accept("lshift", self.stab)
         self.accept("mouse1",self.sweep)
         self.accept("mouse3", self.block)
-        
-        
 
     def set_movement_status(self, direction):
         self.movement_status[direction] = 1
@@ -122,7 +120,7 @@ class Player(EntityBase):
             direction.z = 0
             move_vec += direction * DASH_SPEED
         return move_vec
-    
+
     def update(self, dt):
         # player has been destroyed
         if self.body.isEmpty():
@@ -134,6 +132,7 @@ class Player(EntityBase):
         moveVec = self.__get_movement_vector()
         stepped_move_vec = Vec3(moveVec.x, moveVec.y, 0)
         stepped_move_vec *= dt
+        stepped_move_vec = self.apply_world_border_correction(stepped_move_vec)
         self.body.setPos(self.body, Vec3(stepped_move_vec.x, stepped_move_vec.y, moveVec.z  * dt))
 
     def get_current_state(self) -> PlayerInfo:

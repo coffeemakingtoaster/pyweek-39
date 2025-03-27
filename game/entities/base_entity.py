@@ -3,12 +3,14 @@ from typing import ForwardRef
 from direct.actor.Actor import Actor
 from direct.showbase import DirectObject
 from abc import abstractmethod
+import math
 
+from direct.stdpy.threading import current_thread
 from direct.task.Task import messenger
 
 from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, NO_BIT_MASK, PLAYER_BIT_MASK
 from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, WIN_EVENT
-from game.const.player import BASE_HEALTH, BLOCK_RANGE_DEG, GRAVITY, MOVEMENT_SPEED, POST_HIT_INV_DURATION
+from game.const.player import ALLOWED_WORD_CENTER_DISTANCE, BASE_HEALTH, BLOCK_RANGE_DEG, GRAVITY, MOVEMENT_SPEED, POST_HIT_INV_DURATION, WORLD_CENTER_POINT
 from game.helpers.helpers import getModelPath
 from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule, CollisionHandlerEvent, LineSegs, NodePath, Mat3,Quat
 
@@ -341,6 +343,17 @@ class EntityBase(DirectObject.DirectObject):
         if self.body is not None:
             self.body.cleanup()
             self.body.removeNode()
+
+    def apply_world_border_correction(self, wanted_movement_vector: Vec3) -> Vec3:
+        """ Transform vector to stop at world border. Ignores z coord """
+        current_pos = self.body.getPos()
+        current_pos.setZ(0)
+        current_delta_to_center = (current_pos - Vec3(WORLD_CENTER_POINT[0], WORLD_CENTER_POINT[1], 0))
+        if current_delta_to_center.length() > (ALLOWED_WORD_CENTER_DISTANCE):
+            closest_valid_position = Vec3(WORLD_CENTER_POINT[0], WORLD_CENTER_POINT[1],0) + (current_delta_to_center.normalized() * (ALLOWED_WORD_CENTER_DISTANCE * 0.95))
+            self.body.setFluidPos(closest_valid_position.getX(), closest_valid_position.getY(), self.body.getZ())
+            return Vec3(0,0,0)
+        return wanted_movement_vector
 
     def __collision_into_was_from_behind(self, into_node_path: NodePath) -> bool:
         """ 2D calculation if own sword is coming from behind the stabbed/attacked entity"""
