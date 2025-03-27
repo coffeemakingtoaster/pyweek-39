@@ -7,6 +7,8 @@ from game.const.settings import GAME_SETTINGS
 from game.utils.name_generator import generate_name
 
 PLAYER_NAME_ENV_VAR = "PLAYER_NAME"
+GOOD_SHADOW_QUALITY_ENV_VAR = "PLAYER_NAME"
+
 LOGGER = logging.getLogger(__name__)
 
 def load_config(path='./user_settings.json'):
@@ -22,6 +24,8 @@ def load_config(path='./user_settings.json'):
     set_music_volume(config.get("music_volume", 0.5)) 
 
     set_fullscreen_value(config.get("fullscreen", False))
+
+    set_shadow_map_quality(config.get("good_shadows", False))
       
     base.setFrameRateMeter(config.get("show_fps", False))
 
@@ -41,7 +45,8 @@ def save_config(path='./user_settings.json'):
             "music_volume": float(get_music_volume()), 
             "fullscreen": get_fullscreen_value(), 
             "show_fps": get_fps_counter_enabled(), 
-            "user_name" : os.getenv(PLAYER_NAME_ENV_VAR, generate_name())
+            "user_name" : os.getenv(PLAYER_NAME_ENV_VAR, generate_name()),
+            "good_shadows": should_use_good_shadows(),
     }
     
     with open(path, "w+") as config_file:
@@ -87,6 +92,12 @@ def get_player_name():
     name = os.getenv(PLAYER_NAME_ENV_VAR, generate_name())
     LOGGER.info(f"Saved name was: {name}")
     return name
+
+def set_shadow_map_quality(val: bool):
+    os.environ[GOOD_SHADOW_QUALITY_ENV_VAR] = "true" if val else "false"
+
+def should_use_good_shadows() -> bool:
+    return os.getenv(GOOD_SHADOW_QUALITY_ENV_VAR, "false") == "true"
 
 def set_player_name(val: str):
     LOGGER.info(f"New name set: {val}")

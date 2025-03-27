@@ -1,8 +1,8 @@
-from game.const.events import GUI_RETURN_EVENT
+from game.const.events import GUI_RETURN_EVENT, UPDATE_SHADOW_SETTINGS
 from game.gui.gui_base import GuiBase
 from panda3d.core import TextNode, TransparencyAttrib
 
-from game.helpers.config import get_player_name, save_config, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled
+from game.helpers.config import get_player_name, save_config, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled, set_shadow_map_quality, should_use_good_shadows
 
 from direct.gui.DirectGui import DirectButton, DirectCheckButton, DirectEntry, DirectSlider, DirectLabel, DirectFrame, DGG, OnscreenImage
 
@@ -13,7 +13,6 @@ from game.const.colors import TEXT_SECONDARY_COLOR, TEXT_PRIMARY_COLOR
 class SettingsMenu(GuiBase):
     def __init__(self) -> None:
         super().__init__("SettingsMenu")
-
         buttonImages = loader.loadTexture("assets/textures/button_bg.png"),
         font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
         checkbox_image = loader.loadTexture("assets/textures/checkbox.png")
@@ -194,6 +193,27 @@ class SettingsMenu(GuiBase):
         play_sample_sfx_button.setTransparency(TransparencyAttrib.MAlpha)
         self.menu_elements.append(play_sample_sfx_button)
 
+        good_shadow_checkbox = DirectCheckButton(
+            parent = menu_box,
+            text="Use better shadows", 
+            pos=(-1,0,-0.4), 
+            scale=0.05, 
+            indicatorValue=should_use_good_shadows(), 
+            command=self.set_shadow_map_quality,
+            relief=None,
+            boxImage = (checkbox_image, checkbox_checked_image),
+            boxPlacement = 'right',
+            boxImageScale = 0.5,
+            boxRelief = None,
+            text_fg=(TEXT_SECONDARY_COLOR),
+            text_font = font,
+            text_scale = 0.7,
+            pad = (0.5,0), 
+            text_align = TextNode.ALeft
+        )
+        good_shadow_checkbox.setTransparency(TransparencyAttrib.MAlpha)
+        self.menu_elements.append(good_shadow_checkbox)
+
         main_menu_button = DirectButton(
             parent = menu_box,
             text=("Main Menu"),
@@ -243,3 +263,8 @@ class SettingsMenu(GuiBase):
 
     def update_fps(self, status):
         set_fps_counter_enabled(status == 1)
+
+    def set_shadow_map_quality(self, status):
+        set_shadow_map_quality(status == 1)
+        messenger.send(UPDATE_SHADOW_SETTINGS)
+

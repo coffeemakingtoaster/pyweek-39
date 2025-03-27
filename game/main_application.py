@@ -8,13 +8,13 @@ from pandac.PandaModules import TransparencyAttrib
 
 
 
-from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_ANTI_PLAYER_NAME, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, WIN_EVENT
+from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_ANTI_PLAYER_NAME, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, UPDATE_SHADOW_SETTINGS, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.const.player import MAIN_MENU_CAMERA_HEIGHT, MAIN_MENU_CAMERA_ROTATION_RADIUS, MAIN_MENU_CAMERA_ROTATION_SPEED, MAIN_MENU_PLAYER_POSITION
 from game.entities.anti_player import AntiPlayer
 from game.entities.bot import Bot
 from game.entities.player import Player
-from game.helpers.config import get_player_name, load_config
+from game.helpers.config import get_player_name, load_config, should_use_good_shadows
 from game.helpers.helpers import *
 from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
 import uuid
@@ -74,6 +74,7 @@ class MainGame(ShowBase):
         self.accept(CANCEL_QUEUE_EVENT, self.__cancel_queue)
         self.accept(WIN_EVENT, self.__finish_game, [True])
         self.accept(DEFEAT_EVENT, self.__finish_game, [False])
+        self.accept(UPDATE_SHADOW_SETTINGS, self.__update_shadow_settings)
 
         self.accept(NETWORK_SEND_PRIORITY_EVENT, self.__priority_ws_send)
 
@@ -85,6 +86,8 @@ class MainGame(ShowBase):
 
         self.time_since_last_package: int = 1_000_000
         self.camera_angle = 0
+
+        self.slight = None
 
         self.buildMap()
 
@@ -112,7 +115,8 @@ class MainGame(ShowBase):
         # Create a spotlight
         self.slight = Spotlight('slight')
         self.slight.setColor((2, 2, 3, 1))  # Set light color
-        self.slight.setShadowCaster(True, 2048, 2048) 
+
+        self.__update_shadow_settings()
         
         slnp = self.render.attachNewNode(self.slight)
          # Position and rotate the spotlight
@@ -184,6 +188,14 @@ class MainGame(ShowBase):
             p.setBin("fixed", 0)
 
         self.__add_and_focus_main_menu_player()
+
+    def __update_shadow_settings(self, task=None):
+        if self.slight is None:
+            return
+        if should_use_good_shadows():
+            self.slight.setShadowCaster(True, 2048, 2048) 
+        else:
+            self.slight.setShadowCaster(True, 512, 512) 
 
     def __add_and_focus_main_menu_player(self):
         self.logger.info("Place camera and player")
