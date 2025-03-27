@@ -3,6 +3,7 @@ from direct.gui.DirectGui import DirectFrame, DirectLabel, OnscreenImage
 from game.const.player import BASE_HEALTH
 from game.gui.gui_base import GuiBase
 from panda3d.core import TransparencyAttrib
+from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
 
 class HpBar(GuiBase):
 
@@ -11,24 +12,14 @@ class HpBar(GuiBase):
         self.scale = scale
         self.name = name
 
-        font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
+        self.font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
 
         self.base = DirectFrame( 
             frameSize=(-0.01, 0.001, -0.01, 0.01),
             pos=base_pos, 
             frameColor = (1,1,1,0),
         )
-
-        self.hp_display_bar = OnscreenImage(
-            parent=self.base,
-            scale=(self.scale, 1, 0.05), 
-            pos=(0, 0, 0), 
-            image=join("assets", "icons", "hp_display_bar.png"), 
-            color=(255,0,0,1)
-        )
-        self.hp_display_bar.setTransparency(TransparencyAttrib.MAlpha)
-        self.ui_elements.append(self.hp_display_bar)
-
+        
         self.hp_display_background = OnscreenImage(
             parent=self.base,
             scale=(self.scale, 1, 0.05), 
@@ -37,22 +28,41 @@ class HpBar(GuiBase):
         )
         self.hp_display_background.setTransparency(TransparencyAttrib.MAlpha)
         self.ui_elements.append(self.hp_display_background)
-
+       
+        self.hp_display_bar = OnscreenImage(
+            parent=self.base,
+            scale=(self.scale * 0.92, 1, 0.042), 
+            pos=(0, 0, 0), 
+            image=join("assets", "icons", "hp_display_bar.png"), 
+            color=(255,0,0,1)
+        )
+        self.hp_display_bar.setTransparency(TransparencyAttrib.MAlpha)
+        self.ui_elements.append(self.hp_display_bar)
+        
+        self.hp_bar_text = None
+        
+        self.__create_name_label()
+        
+        self.accept(event, self.update_value)
+        #self.accept(event, self.update_name)
+        
+    def __create_name_label(self):
+        if self.hp_bar_text is not None:
+            if not self.hp_bar_text.is_empty():
+                # cleanup will occurr on destroy
+                self.hp_bar_text.hide()
         self.hp_bar_text = DirectLabel(
             parent=self.base,
             text="{}".format(self.name), 
-            text_font=font,
-            text_scale=(scale/4)*3,
+            text_font=self.font,
+            text_scale=(self.scale/4)*3,
             scale=0.1, 
             # 40 -> magic number :)
-            pos=(-0.009, 0, -scale/40), 
+            pos=(-0.009, 0, -self.scale/40), 
             relief=None, 
-            text_fg=(1, 1, 1, 1)
+            text_fg=(0, 0, 0, 0.9)
         )
         self.ui_elements.append(self.hp_bar_text)
-
-        self.accept(event, self.update_value)
-        self.accept(event, self.update_name)
 
     def update_value(self, hp_val: int, depth=0):
         if depth == 2:
@@ -61,19 +71,24 @@ class HpBar(GuiBase):
         try:
             hp_value = max(0, hp_val)
             x_scale = (self.scale * min((hp_value/BASE_HEALTH),1))
-            self.hp_display_bar.setScale(x_scale,1,0.05)
-            self.hp_display_bar.setX(-self.scale + x_scale)
+            self.hp_display_bar.setScale(x_scale*0.92,1,0.042)
+            #self.hp_display_bar.setX(-self.scale + (x_scale * 0.92))
         except:
             # Try again -> there is a weird _optionInfo bug in direct gui that we cannot fix
             self.update_value(hp_val,depth+1)
 
     def update_name(self, new_name: str, depth=0):
+        if depth == 3:
+            self.logger.warning("Could not set name for enemy name: Replacing label instead")
+            self.__create_name_label()
+            return
         try:
             self.hp_bar_text["text"] =  "{}".format(new_name)
         except:
             # Try again -> there is a weird _optionInfo bug in direct gui that we cannot fix
-            self.update_name(new_name,depth+1)
+            self.update_name(new_name,depth=depth+1)
 
     # Overwrite to make cleanup easier
     def removeNode(self):
         pass
+

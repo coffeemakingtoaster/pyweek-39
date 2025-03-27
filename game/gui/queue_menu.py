@@ -4,15 +4,13 @@ from game.gui.gui_base import GuiBase
 from panda3d.core import TransparencyAttrib
 
 from direct.gui.DirectGui import DirectButton, DirectLabel, DirectFrame, DGG
+from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
 
 from game.gui.gui_base import GuiBase
 
 class QueueMenu(GuiBase):
     def __init__(self):
         super().__init__("QueueMenu")
-
-        TEXT_COLOR = (0.82, 0.34, 0.14, 1) #  NEW: rgb(208, 86, 36) (0.82f, 0.34f, 0.14f, 1f)
-        TEXT_ALTERNATE_COLOR = (1.0, 0.84, 0.62, 1) # rgb(255, 214, 159) (1f, 0.84f, 0.62f, 1f)
 
         self.ui_elements = []
         self.menu_elements = []
@@ -34,7 +32,7 @@ class QueueMenu(GuiBase):
                     pos=(-1,0,0), 
                     scale=0.12, 
                     relief=DGG.FLAT, 
-                    text_fg=(TEXT_ALTERNATE_COLOR),
+                    text_fg=(TEXT_SECONDARY_COLOR),
                     #pad = (1, 0.1),
                     frameSize = (-4, 4, -1, 1),
                     text_font=font,
@@ -51,7 +49,7 @@ class QueueMenu(GuiBase):
                     command=self.cancel_queue, 
                     frameTexture = buttonImages,
                     relief=DGG.FLAT, 
-                    text_fg=(TEXT_COLOR),
+                    text_fg=(TEXT_PRIMARY_COLOR),
                     #pad = (1, 0.1),
                     text_font=font,
                     frameSize = (-4, 4, -1, 1),

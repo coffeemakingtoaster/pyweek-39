@@ -1,6 +1,7 @@
 from game.const.events import ENTER_QUEUE_EVENT, GUI_SETTINGS_EVENT, START_GAME_EVENT
 from game.helpers.config import save_config
 from panda3d.core import TextNode, TransparencyAttrib
+from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
 
 from direct.gui.DirectGui import DirectButton, DirectLabel, DirectFrame, DGG
 
@@ -12,9 +13,6 @@ class MainMenu(GuiBase):
     def __init__(self):
         super().__init__("MainMenu")
 
-        TEXT_COLOR = (0.82, 0.34, 0.14, 1) #  NEW: rgb(208, 86, 36) (0.82f, 0.34f, 0.14f, 1f)
-        TEXT_ALTERNATE_COLOR = (1.0, 0.84, 0.62, 1) # rgb(255, 214, 159) (1f, 0.84f, 0.62f, 1f)
-       
         self.ui_elements = []
         self.menu_elements = []
 
@@ -22,7 +20,7 @@ class MainMenu(GuiBase):
         font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
 
         menu_box = DirectFrame( 
-            frameSize=(-1.75, 1.75, -0.2, 0.2),
+            frameSize=(-2, 2, -0.2, 0.2),
             pos=(0, 0, -0.85), 
             frameColor = (1,1,1,1),
             frameTexture = "assets/textures/main_menu_board.png"
@@ -36,7 +34,7 @@ class MainMenu(GuiBase):
                     scale=0.12, 
                     command=self.start_game, 
                     relief=DGG.FLAT, 
-                    text_fg=(TEXT_COLOR),
+                    text_fg=(TEXT_PRIMARY_COLOR),
                     #pad = (1, 0.1),
                     frameTexture = buttonImages,
                     frameSize = (-3, 3, -1, 1),
@@ -53,7 +51,7 @@ class MainMenu(GuiBase):
                     scale=0.12, 
                     command=self.queue_up, 
                     relief=DGG.FLAT, 
-                    text_fg=(TEXT_COLOR),
+                    text_fg=(TEXT_PRIMARY_COLOR),
                     frameTexture = buttonImages,
                     #pad = (1, 0.1),
                     frameSize = (-3, 3, -1, 1),
@@ -70,7 +68,7 @@ class MainMenu(GuiBase):
                     scale=0.12, 
                     command=self.open_settings, 
                     relief=DGG.FLAT, 
-                    text_fg=(TEXT_COLOR),
+                    text_fg=(TEXT_PRIMARY_COLOR),
                     frameTexture = buttonImages,
                     #text_align = TextNode.ACenter, 
                     #pad = (1, 0.1),
@@ -88,7 +86,7 @@ class MainMenu(GuiBase):
                     scale=0.12, 
                     command=self.quit_game, 
                     relief=DGG.FLAT, 
-                    text_fg=(TEXT_COLOR),
+                    text_fg=(1,0,0,1),
                     frameTexture = buttonImages,
                     #text_align = TextNode.ACenter, 
                     #pad = (1, 0.1),

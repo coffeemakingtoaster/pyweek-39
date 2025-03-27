@@ -1,4 +1,5 @@
 from game.const.events import GUI_UPDATE_ANTI_HP, GUI_UPDATE_LATENCY, GUI_UPDATE_PLAYER_HP
+from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
 from game.gui.gui_base import GuiBase
 from panda3d.core import TransparencyAttrib
 
@@ -9,11 +10,7 @@ from game.gui.hp_bar import HpBar
 class Hud(GuiBase):
     def __init__(self):
         super().__init__("HUD")
-
-        TEXT_COLOR = (0.82, 0.34, 0.14, 1) #  NEW: rgb(208, 86, 36) (0.82f, 0.34f, 0.14f, 1f)
-        TEXT_ALTERNATE_COLOR = (1.0, 0.84, 0.62, 1) # rgb(255, 214, 159) (1f, 0.84f, 0.62f, 1f)
-
-        buttonImages = loader.loadTexture("assets/textures/button_bg.png"),
+        
         font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
 
         latency_box = DirectFrame( 
@@ -24,14 +21,13 @@ class Hud(GuiBase):
         )
         latency_box.setTransparency(TransparencyAttrib.MAlpha)
         self.ui_elements.append(latency_box)
- 
 
         self.latency_indicator = DirectLabel(text=("Ping: N/A"),
                     parent=latency_box,
                     pos=(0,0,0.015), 
                     scale=0.12, 
                     relief=DGG.FLAT, 
-                    text_fg=(TEXT_ALTERNATE_COLOR),
+                    text_fg=(TEXT_SECONDARY_COLOR),
                     #pad = (1, 0.1),
                     text_font = font,
                     frameSize = (-2, 2, -0.5, 0.2),
@@ -42,7 +38,7 @@ class Hud(GuiBase):
         self.ui_elements.append(self.latency_indicator)
 
         self.player_hp_bar = HpBar(
-            base_pos=(-1.3,0,-0.85),
+            base_pos=(-1.2,0,-0.85),
             name="Player",
             event=GUI_UPDATE_PLAYER_HP,
         )

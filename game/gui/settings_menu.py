@@ -8,23 +8,23 @@ from direct.gui.DirectGui import DirectButton, DirectCheckButton, DirectEntry, D
 
 from os.path import join
 
+from game.const.colors import TEXT_SECONDARY_COLOR, TEXT_PRIMARY_COLOR
+
 class SettingsMenu(GuiBase):
     def __init__(self) -> None:
         super().__init__("SettingsMenu")
 
-        TEXT_COLOR = (0.82, 0.34, 0.14, 1) #  NEW: rgb(208, 86, 36) (0.82f, 0.34f, 0.14f, 1f)
-        TEXT_ALTERNATE_COLOR = (1.0, 0.84, 0.62, 1) # rgb(255, 214, 159) (1f, 0.84f, 0.62f, 1f)
-        TEXT_BOX_COLOR = (1, 1, 1, 1) # RGB: 235, 198, 81
-
         buttonImages = loader.loadTexture("assets/textures/button_bg.png"),
         font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
+        checkbox_image = loader.loadTexture("assets/textures/checkbox.png")
+        checkbox_checked_image = loader.loadTexture("assets/textures/checkbox_checked.png")
 
         self.menu_elements = []
 
         menu_box = DirectFrame(
-            frameColor=TEXT_BOX_COLOR, 
-            frameSize=(-1.4, 1.4, 0.8, -0.8),
+            frameSize=(-1.4, 1.4, -0.8, 0.8),
             pos=(0, 0, 0), 
+            frameColor = (1,1,1,1),
             frameTexture = "assets/textures/settings_menu_board.png"
         )
         menu_box.setTransparency(TransparencyAttrib.MAlpha)
@@ -36,19 +36,17 @@ class SettingsMenu(GuiBase):
             scale=0.2, 
             pos=(0,0,0.5), 
             relief=None, 
-            text_fg=(TEXT_ALTERNATE_COLOR), 
+            text_fg=(TEXT_SECONDARY_COLOR), 
             text_font = font, 
             text_align = TextNode.ACenter)
         )
-
-        checkbox_image = loader.loadTexture("assets/textures/checkbox.png")
-        checkbox_checked_image = loader.loadTexture("assets/textures/checkbox_checked.png")
 
         self.player_name_input = DirectEntry(
             parent=menu_box,
             text = "", 
             pos = (-0.5, 0, 0.25),
             width=16,
+            frameColor = (1,1,1,1),
             scale=.1, 
             command = self.update_player_name,
             text_align = TextNode.ACenter,
@@ -64,7 +62,7 @@ class SettingsMenu(GuiBase):
         save_player_name_button = DirectButton(
             parent = menu_box,
             text=("Confirm"),
-            text_fg=(TEXT_COLOR),
+            text_fg=(TEXT_PRIMARY_COLOR),
             text_font = font,
             relief=DGG.FLAT,
             pos = (0.5, 0, 0.275),
@@ -72,8 +70,8 @@ class SettingsMenu(GuiBase):
             frameTexture = buttonImages,
             #pad = (1, 0.1),
             frameSize = (-4, 4, -1, 1),
-            text_pos = (0, -0.2),
-            text_scale=0.5,
+            text_pos = (0, -0.25),
+            text_scale=1,
             frameColor = (1,1,1,1),
             command=self.update_player_name_from_button)
         save_player_name_button.setTransparency(TransparencyAttrib.MAlpha)
@@ -91,7 +89,7 @@ class SettingsMenu(GuiBase):
             boxPlacement = 'right',
             boxImageScale = 0.5,
             boxRelief = None,
-            text_fg=(TEXT_ALTERNATE_COLOR),
+            text_fg=(TEXT_SECONDARY_COLOR),
             text_font = font,
             text_scale = 0.7,
             pad = (0.5,0), 
@@ -112,7 +110,7 @@ class SettingsMenu(GuiBase):
             boxRelief = None,
             boxImage = (checkbox_image, checkbox_checked_image),
             boxImageScale = 0.5,
-            text_fg=(TEXT_ALTERNATE_COLOR),
+            text_fg=(TEXT_SECONDARY_COLOR),
             text_font = font,
             text_scale = 0.7,
             pad = (1,0), 
@@ -126,7 +124,7 @@ class SettingsMenu(GuiBase):
             parent = menu_box,
             text="Music volume",
             relief=None, 
-            text_fg=(TEXT_ALTERNATE_COLOR),
+            text_fg=(TEXT_SECONDARY_COLOR),
             text_font = font,
             scale=0.1, 
             pos=(-0.5,0,-0.15)
@@ -155,7 +153,7 @@ class SettingsMenu(GuiBase):
         sfx_slider_text = DirectLabel(
             parent = menu_box,
             text="SFX volume",
-            text_fg=(TEXT_ALTERNATE_COLOR),
+            text_fg=(TEXT_SECONDARY_COLOR),
             text_font = font,
             relief=None,  
             scale=0.1, 
@@ -181,7 +179,7 @@ class SettingsMenu(GuiBase):
         play_sample_sfx_button = DirectButton(
             parent = menu_box,
             text=("Test sound"),
-            text_fg=(TEXT_COLOR),
+            text_fg=(TEXT_PRIMARY_COLOR),
             text_font = font,
             relief=DGG.FLAT,
             pos=(0.5,0,-0.4), 
@@ -190,7 +188,7 @@ class SettingsMenu(GuiBase):
             #pad = (1, 0.1),
             frameSize = (-4, 4, -1, 1),
             text_pos = (0, -0.2),
-            text_scale=0.5,
+            text_scale=1,
             frameColor = (1,1,1,1),
             command=self.play_sample_sound)
         play_sample_sfx_button.setTransparency(TransparencyAttrib.MAlpha)
@@ -199,7 +197,7 @@ class SettingsMenu(GuiBase):
         main_menu_button = DirectButton(
             parent = menu_box,
             text=("Main Menu"),
-            text_fg=(TEXT_COLOR),
+            text_fg=(TEXT_PRIMARY_COLOR),
             text_font = font,
             relief=DGG.FLAT, 
             pos=(0,0,-0.6), 

@@ -150,9 +150,9 @@ class MainGame(ShowBase):
             p = ParticleEffect()
             p.loadConfig(getParticlePath("spray"))
             p.start(parent = render, renderParent = render)
+            p.setPos(-5.5+i*1.8,-8,0.4)
             p.setDepthWrite(False)
             p.setBin("fixed", 0)
-            p.setPos(-5.5+i*0.8,-8,0.4)
 
         self.__add_and_focus_main_menu_player()
 
