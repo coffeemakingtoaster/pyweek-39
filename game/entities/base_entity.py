@@ -36,6 +36,7 @@ class EntityBase(DirectObject.DirectObject):
         self.sweep2 = False
         self.is_dashing = False
         self.hit_handled = False
+        self.dashParticles = []
         
         self.setupSounds()
 
@@ -133,6 +134,8 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath.node().addSolid(swordHitBox)
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         self.swordHitBoxNodePath.reparentTo(sword_joint)
+        
+        self.sword.setShaderOff()
         
         
                
@@ -313,6 +316,7 @@ class EntityBase(DirectObject.DirectObject):
            
     def play_blocked_animation(self):
         self.logger.debug("My attack was blocked")
+        
         self.sword.play("being-blocked")
         
     def start_dash(self,task):
@@ -321,7 +325,13 @@ class EntityBase(DirectObject.DirectObject):
     def end_dash(self,task):
         self.is_dashing = False
         self.vertical_velocity = -0.01
+        taskMgr.doMethodLater(1,self.cleanUpParticles,"cleanUpSplashTask")
         
+    
+    def cleanUpParticles(self,task):
+        for p in self.dashParticles:
+            p.cleanup()
+        self.dashParticles = []
     def start_match_timer(self):
         self.match_timer = 0.0
 
@@ -369,6 +379,27 @@ class EntityBase(DirectObject.DirectObject):
         line_node.reparentTo(render)
 
     def update(self, dt):
+        print(self.body.getPos())
+        if self.is_dashing and self.body.getZ() < 0.8 and self.body.getX() > -5.5 and self.body.getX() < 6 and self.body.getY() < 16 and self.body.getY() > -8:
+            # -5,5 16
+            # 6 16
+            # 6 -8
+            # -5,5 -8
+            p = ParticleEffect()
+            p.loadConfig(getParticlePath("water_dash2"))
+
+            # Ensure the renderer is set before initialization
+            p0 = p.getParticlesList()[0]  # Get the first particle system
+            
+
+            p.start(parent=render, renderParent=render)
+            p.setDepthWrite(False)
+            p.setBin("fixed", 0)
+            p.setPos(self.body.getPos())
+
+            self.dashParticles.append(p)
+            
+            
         if self.inv_phase > 0.0:
             self.inv_phase -= dt
         else:

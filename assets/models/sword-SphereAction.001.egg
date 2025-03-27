@@ -1,0 +1,17 @@
+<CoordinateSystem> { Z-up } 
+<Table> {
+  <Bundle> Armature.001 {
+    <Table> "<skeleton>" {
+      <Table> Bone {
+        <Xfm$Anim> xform {
+          <Scalar> order { sprht }
+          <Scalar> fps { 24 }
+          <Scalar> contents { ijkprhxyz }
+          <V> {
+            0.176558 0.176558 0.176558 90.000003 -0.000000 0.000000 -0.012882 0.000000 0.587981
+          }
+        }
+      }
+    }
+  }
+}

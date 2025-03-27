@@ -85,21 +85,35 @@ class MainGame(ShowBase):
     def buildMap(self):
         """ Build map and place dummy player for main menu """
         
-        dlight = DirectionalLight('my dlight')
-        dlight.color = (0.6,0.6,1.3,1)
+        #dlight = DirectionalLight('my dlight')
+        #dlight.color = (0.6,0.6,1.3,1)
         #dlight.color = (2,2,1.3,1)
-        dlight.setDirection(Vec3(0,-1,-0.5))
-        dlnp = render.attachNewNode(dlight)
+        #dlight.setDirection(Vec3(0,-1,-0.5))
+        #dlnp = render.attachNewNode(dlight)
         #alight = AmbientLight("ambi light")
         #alight.color = (0.1,0.1,0.1,1)
         #ambientnp = render.attachNewNode(alight)
         # Use a 512x512 resolution shadow map
-        dlight.setShadowCaster(True, 512, 512)
+        #dlight.setShadowCaster(True,1028,1028)
         # Enable the shader generator for the receiving nodes
         render.setShaderAuto()
-        render.setLight(dlnp)     
+        
         #render.setLight(ambientnp) 
-        render.setLight(dlnp)
+        #render.setLight(dlnp)
+        
+        # Create a spotlight
+        self.slight = Spotlight('slight')
+        self.slight.setColor((2, 2, 3, 1))  # Set light color
+        self.slight.setShadowCaster(True, 2048, 2048) 
+        
+        slnp = self.render.attachNewNode(self.slight)
+         # Position and rotate the spotlight
+        slnp.setPos(0, 50, 50)  # Position the spotlight
+        slnp.setHpr(0, -135, 0)  # Make the spotlight point at the model
+        self.render.setLight(slnp)
+        
+        #dlight.getLens().setNearFar(1, 100)  # Adjust based on scene scale
+        #dlight.getLens().setFilmSize(50, 50) 
         
         #cubeMap = loader.loadCubeMap(getImagePath("skybox"))
         self.spaceSkyBox = loader.loadModel(getModelPath("skysphere"))
@@ -116,9 +130,23 @@ class MainGame(ShowBase):
         
         self.map = self.loader.loadModel("assets/models/map.egg")
         
+        
+        
         self.map.reparentTo(self.render)
         
         self.map.setZ(-2)
+        self.map.setShaderAuto()
+        
+        
+        
+        self.treeTops = self.loader.loadModel(getModelPath("treeTops"))
+        self.treeTops.reparentTo(self.render)
+        self.treeTops.setZ(-2)
+        self.treeTops.setShaderOff()
+        self.treeTops.setLightOff()
+        
+        
+        
     
         self.waterfall = loader.loadModel("assets/models/box.egg")
         self.waterfall.reparentTo(render)
@@ -150,7 +178,8 @@ class MainGame(ShowBase):
             p = ParticleEffect()
             p.loadConfig(getParticlePath("spray"))
             p.start(parent = render, renderParent = render)
-            p.setPos(-5.5+i*1.8,-8,0.4)
+            p.setPos(-5.5+i*0.8,-8,0.4)
+            
             p.setDepthWrite(False)
             p.setBin("fixed", 0)
 
