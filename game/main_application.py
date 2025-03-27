@@ -7,7 +7,7 @@ from pandac.PandaModules import TransparencyAttrib
 
 
 
-from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, WIN_EVENT
+from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_ANTI_PLAYER_NAME, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.entities.anti_player import AntiPlayer
 from game.entities.player import Player
@@ -279,6 +279,8 @@ class MainGame(ShowBase):
                 player_name=get_player_name(),
                 recv_callback=self.__process_ws_message)
         messenger.send(GUI_PLAY_EVENT)
+        if is_offline:
+            messenger.send(GUI_UPDATE_ANTI_PLAYER_NAME, [self.anti_player.name])
            
     def __process_ws_message(self, msg):
         if self.anti_player is not None:
@@ -294,12 +296,13 @@ class MainGame(ShowBase):
                         messenger.send(WIN_EVENT)
                     case StatusMessages.PLAYER_NAME.value:
                         self.anti_player.set_name(game_status.detail)
+                        messenger.send(GUI_UPDATE_ANTI_PLAYER_NAME, [game_status.detail])
                     case StatusMessages.PLAYER_1.value:
                         self.player.set_player(StatusMessages.PLAYER_1)
-                        self.anti_playerplayer.set_player(StatusMessages.PLAYER_2)
-                    case StatusMessages.PLAYER_1.value:
+                        self.anti_player.set_player(StatusMessages.PLAYER_2)
+                    case StatusMessages.PLAYER_2.value:
                         self.player.set_player(StatusMessages.PLAYER_2)
-                        self.anti_playerplayer.set_player(StatusMessages.PLAYER_1)
+                        self.anti_player.set_player(StatusMessages.PLAYER_1)
                     case StatusMessages.LOBBY_STARTING.value:
                         self.player.start_match_timer()
                         self.anti_player.start_match_timer()

@@ -1,4 +1,4 @@
-from game.const.events import GUI_UPDATE_ANTI_HP, GUI_UPDATE_LATENCY, GUI_UPDATE_PLAYER_HP
+from game.const.events import GUI_UPDATE_ANTI_HP, GUI_UPDATE_ANTI_PLAYER_NAME, GUI_UPDATE_LATENCY, GUI_UPDATE_PLAYER_HP
 from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
 from game.gui.gui_base import GuiBase
 from panda3d.core import TransparencyAttrib
@@ -39,7 +39,7 @@ class Hud(GuiBase):
 
         self.player_hp_bar = HpBar(
             base_pos=(-1.2,0,-0.85),
-            name="Player",
+            name="",
             event=GUI_UPDATE_PLAYER_HP,
         )
         self.ui_elements.append(self.player_hp_bar)
@@ -53,6 +53,7 @@ class Hud(GuiBase):
         self.ui_elements.append(self.anti_hp_bar)
 
         self.accept(GUI_UPDATE_LATENCY, self.__update_latency)
+        self.accept(GUI_UPDATE_ANTI_PLAYER_NAME, self.anti_hp_bar.update_name)
 
     def __update_latency(self, time_ms: float):
         try:
