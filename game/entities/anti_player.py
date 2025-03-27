@@ -217,7 +217,7 @@ class AntiPlayer(EntityBase):
         if update.bodyRotation is not None:
             self.body.setH(update.bodyRotation)
 
-    def update(self, dt):
+    def update(self, dt, player_pos=None):
         super().update(dt)
         self.match_timer += dt
         self.apply_gravity(dt)

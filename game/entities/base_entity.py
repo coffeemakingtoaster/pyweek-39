@@ -34,10 +34,10 @@ class EntityBase(DirectObject.DirectObject):
         self.opposing_collision_mask = ANTI_PLAYER_BIT_MASK if self.id == "player" else PLAYER_BIT_MASK 
         self.move_speed = MOVEMENT_SPEED
         self.health = BASE_HEALTH
-        self.inAttack = False
-        self.inBlock = False
-        self.swordLethality = False
-        self.swordIsBlock = False
+        self.is_in_attack = False
+        self.is_in_block = False
+        self.has_lethal_sword = False
+        self.has_blocking_sword = False
         self.sweep2 = False
         self.is_dashing = False
         self.hit_handled = False
@@ -153,10 +153,10 @@ class EntityBase(DirectObject.DirectObject):
         self.body.setPos(0, 0, 0.5)
         
     def endAttack(self,task):
-        self.inAttack = False
+        self.is_in_attack = False
     
     def endBlock(self,task):
-        self.inBlock = False
+        self.is_in_block = False
     
     def playSound(self,name):
         if name == "sweep":
@@ -170,16 +170,16 @@ class EntityBase(DirectObject.DirectObject):
         self.playSound(name)
         
     def turnSwordLethal(self,task):
-        self.swordLethality = True
+        self.has_lethal_sword = True
         self.swordHitBoxNodePath.node().setCollideMask(self.opposing_collision_mask)
         
     def turnSwordHarmless(self,task):
-        self.swordLethality = False
+        self.has_lethal_sword = False
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         
     def turnSwordBlock(self,task):
         self.logger.debug("block")
-        self.swordIsBlock = True
+        self.has_blocking_sword = True
         # Enable block body
         self.bodyHitBoxBlockedNodePath.node().setCollideMask(self.own_collision_mask)
         self.headHitBoxBlockedNodePath.node().setCollideMask(self.own_collision_mask)
@@ -189,7 +189,7 @@ class EntityBase(DirectObject.DirectObject):
         
     def turnSwordSword(self,task):
         self.logger.debug("unblock")
-        self.swordIsBlock = False
+        self.has_blocking_sword = False
         self.hitBlocked = False
         # Disable block body
         self.bodyHitBoxBlockedNodePath.node().setCollideMask(NO_BIT_MASK)
@@ -201,7 +201,6 @@ class EntityBase(DirectObject.DirectObject):
         #TODO: interrupt block when hit anyway -> this still applicable? @Heuserus
         
     def handle_hit(self,event):
-        print("hit enemy")
         if not self.hit_handled and self.sword.getCurrentAnim() is not None:
             self.hit_handled = True
             animName = self.sword.getCurrentAnim()
@@ -257,7 +256,7 @@ class EntityBase(DirectObject.DirectObject):
         if not self.__collision_into_was_from_behind(entry.getFromNodePath()):
             if self.hitBlocked:
                 return
-            if self.swordIsBlock:
+            if self.has_blocking_sword:
                 self.hitBlocked = True
                 self.handle_block()
                 return
@@ -279,7 +278,7 @@ class EntityBase(DirectObject.DirectObject):
             if self.hitBlocked:
                 return
         
-            if self.swordIsBlock:
+            if self.has_blocking_sword:
                 self.hitBlocked = True
                 self.handle_block()
                 return
@@ -296,13 +295,12 @@ class EntityBase(DirectObject.DirectObject):
     
     def handle_block(self):
         self.logger.debug("I blocked an attack")
-        self.inBlock = False
-        self.inAttack = False
+        self.is_in_block = False
+        self.is_in_attack = False
         self.playSound("blocked_hit")
         base.taskMgr.doMethodLater(0, self.turnSwordSword,f"{self.id}-makeSwordSword")
         
     def handle_blocked_hit(self,entry):
-        print("hit got blocked")
         if not self.hit_handled:
             if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
                 self.logger.debug("Was from behind, no block occured")
@@ -322,7 +320,7 @@ class EntityBase(DirectObject.DirectObject):
     def cleanse_block_stun(self, task):
         self.is_block_stunned = False
         self.is_dashing = False
-        self.inAttack = False
+        self.is_in_attack = False
         
     def start_dash(self,task):
         self.is_dashing = True
@@ -392,8 +390,11 @@ class EntityBase(DirectObject.DirectObject):
         line_node = NodePath(lines.create())
         line_node.reparentTo(render)
 
+    def getPos(self, ref: NodePath):
+        """ Stupid wrapper to avoid having to write .body in bot """
+        return self.body.getPos(ref)
+
     def update(self, dt):
-        
         if self.is_dashing and self.body.getZ() < 0.8 and self.body.getX() > -5.5 and self.body.getX() < 6 and self.body.getY() < 16 and self.body.getY() > -8:
             # -5,5 16
             # 6 16
@@ -412,7 +413,6 @@ class EntityBase(DirectObject.DirectObject):
             p.setPos(self.body.getPos())
 
             self.dashParticles.append(p)
-            
             
         if self.inv_phase > 0.0:
             self.inv_phase -= dt

@@ -12,6 +12,7 @@ from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVEN
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.const.player import MAIN_MENU_CAMERA_HEIGHT, MAIN_MENU_CAMERA_ROTATION_RADIUS, MAIN_MENU_CAMERA_ROTATION_SPEED, MAIN_MENU_PLAYER_POSITION
 from game.entities.anti_player import AntiPlayer
+from game.entities.bot import Bot
 from game.entities.player import Player
 from game.helpers.config import get_player_name, load_config
 from game.helpers.helpers import *
@@ -55,7 +56,7 @@ class MainGame(ShowBase):
         self.mouse_locked = False
 
         self.player: None | Player = None
-        self.anti_player: None | AntiPlayer  = None
+        self.anti_player: None | AntiPlayer | Bot = None
 
         # Setup gui handling
         self.gui_manager = GuiManager()
@@ -288,7 +289,6 @@ class MainGame(ShowBase):
             self.player.destroy()
         self.player = Player(self.camera,self.win, self.is_online)
         
-        self.anti_player = AntiPlayer(self.win, self.is_online)
         # Reset rotation after main menu 
         self.camera.setHpr(0,0,0)
         self.camera.reparentTo(self.player.head)
@@ -299,12 +299,14 @@ class MainGame(ShowBase):
         if is_offline:
             self.logger.info("Starting game in offline mode...")
             self.match_id = None
+            self.anti_player = Bot(self.win)
             self.player.set_player(StatusMessages.PLAYER_1)
             self.anti_player.set_player(StatusMessages.PLAYER_2)
             self.player.start_match_timer()
             self.anti_player.start_match_timer()
         else:
             self.logger.info("Starting online game...")
+            self.anti_player = AntiPlayer(self.win, self.is_online)
             if self.queue_task is not None:
                 self.queue_task.remove()
             self.queue_task = None
@@ -315,7 +317,7 @@ class MainGame(ShowBase):
                 recv_callback=self.__process_ws_message)
         messenger.send(GUI_PLAY_EVENT)
         if is_offline:
-            messenger.send(GUI_UPDATE_ANTI_PLAYER_NAME, [self.anti_player.name])
+            messenger.send(GUI_UPDATE_ANTI_PLAYER_NAME, [generate_name()])
            
     def __process_ws_message(self, msg):
         if self.anti_player is not None:
@@ -378,11 +380,11 @@ class MainGame(ShowBase):
             return Task.cont
 
         self.player.update(dt)
-        self.anti_player.update(dt)
 
         if self.is_online:
+            self.anti_player.update(dt)
             self.__main_loop_online(dt)
             return Task.cont
         else:
-            pass
+            self.anti_player.update(dt, self.player)
         return Task.cont
