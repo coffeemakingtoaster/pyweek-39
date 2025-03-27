@@ -150,6 +150,8 @@ class MainGame(ShowBase):
             p = ParticleEffect()
             p.loadConfig(getParticlePath("spray"))
             p.start(parent = render, renderParent = render)
+            p.setDepthWrite(False)
+            p.setBin("fixed", 0)
             p.setPos(-5.5+i*0.8,-8,0.4)
 
         self.__add_and_focus_main_menu_player()
@@ -225,11 +227,18 @@ class MainGame(ShowBase):
             props.setCursorHidden(True)
             base.win.requestProperties(props)
     
+    def startLoopMusic(self,task):
+        self.background_music = base.loader.loadMusic(getMusicPath("music_mid"))
+        self.background_music.setLoop(True)
+        self.background_music.play()
+        
     
     def __start_game(self, match_id="", is_offline=True):
         
-        self.background_music = base.loader.loadMusic(getImagePath("music_start"))
+        self.background_music = base.loader.loadMusic(getMusicPath("music_start"))
         self.background_music.play()
+        taskMgr.doMethodLater(70.171,self.startLoopMusic,"startLoopMusicTask")
+        
         self.is_online = not is_offline
         base.disableMouse()
         self.toggle_mouse()

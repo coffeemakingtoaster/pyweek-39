@@ -22,6 +22,10 @@ def getMusicPath(name):
     file_path = os.path.join(os.getcwd(), "assets", "music", name+".mp3")
     return Filename.fromOsSpecific(file_path).getFullpath()
 
+def getSoundPath(name):
+    file_path = os.path.join(os.getcwd(), "assets", "sfx", name+".mp3")
+    return Filename.fromOsSpecific(file_path).getFullpath()
+
 def normal_to_hpr(normal):
     # Normalize the normal vector
     normal = normal.normalized()

@@ -6,6 +6,7 @@ from game.helpers.helpers import *
 from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue
 from shared.types.player_info import PlayerAction, PlayerInfo, Vector
 
+
 class Player(EntityBase):
     def __init__(self,camera,window,online, non_interactive=False) -> None:
         super().__init__(window, "player", online, "Player")
@@ -28,6 +29,8 @@ class Player(EntityBase):
         self.accept("lshift", self.stab)
         self.accept("mouse1",self.sweep)
         self.accept("mouse3", self.block)
+        
+        
 
     def set_movement_status(self, direction):
         self.movement_status[direction] = 1
@@ -44,6 +47,7 @@ class Player(EntityBase):
         if not self.inAttack:
             self.inAttack = True
             self.inBlock = False
+            base.taskMgr.doMethodLater(5/24,self.playSoundLater,"stab")
             self.sword.play("stab")
             frames = self.sword.getAnimControl("stab").getNumFrames()
             base.taskMgr.doMethodLater(25/24,self.turnSwordLethal,"player-makeSwordLethalTask")
@@ -57,6 +61,8 @@ class Player(EntityBase):
         if not self.inAttack:
             self.inAttack = True
             self.inBlock = False
+            base.taskMgr.doMethodLater(14/24,self.playSoundLater,"sweep")
+            
             if self.sweep2:
                 self.sword.play("sweep2")
                 self.sweep2 = False
@@ -64,7 +70,7 @@ class Player(EntityBase):
                 self.sword.play("sweep")
                 self.sweep2 = True
             frames = self.sword.getAnimControl("sweep").getNumFrames()
-            base.taskMgr.doMethodLater(7/24,self.turnSwordLethal,"player-makeSwordLethalTask")
+            base.taskMgr.doMethodLater(10/24,self.turnSwordLethal,"player-makeSwordLethalTask")
             base.taskMgr.doMethodLater(30/24,self.turnSwordHarmless,"player-makeSwordHarmlessTask")
             base.taskMgr.doMethodLater(frames/24,self.endAttack,"player-endAttackTask")
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.SWEEP_1 if self.sweep else PlayerAction.SWEEP_2], action_offsets=[self.match_timer], health=self.health)])

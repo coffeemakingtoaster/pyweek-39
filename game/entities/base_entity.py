@@ -15,6 +15,7 @@ from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule,
 from game.utils.scene_graph import traverse_parents_until_name_is_matched
 from direct.particles.ParticleEffect import ParticleEffect
 from game.helpers.helpers import *
+import random
 
 class EntityBase(DirectObject.DirectObject):
     def __init__(self, window, id: str, online: bool, name="BaseEntity"):
@@ -35,6 +36,8 @@ class EntityBase(DirectObject.DirectObject):
         self.sweep2 = False
         self.is_dashing = False
         self.hit_handled = False
+        
+        self.setupSounds()
 
 
         self.vertical_velocity = 0
@@ -75,6 +78,15 @@ class EntityBase(DirectObject.DirectObject):
         self.inv_phase = 0.0
         self.current_hit_has_critted = False
 
+    def setupSounds(self):
+        self.sweepingSounds = []
+        self.hitSounds = []
+        for i in range(7):
+            self.sweepingSounds.append(base.loader.loadSfx(getSoundPath("swipe"+str(i+1))))
+        for i in range(4):
+            self.hitSounds.append(base.loader.loadSfx(getSoundPath("hit"+str(i+1))))
+    
+    
     def __construct(self):
         self.body = Actor(getModelPath("body"))
         self.body.setName("body")
@@ -116,7 +128,7 @@ class EntityBase(DirectObject.DirectObject):
         self.sword.reparentTo(self.head)
         
         sword_joint = self.sword.exposeJoint(None, "modelRoot", "Bone")
-        swordHitBox = CollisionCapsule(0, 5, 0, 0, 1, 0, 1)
+        swordHitBox = CollisionCapsule(0, 5, 0, 0, 1, 0, 0.3)
         self.swordHitBoxNodePath = self.sword.attachNewNode(CollisionNode(f"{self.id}-sHbnp"))
         self.swordHitBoxNodePath.node().addSolid(swordHitBox)
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
@@ -135,8 +147,20 @@ class EntityBase(DirectObject.DirectObject):
     
     def endBlock(self,task):
         self.inBlock = False
+    
+    def playSound(self,name):
+        if name == "sweep":
+            random.choice(self.sweepingSounds).play()
+        elif name == "hit":
+            random.choice(self.hitSounds).play()
+        else:
+            base.loader.loadSfx(getSoundPath(name)).play()
+    
+    def playSoundLater(self,task):
+        self.playSound(task.name)
         
     def turnSwordLethal(self,task):
+        
         
         self.swordLethality = True
         self.swordHitBoxNodePath.node().setCollideMask(self.opposing_collision_mask)
@@ -170,7 +194,7 @@ class EntityBase(DirectObject.DirectObject):
         
     def handle_hit(self,event):
         print("hit enemy")
-        if not self.hit_handled:
+        if not self.hit_handled and self.sword.getCurrentAnim() is not None:
             
             
             self.hit_handled = True
@@ -206,13 +230,15 @@ class EntityBase(DirectObject.DirectObject):
         blood.removeNode()
 
     def take_damage(self, damage_value: int):
+        
+        self.playSound("hit")
         self.health -= damage_value
         self.logger.debug(f"Now at {self.health} HP")
         messenger.send(GUI_UPDATE_PLAYER_HP if self.id == "player" else GUI_UPDATE_ANTI_HP, [self.health])
         # Server handles online win states
         if self.online:
             return
-        if self.health == 0:
+        if self.health <= 0:
             if self.id == "player":
                 messenger.send(DEFEAT_EVENT)
             else:
@@ -259,15 +285,21 @@ class EntityBase(DirectObject.DirectObject):
         # Direct head hit
         if self.inv_phase <= 0:
             self.current_hit_has_critted = True
-            self.take_damage(2)
+            self.take_damage(1)
             self.inv_phase = POST_HIT_INV_DURATION
         # Hit that hit body first, then head
         elif not self.current_hit_has_critted and self.inv_phase >= 0:
             self.current_hit_has_critted = True
-            self.take_damage(1)
+            #self.take_damage(1)
     
     def handle_block(self):
+    
         self.logger.debug("I blocked an attack")
+        self.inBlock = False
+        self.inAttack = False
+        self.playSound("blocked_hit")
+        base.taskMgr.doMethodLater(0, self.turnSwordSword,f"{self.id}-makeSwordSword")
+
         
     def handle_blocked_hit(self,entry):
         print("hit got blocked")
