@@ -4,7 +4,6 @@ ENTER_QUEUE_EVENT = "enter_queue"
 CANCEL_QUEUE_EVENT = "cancel_queue"
 WIN_EVENT = "win"
 DEFEAT_EVENT = "defeat"
-SET_USERNAME_EVENT = "set_username"
 
 # Networking events
 NETWORK_SEND_PRIORITY_EVENT = "network_priority"

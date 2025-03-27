@@ -7,13 +7,15 @@ from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,Colli
 from shared.types.player_info import PlayerAction, PlayerInfo, Vector
 
 class Player(EntityBase):
-    def __init__(self,camera,window,online) -> None:
+    def __init__(self,camera,window,online, non_interactive=False) -> None:
         super().__init__(window, "player", online, "Player")
         self.mouse_sens = 0.1 #MOUSE_SENS
         self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
         self.camera = camera
                 
         # Keybinds for movement
+        if non_interactive:
+            return
         self.accept("a", self.set_movement_status, ["left"])
         self.accept("a-up", self.unset_movement_status, ["left"])
         self.accept("d", self.set_movement_status, ["right"])
@@ -113,11 +115,12 @@ class Player(EntityBase):
             self.vertical_velocity = direction.z * DASH_SPEED
             direction.z = 0
             move_vec += direction * DASH_SPEED
-            
         return move_vec
     
     def update(self, dt):
-        #self.draw_debug_ray(self.head.getPos(),(self.head.getPos()+render.getRelativeVector(self.head, Vec3.forward())))
+        # player has been destroyed
+        if self.body.isEmpty():
+            return
         super().update(dt)
         self.match_timer += dt
         self.update_camera(dt)
