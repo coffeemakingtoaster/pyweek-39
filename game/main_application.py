@@ -231,7 +231,6 @@ class MainGame(ShowBase):
         self.background_music = base.loader.loadMusic(getMusicPath("music_mid"))
         self.background_music.setLoop(True)
         self.background_music.play()
-        
     
     def __start_game(self, match_id="", is_offline=True):
         
@@ -243,14 +242,12 @@ class MainGame(ShowBase):
         base.disableMouse()
         self.toggle_mouse()
         
-        
         '''
         testbox = CollisionSphere(0,0,0,3)
         testboxNode = render.attachNewNode(CollisionNode("testbox"))
         testboxNode.node().addSolid(testbox)
         testboxNode.show()
         '''
-        
        
         if self.player is not None:
             self.player.destroy()
@@ -267,6 +264,8 @@ class MainGame(ShowBase):
         if is_offline:
             self.logger.info("Starting game in offline mode...")
             self.match_id = None
+            self.player.set_player(StatusMessages.PLAYER_1)
+            self.anti_player.set_player(StatusMessages.PLAYER_2)
             self.player.start_match_timer()
             self.anti_player.start_match_timer()
         else:
@@ -295,6 +294,12 @@ class MainGame(ShowBase):
                         messenger.send(WIN_EVENT)
                     case StatusMessages.PLAYER_NAME.value:
                         self.anti_player.set_name(game_status.detail)
+                    case StatusMessages.PLAYER_1.value:
+                        self.player.set_player(StatusMessages.PLAYER_1)
+                        self.anti_playerplayer.set_player(StatusMessages.PLAYER_2)
+                    case StatusMessages.PLAYER_1.value:
+                        self.player.set_player(StatusMessages.PLAYER_2)
+                        self.anti_playerplayer.set_player(StatusMessages.PLAYER_1)
                     case StatusMessages.LOBBY_STARTING.value:
                         self.player.start_match_timer()
                         self.anti_player.start_match_timer()
