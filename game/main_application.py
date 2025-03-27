@@ -1,4 +1,5 @@
 import logging
+import math
 from direct.task.Task import Task, messenger
 from panda3d.core import *
 
@@ -9,6 +10,7 @@ from pandac.PandaModules import TransparencyAttrib
 
 from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_ANTI_PLAYER_NAME, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
+from game.const.player import MAIN_MENU_CAMERA_HEIGHT, MAIN_MENU_CAMERA_ROTATION_RADIUS, MAIN_MENU_CAMERA_ROTATION_SPEED, MAIN_MENU_PLAYER_POSITION
 from game.entities.anti_player import AntiPlayer
 from game.entities.player import Player
 from game.helpers.config import get_player_name, load_config
@@ -81,6 +83,8 @@ class MainGame(ShowBase):
         self.ws: None | MatchWS = None
 
         self.time_since_last_package: int = 1_000_000
+        self.camera_angle = 0
+
         self.buildMap()
 
     def buildMap(self):
@@ -191,8 +195,9 @@ class MainGame(ShowBase):
         if self.player is not None:
             self.player.destroy()
         self.player = Player(self.camera, self.win, False, non_interactive=True)
-        self.player.body.setPos(0.2, -7, 0.5)
+        self.player.body.setPos(MAIN_MENU_PLAYER_POSITION)
         self.camera.reparentTo(render)
+        self.camera_angle = 0
         
     def shiftWaterfallTextureTask(self,task):
         self.waterfall.setTexOffset(self.textureStage0, 0, (task.time*2) % 1.0 )
@@ -354,13 +359,22 @@ class MainGame(ShowBase):
             self.ws.send_game_data(packet)
             self.time_since_last_package = 0
 
+    def rotate_camera(self, dt):
+        self.camera_angle += MAIN_MENU_CAMERA_ROTATION_SPEED * dt
+
+        # Compute new position
+        x = MAIN_MENU_PLAYER_POSITION.x +  MAIN_MENU_CAMERA_ROTATION_RADIUS * math.cos(self.camera_angle)
+        y = MAIN_MENU_PLAYER_POSITION.y + MAIN_MENU_CAMERA_ROTATION_RADIUS * math.sin(self.camera_angle)
+
+        # Set camera position and look at the center
+        self.camera.setPos(x, y, MAIN_MENU_CAMERA_HEIGHT)
+        self.camera.lookAt(self.player.body)
+
     def __main_loop(self, task):
         dt = self.clock.dt
 
         if self.gui_manager.gui_state_machine.getCurrentOrNextState() != GuiStates.RUNNING.value:
-            # This is a bit hacky...but oh well :)
-            self.camera.setPos(0, 9, 5)
-            self.camera.lookAt(self.player.body)
+            self.rotate_camera(dt)
             return Task.cont
 
         self.player.update(dt)
