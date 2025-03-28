@@ -6,8 +6,9 @@ on:
       - 'server/**.py'
       - 'shared/**.py'
       - '.github/workflows/*.yml'
-    #branches:
-      #- main
+    branches:
+      - main
+      - 'test/attacker-auth'
     tags:
       - '*'
 
