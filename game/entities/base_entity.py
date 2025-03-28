@@ -79,6 +79,9 @@ class EntityBase(DirectObject.DirectObject):
         self.hitBlocked = False
         self.inv_phase = 0.0
         self.current_hit_has_critted = False
+        
+        self.particle_owner = self.body.attachNewNode("particle_owner")
+        self.particle_owner.setShaderOff()
 
     def setupSounds(self):
         self.sweepingSounds = []
@@ -220,7 +223,7 @@ class EntityBase(DirectObject.DirectObject):
             emitter.setExplicitLaunchVector(normal)
             
             p.setScale(1)
-            p.start(parent = render, renderParent = render)
+            p.start(parent = self.particle_owner, renderParent = self.particle_owner)
             taskMgr.doMethodLater(2/24,self.continueStrike,"continueStrike",extraArgs=[animName,frame],appendTask=True)
             taskMgr.doMethodLater(1,self.hitOver,"hitOver",extraArgs=[p],appendTask=True)
 
@@ -409,7 +412,7 @@ class EntityBase(DirectObject.DirectObject):
             p0 = p.getParticlesList()[0]  # Get the first particle system
             
 
-            p.start(parent=render, renderParent=render)
+            p.start(parent=self.particle_owner, renderParent=self.particle_owner)
             p.setDepthWrite(False)
             p.setBin("fixed", 0)
             p.setPos(self.body.getPos())

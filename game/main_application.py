@@ -176,42 +176,13 @@ class MainGame(ShowBase):
         self.waterFallMaker(self.waterfall)
         self.waterFallMaker(self.waterfall2)
         
-        '''
-        self.waterfall = loader.loadModel(getModelPath("waterfall"))
-        self.waterfall.reparentTo(render)
-        self.waterfall.setTransparency(TransparencyAttrib.MAlpha)
-        self.waterfall.setPos(0,0,-2)
-        
-
-        texture2 = loader.loadTexture(getImagePath("transWater2"))
-        texture = loader.loadTexture(getImagePath("transWater"))
-        transTexture = loader.loadTexture(getImagePath("blue"))
-        
-        self.waterfall.setTexture(transTexture)
-        self.textureStage0 = self.waterfall.findTextureStage("pxArt (8).png")
-        self.textureStage0.setMode(TextureStage.MBlend)
-        
-        self.waterfall.setTexture(self.textureStage0,texture,1)
-        self.waterfall.setTexScale(self.textureStage0, 2, 2)
-        
-        self.textureStage1 = copy.copy(self.textureStage0)
-        self.textureStage1.setMode(TextureStage.MAdd)
-        
-        self.waterfall.setTexture(self.textureStage1,texture,1)
-        self.waterfall.setTexScale(self.textureStage1, 1, 1)
-
-        add_3d_sound_to_node("waterfall", self.waterfall)
-
-        taskMgr.add(self.shiftWaterfallTextureTask,"shift Task")
-        
-        '''
-       
+        self.particle_owner = render.attachNewNode("particle_owner")
+        self.particle_owner.setShaderOff()
         
         for i in range(15):
             p = ParticleEffect()
-            p.setShaderOff()
             p.loadConfig(getParticlePath("spray"))
-            p.start(parent = render, renderParent = render)
+            p.start(parent = self.particle_owner, renderParent = self.particle_owner)
             p.setPos(-5.5+i*0.8,-8,0.4)
             
             p.setDepthWrite(False)
