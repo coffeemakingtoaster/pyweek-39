@@ -1,14 +1,9 @@
-import math
 import random
-from typing import Tuple
-from game.const.events import NETWORK_SEND_PRIORITY_EVENT
-from game.const.player import BASE_HEALTH, BOT_WAIT_TIME_BETWEEN_ACTION_CHECKS, DASH_SPEED, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
+from game.const.player import BOT_WAIT_TIME_BETWEEN_ACTION_CHECKS, DASH_SPEED, JUMP_VELOCITY, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
-from direct.actor.Actor import Actor
 from game.entities.player import Player
 from game.helpers.helpers import *
-from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue
-from shared.types.player_info import PlayerAction, PlayerInfo, Vector
+from panda3d.core import Vec3
 
 class Bot(EntityBase):
     def __init__(self,window) -> None:
@@ -138,4 +133,3 @@ class Bot(EntityBase):
         moveVec *= dt
         #moveVec = self.apply_world_border_correction(moveVec)
         self.body.setFluidPos(self.body, Vec3(moveVec.x, moveVec.y, moveVec.z  * dt))
-

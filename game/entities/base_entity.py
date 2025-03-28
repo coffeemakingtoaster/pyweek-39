@@ -254,9 +254,6 @@ class EntityBase(DirectObject.DirectObject):
 
     def handle_body_damage(self, entry):
         self.logger.debug("My body was hit")
-        if self.is_puppet:
-            return
-
         # ensure that this is the sword in case any topology is changed at some point
         assert entry.getFromNodePath().getName().endswith("-sHbnp")
 
@@ -267,20 +264,15 @@ class EntityBase(DirectObject.DirectObject):
                 self.hitBlocked = True
                 self.handle_block()
                 return
-        
+
         if self.inv_phase <= 0.0:
             self.current_hit_has_critted = False
             self.take_damage(1)
             self.inv_phase = POST_HIT_INV_DURATION
 
     def handle_head_damage(self, entry):
-         # Do not calculate damage for enemy
-        if self.is_puppet:
-            return
-
         # ensure that this is the sword in case any topology is changed at some point
         assert entry.getFromNodePath().getName().endswith("-sHbnp")
-
         if not self.__collision_into_was_from_behind(entry.getFromNodePath()):
             if self.hitBlocked:
                 return
@@ -302,6 +294,7 @@ class EntityBase(DirectObject.DirectObject):
     
     def handle_block(self):
         self.logger.debug("I blocked an attack")
+        self.inv_phase = 0.1
         self.is_in_block = False
         self.is_in_attack = False
         base.taskMgr.doMethodLater(0, self.turnSwordSword,f"{self.id}-makeSwordSword")
@@ -312,6 +305,7 @@ class EntityBase(DirectObject.DirectObject):
             if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
                 self.logger.debug("Was from behind, no block occured")
                 return
+            self.turnSwordSword(None)
             self.end_dash(None)
             self.endAttack(None)
             taskMgr.remove(f"{self.id}-endAttackTask")

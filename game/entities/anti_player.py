@@ -141,7 +141,6 @@ class AntiPlayer(EntityBase):
             base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name,extraArgs=extraArgs)
             return
         base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name)
-
     
     def handleSwordCollisionEnd(self,entry):
         self.logger.debug(f"no longer colliding with {entry}")

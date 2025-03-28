@@ -199,7 +199,6 @@ class MainGame(ShowBase):
         '''
 
     def waterFallMaker(self,waterfall):
-        
         waterfall.reparentTo(render)
         waterfall.setTransparency(TransparencyAttrib.MAlpha)
         waterfall.setPos(0,0,-2)
@@ -222,7 +221,7 @@ class MainGame(ShowBase):
         waterfall.setTexture(textureStage1,texture,1)
         waterfall.setTexScale(textureStage1, 1, 1)
 
-        add_3d_sound_to_node("waterfall", self.waterfall)
+        add_3d_sound_to_node("waterfall", self.waterfall, delay=1)
 
         taskMgr.add(self.shiftWaterfallTextureTask,("shift Task")+str(self.waterfallCount),extraArgs=[waterfall,textureStage0,textureStage1],appendTask = True)
     
