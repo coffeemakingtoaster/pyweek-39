@@ -211,6 +211,7 @@ class EntityBase(DirectObject.DirectObject):
             anim = self.sword.getAnimControl(animName)
             frame = anim.getFrame()
             anim.pose(frame)
+
             p = ParticleEffect()
             p.setShaderOff()
             p.loadConfig(getParticlePath("blood2"))
@@ -221,6 +222,8 @@ class EntityBase(DirectObject.DirectObject):
             emitter = p0.getEmitter()
             
             emitter.setExplicitLaunchVector(normal)
+
+            self.playSound("hit")
             
             p.setScale(1)
             p.start(parent = self.particle_owner, renderParent = self.particle_owner)
@@ -238,7 +241,6 @@ class EntityBase(DirectObject.DirectObject):
         blood.removeNode()
 
     def take_damage(self, damage_value: int):
-        self.playSound("hit")
         self.health -= damage_value
         self.logger.debug(f"Now at {self.health} HP")
         messenger.send(GUI_UPDATE_PLAYER_HP if self.id == "player" else GUI_UPDATE_ANTI_HP, [self.health])

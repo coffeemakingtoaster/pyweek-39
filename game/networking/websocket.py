@@ -1,6 +1,7 @@
 from dataclasses import asdict
 import logging
-from game.const.networking import HOST
+from time import time
+from game.const.networking import HOST, TIME_BETWEEN_PACKAGES_IN_S
 from ws4py.client.threadedclient import WebSocketClient
 
 from shared.types.player_info import PlayerInfo
@@ -14,6 +15,7 @@ class MatchWS(WebSocketClient):
         self.connected = False
         self.connect()
         self.last_packet: PlayerInfo = PlayerInfo()
+        self.last_packet_time = time()
 
     def opened(self):
         self.logger.info("Match connection established...")
@@ -27,12 +29,14 @@ class MatchWS(WebSocketClient):
         if not self.connected:
             self.logger.error("Tried to send websocket data but connection was not yet established.")
             return
+
         # Don't send duplicate packages
-        if self.last_packet.__hash__() == data.__hash__():
+        if self.last_packet.__hash__() == data.__hash__() and time() - self.last_packet_time > (TIME_BETWEEN_PACKAGES_IN_S * 4):
             return
 
         self.send(data.to_bytes(), binary=True)
         self.last_packet = data
+        self.last_packet_time = time()
 
     def received_message(self, message):
         if message.is_text:
