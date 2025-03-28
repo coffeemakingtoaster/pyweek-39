@@ -10,8 +10,9 @@ from direct.task.Task import messenger
 
 from game.const import player
 from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, NO_BIT_MASK, PLAYER_BIT_MASK
-from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, WIN_EVENT
+from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, NETWORK_SEND_PRIORITY_EVENT, WIN_EVENT
 from game.const.player import ALLOWED_WORD_CENTER_DISTANCE, BASE_HEALTH, BLOCK_RANGE_DEG, GRAVITY, MOVEMENT_SPEED, PLAYER_1_SPAWN, PLAYER_2_SPAWN, POST_HIT_INV_DURATION, WORLD_CENTER_POINT
+from game.helpers.config import is_attacker_authority
 from game.helpers.helpers import getModelPath
 from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule, CollisionHandlerEvent, LineSegs, NodePath, Mat3,Quat
 
@@ -20,6 +21,7 @@ from direct.particles.ParticleEffect import ParticleEffect
 from game.helpers.helpers import *
 import random
 
+from shared.types.player_info import PlayerAction, PlayerInfo
 from shared.types.status_message import StatusMessages
 
 class EntityBase(DirectObject.DirectObject):
@@ -148,7 +150,6 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath.reparentTo(sword_joint)
         
         self.sword.setShaderOff()
-        
                
         self.sword.setPos(0, 0.2, 0)
     
@@ -203,9 +204,32 @@ class EntityBase(DirectObject.DirectObject):
         self.headHitBoxNodePath.node().setCollideMask(self.own_collision_mask)
 
         #TODO: interrupt block when hit anyway -> this still applicable? @Heuserus
+
+    def show_sword_hit(self, start, direction):
+        self.playSound("hit")
+        p = ParticleEffect()
+        p.setShaderOff()
+        p.loadConfig(getParticlePath("blood2"))
+        p.setPos(start)
         
-    def handle_hit(self,event):
+        p0 = p.getParticlesList()[0]  # Get the first particle system
+        emitter = p0.getEmitter()
+        
+        emitter.setExplicitLaunchVector(direction)
+        
+        p.setScale(1)
+        p.start(parent = self.particle_owner, renderParent = self.particle_owner)
+
+
+        taskMgr.doMethodLater(1, self.hitOver,"hitOver", extraArgs=[p], appendTask=True)
+
+    def handle_hit(self, event):
+        """I hit an enemy"""
         if not self.hit_handled and self.sword.getCurrentAnim() is not None:
+            if self.is_puppet and is_attacker_authority():
+                self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
+                return
+
             self.hit_handled = True
             animName = self.sword.getCurrentAnim()
             
@@ -213,26 +237,15 @@ class EntityBase(DirectObject.DirectObject):
             frame = anim.getFrame()
             anim.pose(frame)
 
-            p = ParticleEffect()
-            p.setShaderOff()
-            p.loadConfig(getParticlePath("blood2"))
-            p.setPos(event.getSurfacePoint(render))
-            normal = event.getSurfaceNormal(render)
+            self.show_sword_hit(event.getSurfacePoint(render), event.getSurfaceNormal(render))
             
-            p0 = p.getParticlesList()[0]  # Get the first particle system
-            emitter = p0.getEmitter()
-            
-            emitter.setExplicitLaunchVector(normal)
-
-            self.playSound("hit")
-            
-            p.setScale(1)
-            p.start(parent = self.particle_owner, renderParent = self.particle_owner)
             taskMgr.doMethodLater(2/24,self.continueStrike,"continueStrike",extraArgs=[animName,frame],appendTask=True)
-            taskMgr.doMethodLater(1,self.hitOver,"hitOver",extraArgs=[p],appendTask=True)
             # Does this work in online?
-            self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
-
+            '''
+            if not self.is_puppet:
+                messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.DEAL_DAMAGE], action_offsets=[self.match_timer])])
+            '''
+            
     def continueStrike(self,animName,frame,task):
         self.sword.play(animName,fromFrame=frame)
         
@@ -241,13 +254,22 @@ class EntityBase(DirectObject.DirectObject):
         blood.cleanup()
         blood.removeNode()
 
-    def take_damage(self, damage_value: int):
+    def take_damage(self, damage_value: int, force = False):
+        # Player only takes damage after network said so
+        #if self.id == "player" and is_attacker_authority():
+            #if self.online and not force:
+                #self.logger.debug("Skipped own damage as we wait for server")
+                #return
+            #self.logger.debug("Network update own health")
+
         self.health -= damage_value
         self.logger.debug(f"Now at {self.health} HP")
         messenger.send(GUI_UPDATE_PLAYER_HP if self.id == "player" else GUI_UPDATE_ANTI_HP, [self.health])
         # Server handles online win states
         if self.online:
-            return
+            if self.is_puppet:
+                messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.DEAL_DAMAGE], action_offsets=[self.match_timer])])
+
         if self.health <= 0:
             if self.id == "player":
                 messenger.send(DEFEAT_EVENT)
@@ -301,26 +323,38 @@ class EntityBase(DirectObject.DirectObject):
         self.is_in_block = False
         self.is_in_attack = False
         base.taskMgr.doMethodLater(0, self.turnSwordSword,f"{self.id}-makeSwordSword")
-        
-    def handle_blocked_hit(self,entry):
-        self.logger.debug("My attack was blocked")
-        if not self.hit_handled:
+                
+    def handle_blocked_hit(self, entry, force=False, frame_offset=0):
+        if self.is_puppet and is_attacker_authority() and not force:
+            return
+
+        self.logger.debug(f"My attack was blocked {force}")
+        if self.hit_handled and not force:
+            return
+
+        # force is over network...no need to verify that
+        if not force:
             if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
-                self.logger.debug("Was from behind, no block occured")
-                return
-            self.turnSwordSword(None)
-            self.end_dash(None)
-            self.endAttack(None)
-            taskMgr.remove(f"{self.id}-endAttackTask")
-            self.play_blocked_animation()
+                    self.logger.debug("Was from behind, no block occured")
+                    return
+        self.turnSwordSword(None)
+        self.end_dash(None)
+        self.endAttack(None)
+        taskMgr.remove(f"{self.id}-endAttackTask")
+        self.play_blocked_animation(frame_offset)
+
+        self.logger.error("here")
+        if self.id == "player" and self.online and is_attacker_authority():
+            self.logger.error("sent")
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.GOT_BLOCKED], action_offsets=[self.match_timer])])
            
-    def play_blocked_animation(self):
-        self.logger.debug("My attack was blocked")
+    def play_blocked_animation(self, frame_offset=0):
+        self.logger.debug(f"My attack was blocked {frame_offset}")
         self.playSound("blocked_hit")
-        self.sword.play("being-blocked")
+        self.sword.play("being-blocked", fromFrame=frame_offset)
         self.is_block_stunned = True
         total_frames = self.sword.getAnimControl("being-blocked").getNumFrames()
-        taskMgr.doMethodLater(total_frames/24, self.cleanse_block_stun, f"{self.id}-cleanseBlockStun")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.cleanse_block_stun,  name=f"{self.id}-cleanseBlockStun")
 
     def cleanse_block_stun(self, task):
         self.is_block_stunned = False
@@ -397,7 +431,20 @@ class EntityBase(DirectObject.DirectObject):
 
     def getPos(self, ref: NodePath):
         """ Stupid wrapper to avoid having to write .body in bot """
+        if self.body.is_empty():
+            return Vec3(0,0,0)
         return self.body.getPos(ref)
+
+    def schedule_or_run(self, offset_frame: int, wanted_frame: int, fn, name: str, extraArgs=[None]):
+        # Already happended -> do now
+        if offset_frame >= wanted_frame:
+            # Pass none as tasks expect 
+            fn(*extraArgs)
+            return
+        if len(extraArgs) > 0:
+            base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name,extraArgs=extraArgs)
+            return
+        base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name)
 
     def update(self, dt):
         if self.is_dashing and self.body.getZ() < 0.8 and self.body.getX() > -5.5 and self.body.getX() < 6 and self.body.getY() < 16 and self.body.getY() > -8:

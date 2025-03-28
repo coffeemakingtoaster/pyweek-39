@@ -69,8 +69,8 @@ class Bot(EntityBase):
                 self.sword.play("sweep")
                 self.sweep2 = True
             frames = self.sword.getAnimControl("sweep").getNumFrames()
-            base.taskMgr.doMethodLater(10/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
-            base.taskMgr.doMethodLater(30/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
+            base.taskMgr.doMethodLater(20/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
+            base.taskMgr.doMethodLater(28/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
             base.taskMgr.doMethodLater(frames/24,self.endAttack,f"{self.id}-endAttackTask")
     
     def block(self):
@@ -150,7 +150,6 @@ class Bot(EntityBase):
             self.sweep() if random.randint(1,100) else None
             self.jump() if random.randint(1,200) else None
             self.stab(player) if random.randint(1,600) else None
-            
 
     def get_desired_movement_direction(self, player_position: Vec3) -> Vec3:
         if self.is_dashing:

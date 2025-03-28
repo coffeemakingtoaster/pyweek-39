@@ -2,6 +2,7 @@ from game.const.events import NETWORK_SEND_PRIORITY_EVENT
 from game.const.player import BASE_HEALTH, DASH_SPEED, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
+from game.helpers.config import is_attacker_authority
 from game.helpers.helpers import *
 from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue
 from shared.types.player_info import PlayerAction, PlayerInfo, Vector
@@ -77,8 +78,8 @@ class Player(EntityBase):
                 self.sword.play("sweep")
                 self.sweep2 = True
             frames = self.sword.getAnimControl("sweep").getNumFrames()
-            base.taskMgr.doMethodLater(10/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
-            base.taskMgr.doMethodLater(30/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
+            base.taskMgr.doMethodLater(20/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
+            base.taskMgr.doMethodLater(28/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
             base.taskMgr.doMethodLater(frames/24,self.endAttack,f"{self.id}-endAttackTask")
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.SWEEP_1 if self.sweep else PlayerAction.SWEEP_2], action_offsets=[self.match_timer], health=self.health)])
     
@@ -102,6 +103,13 @@ class Player(EntityBase):
             base.taskMgr.doMethodLater(frames/24, self.endBlock,f"{self.id}-endBlockTask")
             base.taskMgr.doMethodLater(frames/24, self.endAttack,f"{self.id}-endAttackTask")
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.BLOCK], action_offsets=[self.match_timer], health=self.health)])
+
+    def update_state(self, player_info: PlayerInfo):
+        if PlayerAction.DEAL_DAMAGE in player_info.actions and is_attacker_authority():
+            self.show_sword_hit(self.body.getPos(render), render.getRelativeVector(self.body, Vec3.forward() + Vec3.up()))
+            if player_info.enemy_health != self.health:
+                self.logger.warning(f"Health desync. Updating with network value local: {self.health} remote: {player_info.enemy_health}")
+                self.take_damage(self.health - player_info.enemy_health, force=True)
     
     def update_camera(self, dt):
         md = self.window.getPointer(0)
