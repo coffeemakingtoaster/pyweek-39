@@ -1,14 +1,18 @@
-from dataclasses import asdict
 import logging
 from time import time
-from game.const.networking import HOST, TIME_BETWEEN_PACKAGES_IN_S
+from game.const.networking import HOST, HOST_IS_SECURE, TIME_BETWEEN_PACKAGES_IN_S
 from ws4py.client.threadedclient import WebSocketClient
 
 from shared.types.player_info import PlayerInfo
 
+def get_ws_protocol() -> str:
+    if HOST_IS_SECURE:
+        return "wss"
+    return "ws"
+
 class MatchWS(WebSocketClient):
     def __init__(self, match_id, player_id, player_name, recv_callback,protocols=None, extensions=None, heartbeat_freq=None, ssl_options=None, headers=None, exclude_headers=None):
-        self.url = f"ws://{HOST}/match/{match_id}/{player_id}/{player_name}"
+        self.url = f"{get_ws_protocol()}://{HOST}/match/{match_id}/{player_id}/{player_name}"
         super().__init__(self.url, protocols, extensions, heartbeat_freq, ssl_options, headers, exclude_headers)
         self.recv_cb = recv_callback
         self.logger = logging.getLogger("")

@@ -6,7 +6,7 @@ import httpx
 from typing import Tuple
 
 from direct.task.Task import Task
-from game.const.networking import HOST
+from game.const.networking import HOST, HOST_IS_SECURE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -20,9 +20,14 @@ def __set_logger(lvl=logging.WARN):
     requests_log = logging.getLogger("httpcore.connection")
     requests_log.setLevel(lvl)
 
+def get_http_protocol() -> str:
+    if HOST_IS_SECURE: 
+        return "https"
+    return "http"
+
 def join_queue(player_id: str) -> bool:
     __set_logger()
-    url = f'http://{HOST}/queue'
+    url = f'{get_http_protocol()}://{HOST}/queue'
     body = {'player_id': player_id}
     try:
         res = httpx.post(url, json = body, verify=CTX)
@@ -39,7 +44,7 @@ def join_queue(player_id: str) -> bool:
 def check_queue_status(player_id: str) -> Tuple[ bool, str, str]:
     __set_logger()
     try:
-        res = httpx.get(f"http://{HOST}/queue/{player_id}", verify=CTX)
+        res = httpx.get(f"{get_http_protocol()}://{HOST}/queue/{player_id}", verify=CTX)
     except Exception as e:
         LOGGER.warning(f"Could not join queue. This may indicate network problems. Either way please play against a bot in the meantime. Error {e}")
         return (False, "", "")
@@ -52,7 +57,7 @@ def check_queue_status(player_id: str) -> Tuple[ bool, str, str]:
 def leave_queue(player_id: str) -> bool:
     __set_logger()
 
-    url = f'http://{HOST}/queue/{player_id}'
+    url = f'{get_http_protocol()}://{HOST}/queue/{player_id}'
     try:
         res = httpx.delete(url, verify=CTX)
     except Exception as e:
