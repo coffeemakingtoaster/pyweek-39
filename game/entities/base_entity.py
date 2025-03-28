@@ -79,6 +79,9 @@ class EntityBase(DirectObject.DirectObject):
         self.hitBlocked = False
         self.inv_phase = 0.0
         self.current_hit_has_critted = False
+        
+        self.particle_owner = render.attachNewNode("particle_owner")
+        self.particle_owner.setShaderOff()
 
     def setupSounds(self):
         self.sweepingSounds = []
@@ -220,9 +223,11 @@ class EntityBase(DirectObject.DirectObject):
             emitter.setExplicitLaunchVector(normal)
             
             p.setScale(1)
-            p.start(parent = render, renderParent = render)
+            p.start(parent = self.particle_owner, renderParent = self.particle_owner)
             taskMgr.doMethodLater(2/24,self.continueStrike,"continueStrike",extraArgs=[animName,frame],appendTask=True)
             taskMgr.doMethodLater(1,self.hitOver,"hitOver",extraArgs=[p],appendTask=True)
+            # Does this work in online?
+            self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
 
     def continueStrike(self,animName,frame,task):
         self.sword.play(animName,fromFrame=frame)
@@ -248,6 +253,7 @@ class EntityBase(DirectObject.DirectObject):
                     messenger.send(WIN_EVENT)
 
     def handle_body_damage(self, entry):
+        self.logger.debug("My body was hit")
         if self.is_puppet:
             return
 
@@ -298,10 +304,10 @@ class EntityBase(DirectObject.DirectObject):
         self.logger.debug("I blocked an attack")
         self.is_in_block = False
         self.is_in_attack = False
-        self.playSound("blocked_hit")
         base.taskMgr.doMethodLater(0, self.turnSwordSword,f"{self.id}-makeSwordSword")
         
     def handle_blocked_hit(self,entry):
+        self.logger.debug("My attack was blocked")
         if not self.hit_handled:
             if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
                 self.logger.debug("Was from behind, no block occured")
@@ -313,6 +319,7 @@ class EntityBase(DirectObject.DirectObject):
            
     def play_blocked_animation(self):
         self.logger.debug("My attack was blocked")
+        self.playSound("blocked_hit")
         self.sword.play("being-blocked")
         self.is_block_stunned = True
         total_frames = self.sword.getAnimControl("being-blocked").getNumFrames()
@@ -407,12 +414,10 @@ class EntityBase(DirectObject.DirectObject):
 
             # Ensure the renderer is set before initialization
             p0 = p.getParticlesList()[0]  # Get the first particle system
-            
-
-            p.start(parent=render, renderParent=render)
+            p.start(parent=self.particle_owner, renderParent=self.particle_owner)
             p.setDepthWrite(False)
             p.setBin("fixed", 0)
-            p.setPos(self.body.getPos())
+            p.setPos(self.body.getPos()) 
 
             self.dashParticles.append(p)
             

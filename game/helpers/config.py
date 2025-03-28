@@ -39,7 +39,6 @@ def setup_windowed():
     base.win.requestProperties(wp) 
             
 def save_config(path='./user_settings.json'):
-    LOGGER.info(f"{get_music_volume()}")
     config = {
             "sfx_volume": float(get_sfx_volume()), 
             "music_volume": float(get_music_volume()), 

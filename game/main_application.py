@@ -7,8 +7,6 @@ from direct.showbase.ShowBase import ShowBase
 from pandac.PandaModules import TransparencyAttrib
 import copy
 
-
-
 from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_ANTI_PLAYER_NAME, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, UPDATE_SHADOW_SETTINGS, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.const.player import MAIN_MENU_CAMERA_HEIGHT, MAIN_MENU_CAMERA_ROTATION_RADIUS, MAIN_MENU_CAMERA_ROTATION_SPEED, MAIN_MENU_PLAYER_POSITION
@@ -32,7 +30,6 @@ from shared.types.status_message import StatusMessages
 from shared.utils.validation import parse_game_status, parse_player_info
 
 from direct.particles.ParticleEffect import ParticleEffect
-
 
 class MainGame(ShowBase):
     def __init__(self) -> None:
@@ -167,8 +164,6 @@ class MainGame(ShowBase):
 
         self.river.setTexture(self.riverTextureStage, texture, 1)  # Use priority to force replace
         taskMgr.add(self.shiftRiverTextureTask,"shift river Task")
-
-        
         
         self.waterfall = loader.loadModel(getModelPath("waterfall"))
         self.waterfall2 = loader.loadModel(getModelPath("waterfall2"))
@@ -176,48 +171,32 @@ class MainGame(ShowBase):
         self.waterFallMaker(self.waterfall)
         self.waterFallMaker(self.waterfall2)
         
-        '''
-        self.waterfall = loader.loadModel(getModelPath("waterfall"))
-        self.waterfall.reparentTo(render)
-        self.waterfall.setTransparency(TransparencyAttrib.MAlpha)
-        self.waterfall.setPos(0,0,-2)
-        
-
-        texture2 = loader.loadTexture(getImagePath("transWater2"))
-        texture = loader.loadTexture(getImagePath("transWater"))
-        transTexture = loader.loadTexture(getImagePath("blue"))
-        
-        self.waterfall.setTexture(transTexture)
-        self.textureStage0 = self.waterfall.findTextureStage("pxArt (8).png")
-        self.textureStage0.setMode(TextureStage.MBlend)
-        
-        self.waterfall.setTexture(self.textureStage0,texture,1)
-        self.waterfall.setTexScale(self.textureStage0, 2, 2)
-        
-        self.textureStage1 = copy.copy(self.textureStage0)
-        self.textureStage1.setMode(TextureStage.MAdd)
-        
-        self.waterfall.setTexture(self.textureStage1,texture,1)
-        self.waterfall.setTexScale(self.textureStage1, 1, 1)
-
-        add_3d_sound_to_node("waterfall", self.waterfall)
-
-        taskMgr.add(self.shiftWaterfallTextureTask,"shift Task")
-        
-        '''
-       
+        self.particle_owner = render.attachNewNode("particle_owner")
+        self.particle_owner.setShaderOff()
         
         for i in range(15):
             p = ParticleEffect()
-            p.setShaderOff()
             p.loadConfig(getParticlePath("spray"))
-            p.start(parent = render, renderParent = render)
+            p.start(parent = self.particle_owner, renderParent = self.particle_owner)
             p.setPos(-5.5+i*0.8,-8,0.4)
             
             p.setDepthWrite(False)
             p.setBin("fixed", 0)
 
         self.__add_and_focus_main_menu_player()
+
+        '''
+        color = (0.5, 0.5, 0.5)
+        linfog = Fog("A linear-mode Fog node")
+        linfog.setColor(*color)
+        linfog.setLinearRange(1000, 1000)
+        #linfog.setExpDensity(0.1)            
+        linfog.setLinearFallback(20, 50, 80)
+        fogNode = render.attachNewNode(linfog) 
+        fogNode.setPos(0,0,-5)
+        fogNode.lookAt(0,0,-10)
+        render.setFog(linfog) 
+        '''
 
     def waterFallMaker(self,waterfall):
         
@@ -461,3 +440,4 @@ class MainGame(ShowBase):
         else:
             self.anti_player.update(dt, self.player)
         return Task.cont
+

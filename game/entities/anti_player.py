@@ -80,7 +80,7 @@ class AntiPlayer(EntityBase):
         self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name=f"{self.id}-endAttackTask")
 
     def sweep(self, is_alternate_sweep=False, start_time=0.0):
-        if not self.is_puppet:
+        if not self.is_puppet or start_time == 0.0:
             self.__sweep_safe(is_alternate_sweep=is_alternate_sweep)
             return
         offset = self.match_timer - start_time
@@ -108,7 +108,7 @@ class AntiPlayer(EntityBase):
         self.__schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endBlock, name=f"{self.id}-endAttackTask")
 
     def block(self, start_time=0.0):
-        if not self.is_puppet:
+        if not self.is_puppet or start_time == 0.0:
             self.__block_safe()
             return
         offset = self.match_timer - start_time
@@ -157,7 +157,7 @@ class AntiPlayer(EntityBase):
 
     def stab(self, start_time: float = 0.0):
         # AI controlled
-        if not self.is_puppet:
+        if not self.is_puppet or start_time == 0.0:
             self.__stab_safe()
             return
         offset = self.match_timer - start_time
