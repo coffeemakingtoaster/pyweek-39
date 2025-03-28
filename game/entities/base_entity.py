@@ -431,6 +431,8 @@ class EntityBase(DirectObject.DirectObject):
 
     def getPos(self, ref: NodePath):
         """ Stupid wrapper to avoid having to write .body in bot """
+        if self.body.is_empty():
+            return Vec3(0,0,0)
         return self.body.getPos(ref)
 
     def schedule_or_run(self, offset_frame: int, wanted_frame: int, fn, name: str, extraArgs=[None]):
@@ -443,7 +445,6 @@ class EntityBase(DirectObject.DirectObject):
             base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name,extraArgs=extraArgs)
             return
         base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name)
-
 
     def update(self, dt):
         if self.is_dashing and self.body.getZ() < 0.8 and self.body.getX() > -5.5 and self.body.getX() < 6 and self.body.getY() < 16 and self.body.getY() > -8:
