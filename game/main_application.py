@@ -31,7 +31,6 @@ from shared.utils.validation import parse_game_status, parse_player_info
 
 from direct.particles.ParticleEffect import ParticleEffect
 
-
 class MainGame(ShowBase):
     def __init__(self) -> None:
         super().__init__()
@@ -165,8 +164,6 @@ class MainGame(ShowBase):
 
         self.river.setTexture(self.riverTextureStage, texture, 1)  # Use priority to force replace
         taskMgr.add(self.shiftRiverTextureTask,"shift river Task")
-
-        
         
         self.waterfall = loader.loadModel(getModelPath("waterfall"))
         self.waterfall2 = loader.loadModel(getModelPath("waterfall2"))
@@ -187,7 +184,8 @@ class MainGame(ShowBase):
             p.setBin("fixed", 0)
 
         self.__add_and_focus_main_menu_player()
-        
+
+        '''
         color = (0.5, 0.5, 0.5)
         linfog = Fog("A linear-mode Fog node")
         linfog.setColor(*color)
@@ -198,6 +196,7 @@ class MainGame(ShowBase):
         fogNode.setPos(0,0,-5)
         fogNode.lookAt(0,0,-10)
         render.setFog(linfog) 
+        '''
 
     def waterFallMaker(self,waterfall):
         
@@ -435,5 +434,5 @@ class MainGame(ShowBase):
             return Task.cont
         else:
             self.anti_player.update(dt, self.player)
-        return Task.contlinfog.setLinearFallback(20, 50, 80)
+        return Task.cont
 

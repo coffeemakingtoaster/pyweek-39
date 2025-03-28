@@ -226,6 +226,8 @@ class EntityBase(DirectObject.DirectObject):
             p.start(parent = self.particle_owner, renderParent = self.particle_owner)
             taskMgr.doMethodLater(2/24,self.continueStrike,"continueStrike",extraArgs=[animName,frame],appendTask=True)
             taskMgr.doMethodLater(1,self.hitOver,"hitOver",extraArgs=[p],appendTask=True)
+            # Does this work in online?
+            self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
 
     def continueStrike(self,animName,frame,task):
         self.sword.play(animName,fromFrame=frame)
@@ -251,6 +253,7 @@ class EntityBase(DirectObject.DirectObject):
                     messenger.send(WIN_EVENT)
 
     def handle_body_damage(self, entry):
+        self.logger.debug("My body was hit")
         if self.is_puppet:
             return
 
@@ -301,10 +304,10 @@ class EntityBase(DirectObject.DirectObject):
         self.logger.debug("I blocked an attack")
         self.is_in_block = False
         self.is_in_attack = False
-        self.playSound("blocked_hit")
         base.taskMgr.doMethodLater(0, self.turnSwordSword,f"{self.id}-makeSwordSword")
         
     def handle_blocked_hit(self,entry):
+        self.logger.debug("My attack was blocked")
         if not self.hit_handled:
             if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
                 self.logger.debug("Was from behind, no block occured")
@@ -316,6 +319,7 @@ class EntityBase(DirectObject.DirectObject):
            
     def play_blocked_animation(self):
         self.logger.debug("My attack was blocked")
+        self.playSound("blocked_hit")
         self.sword.play("being-blocked")
         self.is_block_stunned = True
         total_frames = self.sword.getAnimControl("stab").getNumFrames()
