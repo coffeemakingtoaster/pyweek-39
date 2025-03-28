@@ -110,7 +110,7 @@ class Player(EntityBase):
         if abs(y) <= 0.5: #Potenziell Fixable
             y = 0
         self.body.setH(self.body.getH() - x * self.mouse_sens)
-        self.head.setP(self.head.getP() - y * self.mouse_sens)
+        self.head.setP(min(max(self.head.getP() - y * self.mouse_sens, -90 + 5), 90 - 5))
         self.window.movePointer(0, self.window.getXSize() // 2, self.window.getYSize() // 2)
     
     def __get_movement_vector(self) -> Vec3:
