@@ -152,7 +152,6 @@
   <Scalar> magfilter { linear }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }
-  <Scalar> alpha { off }
 }
 
 <Texture> "pxArt (11).png" {
@@ -164,7 +163,6 @@
   <Scalar> magfilter { linear }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }
-  <Scalar> alpha { off }
 }
 
 <Texture> handle_texture.png {
@@ -176,7 +174,6 @@
   <Scalar> magfilter { linear }
   <Scalar> wrapu { repeat }
   <Scalar> wrapv { repeat }
-  <Scalar> alpha { off }
 }
 
   <Group> Armature.001 {
