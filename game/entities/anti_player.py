@@ -177,7 +177,8 @@ class AntiPlayer(EntityBase):
                     self.logger.debug(f"Code {action} not implemented")
 
     def __remote_block(self, start_time):
-        self.handle_blocked_hit(None, force=True)
+        self.logger.debug("Network block")
+        self.handle_blocked_hit(None, force=True, frame_offset=int(self.match_timer - start_time) * 24)
 
     def set_state(self, update: PlayerInfo):
         if not self.is_puppet:
