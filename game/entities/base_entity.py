@@ -315,26 +315,32 @@ class EntityBase(DirectObject.DirectObject):
         self.is_in_block = False
         self.is_in_attack = False
         base.taskMgr.doMethodLater(0, self.turnSwordSword,f"{self.id}-makeSwordSword")
+        if self.id == "player" and self.online and is_attacker_authority():
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.GOT_BLOCKED], action_offsets=[self.match_timer])])
         
-    def handle_blocked_hit(self,entry):
+    def handle_blocked_hit(self, entry, force=True, frame_offset=0):
         self.logger.debug("My attack was blocked")
+        if self.online and self.id == "player" and is_attacker_authority() and not force:
+            return
         if not self.hit_handled:
-            if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
-                self.logger.debug("Was from behind, no block occured")
-                return
+            # force is over network...no need to verify that
+            if not force:
+                if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
+                    self.logger.debug("Was from behind, no block occured")
+                    return
             self.turnSwordSword(None)
             self.end_dash(None)
             self.endAttack(None)
             taskMgr.remove(f"{self.id}-endAttackTask")
-            self.play_blocked_animation()
+            self.play_blocked_animation(frame_offset)
            
-    def play_blocked_animation(self):
+    def play_blocked_animation(self, frame_offset=0):
         self.logger.debug("My attack was blocked")
         self.playSound("blocked_hit")
-        self.sword.play("being-blocked")
+        self.sword.play("being-blocked", fromFrame=frame_offset)
         self.is_block_stunned = True
         total_frames = self.sword.getAnimControl("being-blocked").getNumFrames()
-        taskMgr.doMethodLater(total_frames/24, self.cleanse_block_stun, f"{self.id}-cleanseBlockStun")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.cleanse_block_stun,  name=f"{self.id}-cleanseBlockStun")
 
     def cleanse_block_stun(self, task):
         self.is_block_stunned = False
@@ -412,6 +418,18 @@ class EntityBase(DirectObject.DirectObject):
     def getPos(self, ref: NodePath):
         """ Stupid wrapper to avoid having to write .body in bot """
         return self.body.getPos(ref)
+
+    def schedule_or_run(self, offset_frame: int, wanted_frame: int, fn, name: str, extraArgs=[None]):
+        # Already happended -> do now
+        if offset_frame >= wanted_frame:
+            # Pass none as tasks expect 
+            fn(*extraArgs)
+            return
+        if len(extraArgs) > 0:
+            base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name,extraArgs=extraArgs)
+            return
+        base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name)
+
 
     def update(self, dt):
         if self.is_dashing and self.body.getZ() < 0.8 and self.body.getX() > -5.5 and self.body.getX() < 6 and self.body.getY() < 16 and self.body.getY() > -8:

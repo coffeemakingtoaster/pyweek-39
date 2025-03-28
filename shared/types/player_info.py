@@ -11,6 +11,7 @@ class PlayerAction(Enum):
     SWEEP_1 = 4
     SWEEP_2 = 5
     DEAL_DAMAGE = 6
+    GOT_BLOCKED = 7
 
 @dataclass
 class Vector:

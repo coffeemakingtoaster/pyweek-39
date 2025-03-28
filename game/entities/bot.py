@@ -150,7 +150,6 @@ class Bot(EntityBase):
             self.sweep() if random.randint(1,100) else None
             self.jump() if random.randint(1,200) else None
             self.stab(player) if random.randint(1,600) else None
-            
 
     def get_desired_movement_direction(self, player_position: Vec3) -> Vec3:
         if self.is_dashing:
