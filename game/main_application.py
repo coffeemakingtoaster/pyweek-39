@@ -174,6 +174,15 @@ class MainGame(ShowBase):
         self.particle_owner = render.attachNewNode("particle_owner")
         self.particle_owner.setShaderOff()
         
+        
+        p = ParticleEffect()
+        p.loadConfig(getParticlePath("leaves"))
+        p.start(parent = self.particle_owner, renderParent = self.particle_owner)
+        p.setPos(12,15,0)
+        #p.setDepthWrite(False)
+        #p.setBin("fixed", 0)
+        
+        
         for i in range(15):
             p = ParticleEffect()
             p.loadConfig(getParticlePath("spray"))

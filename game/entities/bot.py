@@ -38,6 +38,8 @@ class Bot(EntityBase):
             base.taskMgr.doMethodLater(frames/24,self.endAttack,f"{self.id}-endAttackTask")
     
     def start_dash(self,player,task):
+        if self.body.isEmpty():
+            return
         self.is_dashing = True
         # Get positions
         player_position = player.getPos(render)
@@ -146,10 +148,12 @@ class Bot(EntityBase):
             self.stab(player) if random.randint(1,100) else None
             
         else:
+            self.stab(player) if random.randint(1,500) else None
+            #self.jump() if random.randint(1,200) else None
             # 1 in 100 chance to block -> this is per tick :)
             self.sweep() if random.randint(1,100) else None
-            self.jump() if random.randint(1,200) else None
-            self.stab(player) if random.randint(1,600) else None
+            
+            
             
 
     def get_desired_movement_direction(self, player_position: Vec3) -> Vec3:
@@ -166,6 +170,7 @@ class Bot(EntityBase):
         return self.body.getRelativeVector(self.head, Vec3.forward()) * MOVEMENT_SPEED
             
     def update(self, dt, player=None):
+        
         self.action_check_cooldown -= dt
         if player is None:
             self.logger.error("Bot did not receive valid player")

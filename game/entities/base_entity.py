@@ -397,9 +397,12 @@ class EntityBase(DirectObject.DirectObject):
 
     def getPos(self, ref: NodePath):
         """ Stupid wrapper to avoid having to write .body in bot """
+        if self.body.is_empty():
+            return Vec3(0,0,0)
         return self.body.getPos(ref)
 
     def update(self, dt):
+        
         if self.is_dashing and self.body.getZ() < 0.8 and self.body.getX() > -5.5 and self.body.getX() < 6 and self.body.getY() < 16 and self.body.getY() > -8:
             # -5,5 16
             # 6 16
