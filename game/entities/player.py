@@ -106,6 +106,7 @@ class Player(EntityBase):
 
     def update_state(self, player_info: PlayerInfo):
         if PlayerAction.DEAL_DAMAGE in player_info.actions and is_attacker_authority():
+            self.show_sword_hit(self.body.getPos(render), render.getRelativeVector(self.body, Vec3.forward() + Vec3.up()))
             if player_info.enemy_health != self.health:
                 self.logger.warning(f"Health desync. Updating with network value local: {self.health} remote: {player_info.enemy_health}")
                 self.take_damage(self.health - player_info.enemy_health, force=True)
