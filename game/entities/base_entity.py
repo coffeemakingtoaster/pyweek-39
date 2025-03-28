@@ -10,8 +10,9 @@ from direct.task.Task import messenger
 
 from game.const import player
 from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, NO_BIT_MASK, PLAYER_BIT_MASK
-from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, WIN_EVENT
+from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, NETWORK_SEND_PRIORITY_EVENT, WIN_EVENT
 from game.const.player import ALLOWED_WORD_CENTER_DISTANCE, BASE_HEALTH, BLOCK_RANGE_DEG, GRAVITY, MOVEMENT_SPEED, PLAYER_1_SPAWN, PLAYER_2_SPAWN, POST_HIT_INV_DURATION, WORLD_CENTER_POINT
+from game.helpers.config import is_attacker_authority
 from game.helpers.helpers import getModelPath
 from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule, CollisionHandlerEvent, LineSegs, NodePath, Mat3,Quat
 
@@ -20,6 +21,7 @@ from direct.particles.ParticleEffect import ParticleEffect
 from game.helpers.helpers import *
 import random
 
+from shared.types.player_info import PlayerAction, PlayerInfo
 from shared.types.status_message import StatusMessages
 
 class EntityBase(DirectObject.DirectObject):
@@ -148,7 +150,6 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath.reparentTo(sword_joint)
         
         self.sword.setShaderOff()
-        
                
         self.sword.setPos(0, 0.2, 0)
     
@@ -232,7 +233,11 @@ class EntityBase(DirectObject.DirectObject):
             taskMgr.doMethodLater(1,self.hitOver,"hitOver",extraArgs=[p],appendTask=True)
             # Does this work in online?
             self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
-
+            '''
+            if not self.is_puppet:
+                messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.DEAL_DAMAGE], action_offsets=[self.match_timer])])
+            '''
+            
     def continueStrike(self,animName,frame,task):
         self.sword.play(animName,fromFrame=frame)
         
@@ -241,13 +246,22 @@ class EntityBase(DirectObject.DirectObject):
         blood.cleanup()
         blood.removeNode()
 
-    def take_damage(self, damage_value: int):
+    def take_damage(self, damage_value: int, force=False):
+        # Player only takes damage after network said so
+        #if self.id == "player" and is_attacker_authority():
+        #    if self.online and not force:
+        #        self.logger.debug("Skipped own damage as we wait for server")
+        #        return
+        #    self.logger.debug("Network update own health")
+
         self.health -= damage_value
         self.logger.debug(f"Now at {self.health} HP")
         messenger.send(GUI_UPDATE_PLAYER_HP if self.id == "player" else GUI_UPDATE_ANTI_HP, [self.health])
         # Server handles online win states
         if self.online:
-            return
+            if self.is_puppet:
+                messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.DEAL_DAMAGE], action_offsets=[self.match_timer])])
+
         if self.health <= 0:
             if self.id == "player":
                 messenger.send(DEFEAT_EVENT)

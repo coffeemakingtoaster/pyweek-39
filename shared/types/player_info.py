@@ -10,6 +10,7 @@ class PlayerAction(Enum):
     BLOCK = 3
     SWEEP_1 = 4
     SWEEP_2 = 5
+    DEAL_DAMAGE = 6
 
 @dataclass
 class Vector:
@@ -33,6 +34,7 @@ class Vector:
 class PlayerInfo:
     position: Vector | None = None
     health: int = 1 # this cannot default to 0 as 0 means defeat :)
+    enemy_health: int = 1
     lookRotation: float | None = None
     bodyRotation: float | None = None
     movement: Vector | None = None
@@ -50,10 +52,11 @@ class PlayerInfo:
         parts = []
         
         # Pack fixed fields
-        fmt = "B i B f B f B"  # Presence flags, health, and rotation values
+        fmt = "B i i B f B f B"  # Presence flags, health, and rotation values
         parts.append(struct.pack(fmt, 
             1 if self.position else 0,
             self.health,
+            self.enemy_health,
             1 if self.lookRotation is not None else 0,
             self.lookRotation if self.lookRotation is not None else 0.0,
             1 if self.bodyRotation is not None else 0,
@@ -82,12 +85,12 @@ class PlayerInfo:
     @staticmethod
     def from_bytes(data: bytes):
         offset = 0
-        fmt = "B i B f B f B"
+        fmt = "B i i B f B f B"
         fixed_size = struct.calcsize(fmt)
         values = struct.unpack(fmt, data[:fixed_size])
         offset += fixed_size
 
-        pos_flag, health, look_flag, look_rotation, body_flag, body_rotation, move_flag = values
+        pos_flag, health, enemy_health, look_flag, look_rotation, body_flag, body_rotation, move_flag = values
         pos = Vector.from_bytes(data[offset:offset+16]) if pos_flag else None
         offset += 16 if pos_flag else 0
 
@@ -110,6 +113,7 @@ class PlayerInfo:
         return PlayerInfo(
             position=pos,
             health=health,
+            enemy_health=enemy_health,
             lookRotation=look_rotation if look_flag else None,
             bodyRotation=body_rotation if body_flag else None,
             movement=move,

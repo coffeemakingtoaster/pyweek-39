@@ -8,6 +8,7 @@ from game.utils.name_generator import generate_name
 
 PLAYER_NAME_ENV_VAR = "PLAYER_NAME"
 GOOD_SHADOW_QUALITY_ENV_VAR = "PLAYER_NAME"
+IS_ATTACKER_AUTHORITATIVE_ENV_VAR = "ATTACK_AUTHORITY"
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,10 +27,12 @@ def load_config(path='./user_settings.json'):
     set_fullscreen_value(config.get("fullscreen", False))
 
     set_shadow_map_quality(config.get("good_shadows", False))
-      
+
     base.setFrameRateMeter(config.get("show_fps", False))
 
     os.environ[PLAYER_NAME_ENV_VAR] = config.get("user_name", generate_name())
+
+    set_attack_authority(config.get("attack_authority", False))
         
 def setup_windowed():
     wp = WindowProperties(base.win.getProperties()) 
@@ -46,6 +49,7 @@ def save_config(path='./user_settings.json'):
             "show_fps": get_fps_counter_enabled(), 
             "user_name" : os.getenv(PLAYER_NAME_ENV_VAR, generate_name()),
             "good_shadows": should_use_good_shadows(),
+            "attack_authority": is_attacker_authority(),
     }
     
     with open(path, "w+") as config_file:
@@ -97,6 +101,12 @@ def set_shadow_map_quality(val: bool):
 
 def should_use_good_shadows() -> bool:
     return os.getenv(GOOD_SHADOW_QUALITY_ENV_VAR, "false") == "true"
+
+def set_attack_authority(val: bool):
+    os.environ[IS_ATTACKER_AUTHORITATIVE_ENV_VAR] = "true" if val else "false"
+
+def is_attacker_authority() -> bool:
+    return os.getenv(IS_ATTACKER_AUTHORITATIVE_ENV_VAR, "false") == "true"
 
 def set_player_name(val: str):
     LOGGER.info(f"New name set: {val}")

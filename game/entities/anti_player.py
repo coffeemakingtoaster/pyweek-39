@@ -3,6 +3,7 @@ from game.const.events import GUI_UPDATE_LATENCY, NETWORK_SEND_PRIORITY_EVENT
 from game.const.networking import POSITION_DIFF_THRESHOLD
 from game.const.player import DASH_SPEED, GRAVITY, JUMP_VELOCITY
 from game.entities.base_entity import EntityBase
+from game.helpers.config import is_attacker_authority
 from game.helpers.helpers import *
 from panda3d.core import Vec3, Vec2, TextNode
 from shared.types.player_info import PlayerAction, PlayerInfo
@@ -191,8 +192,8 @@ class AntiPlayer(EntityBase):
         # an attack package does not! contain any other info
         if len(update.actions) > 0:
             self.__handle_actions(update.actions, update.action_offsets)
-        if self.health != update.health:
-            self.logger.error("Desync between received and perceived health")
+        if self.health != update.health and not is_attacker_authority():
+            self.logger.debug("Network update enemy health")
             self.take_damage(self.health - update.health)
         if update.position is not None:
             # Use the locally calculated z coord to stop slight jittering midair
