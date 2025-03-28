@@ -2,7 +2,7 @@ from game.const.events import GUI_RETURN_EVENT, UPDATE_SHADOW_SETTINGS
 from game.gui.gui_base import GuiBase
 from panda3d.core import TextNode, TransparencyAttrib
 
-from game.helpers.config import get_player_name, save_config, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled, set_shadow_map_quality, should_use_good_shadows
+from game.helpers.config import get_player_name, save_config, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled, set_attack_authority, is_attacker_authority
 
 from direct.gui.DirectGui import DirectButton, DirectCheckButton, DirectEntry, DirectSlider, DirectLabel, DirectFrame, DGG, OnscreenImage
 
@@ -198,7 +198,7 @@ class SettingsMenu(GuiBase):
             text="Use better shadows", 
             pos=(-1,0,-0.4), 
             scale=0.05, 
-            indicatorValue=should_use_good_shadows(), 
+            indicatorValue=is_attacker_authority(), 
             command=self.set_shadow_map_quality,
             relief=None,
             boxImage = (checkbox_image, checkbox_checked_image),
@@ -265,6 +265,6 @@ class SettingsMenu(GuiBase):
         set_fps_counter_enabled(status == 1)
 
     def set_shadow_map_quality(self, status):
-        set_shadow_map_quality(status == 1)
+        set_attack_authority(status == 1)
         messenger.send(UPDATE_SHADOW_SETTINGS)
 

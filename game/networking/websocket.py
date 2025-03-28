@@ -12,10 +12,11 @@ def get_ws_protocol() -> str:
 
 class MatchWS(WebSocketClient):
     def __init__(self, match_id, player_id, player_name, recv_callback,protocols=None, extensions=None, heartbeat_freq=None, ssl_options=None, headers=None, exclude_headers=None):
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug(f"Sending {player_name}")
         self.url = f"{get_ws_protocol()}://{HOST}/match/{match_id}/{player_id}/{player_name}"
         super().__init__(self.url, protocols, extensions, heartbeat_freq, ssl_options, headers, exclude_headers)
         self.recv_cb = recv_callback
-        self.logger = logging.getLogger("")
         self.connected = False
         self.connect()
         self.last_packet: PlayerInfo = PlayerInfo()

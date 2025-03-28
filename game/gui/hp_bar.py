@@ -24,16 +24,16 @@ class HpBar(GuiBase):
             parent=self.base,
             scale=(self.scale, 1, 0.05), 
             pos=(0, 0, 0),
-            image=join("assets", "icons", "hp_display_backplane.png")
+            image=join("assets", "icons", "hp_display_backplane2.png")
         )
         self.hp_display_background.setTransparency(TransparencyAttrib.MAlpha)
         self.ui_elements.append(self.hp_display_background)
        
         self.hp_display_bar = OnscreenImage(
             parent=self.base,
-            scale=(self.scale * 0.92, 1, 0.042), 
+            scale=(self.scale * 0.99, 1, 0.042), 
             pos=(0, 0, 0), 
-            image=join("assets", "icons", "hp_display_bar.png"), 
+            image=join("assets", "icons", "hp_display_bar2.png"), 
             color=(255,0,0,1)
         )
         self.hp_display_bar.setTransparency(TransparencyAttrib.MAlpha)

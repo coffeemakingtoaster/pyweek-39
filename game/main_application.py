@@ -10,10 +10,11 @@ import copy
 from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_ANTI_PLAYER_NAME, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, UPDATE_SHADOW_SETTINGS, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.const.player import MAIN_MENU_CAMERA_HEIGHT, MAIN_MENU_CAMERA_ROTATION_RADIUS, MAIN_MENU_CAMERA_ROTATION_SPEED, MAIN_MENU_PLAYER_POSITION
+from game.entities import anti_player
 from game.entities.anti_player import AntiPlayer
 from game.entities.bot import Bot
 from game.entities.player import Player
-from game.helpers.config import get_player_name, load_config, should_use_good_shadows
+from game.helpers.config import get_player_name, load_config, is_attacker_authority
 from game.helpers.helpers import *
 from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
 import uuid
@@ -237,7 +238,7 @@ class MainGame(ShowBase):
     def __update_shadow_settings(self, task=None):
         if self.slight is None:
             return
-        if should_use_good_shadows():
+        if is_attacker_authority():
             self.slight.setShadowCaster(True, 2048, 2048) 
         else:
             self.slight.setShadowCaster(True, 512, 512) 
@@ -383,6 +384,7 @@ class MainGame(ShowBase):
         if self.anti_player is not None:
             # Player info package
             if (player_info := parse_player_info(msg)) is not None:
+                self.player.update_state(player_info)
                 self.anti_player.set_state(player_info)
                 return
             if (game_status := parse_game_status(msg)) is not None:
@@ -392,6 +394,7 @@ class MainGame(ShowBase):
                     case StatusMessages.VICTORY.value:
                         messenger.send(WIN_EVENT)
                     case StatusMessages.PLAYER_NAME.value:
+                        self.logger.debug(f"enemy named {game_status.detail}")
                         self.anti_player.set_name(game_status.detail)
                         messenger.send(GUI_UPDATE_ANTI_PLAYER_NAME, [game_status.detail])
                     case StatusMessages.PLAYER_1.value:
@@ -412,12 +415,15 @@ class MainGame(ShowBase):
         if not self.is_online:
             return
         if self.ws is not None:
+            packet.health = self.player.health
+            packet.enemy_health = self.anti_player.health
             self.ws.send_game_data(packet)
 
     def __main_loop_online(self, dt):
         self.time_since_last_package += dt
         if self.time_since_last_package > TIME_BETWEEN_PACKAGES_IN_S:
             packet = self.player.get_current_state()
+            packet.enemy_health = self.anti_player.health
             self.ws.send_game_data(packet)
             self.time_since_last_package = 0
 
