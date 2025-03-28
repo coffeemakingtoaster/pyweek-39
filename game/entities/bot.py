@@ -9,6 +9,7 @@ from game.entities.player import Player
 from game.helpers.helpers import *
 from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue
 from shared.types.player_info import PlayerAction, PlayerInfo, Vector
+from math import atan2, degrees, sqrt
 
 class Bot(EntityBase):
     def __init__(self,window) -> None:
@@ -23,7 +24,7 @@ class Bot(EntityBase):
         if self.vertical_velocity == 0:
             self.vertical_velocity = JUMP_VELOCITY
             
-    def stab(self):
+    def stab(self,player):
         if self.is_block_stunned:
             return
 
@@ -35,10 +36,27 @@ class Bot(EntityBase):
             frames = self.sword.getAnimControl("stab").getNumFrames()
             base.taskMgr.doMethodLater(25/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
             base.taskMgr.doMethodLater(32/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
-            base.taskMgr.doMethodLater(25/24,self.start_dash,f"{self.id}-startDashingTask")
+            base.taskMgr.doMethodLater(25/24,self.start_dash,f"{self.id}-startDashingTask",extraArgs=[player],appendTask = True)
             base.taskMgr.doMethodLater(32/24,self.end_dash,f"{self.id}-endDashingTask")
             base.taskMgr.doMethodLater(frames/24,self.endAttack,f"{self.id}-endAttackTask")
     
+    def start_dash(self,player,task):
+        self.is_dashing = True
+        # Get positions
+        player_position = player.getPos(render)
+        body_position = self.body.getPos(render)
+
+        # Calculate direction vector
+        direction_x = player_position.x - body_position.x
+        direction_y = player_position.y - body_position.y
+
+        # Calculate angle in degrees
+        angle = degrees(atan2(direction_y, direction_x))-80
+
+        # Set the heading (H) to face the player
+        self.body.setH(angle)
+        
+     
     def sweep(self):
         if self.is_block_stunned:
             return
@@ -78,13 +96,37 @@ class Bot(EntityBase):
             base.taskMgr.doMethodLater(frames/24, self.endBlock,f"{self.id}-endBlockTask")
             base.taskMgr.doMethodLater(frames/24, self.endAttack,f"{self.id}-endAttackTask")
     
+    def jump(self):
+        if self.is_block_stunned:
+            return
+
+        if self.vertical_velocity == 0:
+            self.vertical_velocity = JUMP_VELOCITY
+            
+    
     def update_viewing_direction(self, dt, player_position: Vec3):
         # Dont turn during dash to make it a bit more fair
         if self.is_dashing:
             return
-        # Only turn to player if player gets closer
-        self.body.lookAt(Vec3(player_position.x, player_position.y,0.5))
-        self.head.lookAt(player_position)
+       
+       
+        body_position = self.body.getPos(render)
+
+        # Calculate direction vector
+        direction_x = player_position.x - body_position.x
+        direction_y = player_position.y - body_position.y
+        direction_z = player_position.z - body_position.z
+
+        # Calculate heading (H) - rotate horizontally
+        angle_h = degrees(atan2(direction_y, direction_x)) - 90
+
+        # Calculate pitch (P) - tilt up/down
+        distance_xy = sqrt(direction_x**2 + direction_y**2)  # Horizontal distance
+        angle_p = degrees(atan2(direction_z, distance_xy))  # Negative because Panda3D pitch increases downward
+
+        # Apply rotation
+        self.body.setH(angle_h)
+        self.head.setP(angle_p)
 
     def attack_if_possible(self, player: Player):
         # We wait a bit longer until we try again
@@ -95,18 +137,23 @@ class Bot(EntityBase):
             return
         dist_to_player = (self.body.getPos(render) - player.getPos(render)).length()
         # Player is too far away?
-        if dist_to_player > 5:
+        if dist_to_player > 7:
             return
         self.action_check_cooldown = BOT_WAIT_TIME_BETWEEN_ACTION_CHECKS
         if player.is_in_attack:
             # 1 in 100 chance to block -> this is per tick :)
             self.block() if random.randint(1,100) else None
-        if 5 > dist_to_player > 3:
+        if 7 > dist_to_player > 3:
             # 1 in 100 chance to block -> this is per tick :)
-            self.stab() if random.randint(1,100) else None
+            
+            self.stab(player) if random.randint(1,100) else None
+            
         else:
             # 1 in 100 chance to block -> this is per tick :)
             self.sweep() if random.randint(1,100) else None
+            self.jump() if random.randint(1,200) else None
+            self.stab(player) if random.randint(1,600) else None
+            
 
     def get_desired_movement_direction(self, player_position: Vec3) -> Vec3:
         if self.is_dashing:
@@ -119,7 +166,7 @@ class Bot(EntityBase):
             return self.body.getRelativeVector(self.head, Vec3.forward()).normalized() * MOVEMENT_SPEED * -1 
         if delta < 3:
             return Vec3(0,0,self.vertical_velocity)
-        return self.body.getRelativeVector(self.head, Vec3.forward()).normalized() * MOVEMENT_SPEED
+        return self.body.getRelativeVector(self.head, Vec3.forward()) * MOVEMENT_SPEED
             
     def update(self, dt, player=None):
         self.action_check_cooldown -= dt
@@ -136,6 +183,6 @@ class Bot(EntityBase):
         self.attack_if_possible(player)
         moveVec = self.get_desired_movement_direction(player.getPos(render))
         moveVec *= dt
-        #moveVec = self.apply_world_border_correction(moveVec)
+        moveVec = self.apply_world_border_correction(moveVec)
         self.body.setFluidPos(self.body, Vec3(moveVec.x, moveVec.y, moveVec.z  * dt))
 

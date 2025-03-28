@@ -148,6 +148,7 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath.reparentTo(sword_joint)
         
         self.sword.setShaderOff()
+        
                
         self.sword.setPos(0, 0.2, 0)
     
