@@ -315,7 +315,7 @@ class EntityBase(DirectObject.DirectObject):
         self.logger.debug("My attack was blocked")
         self.sword.play("being-blocked")
         self.is_block_stunned = True
-        total_frames = self.sword.getAnimControl("stab").getNumFrames()
+        total_frames = self.sword.getAnimControl("being-blocked").getNumFrames()
         taskMgr.doMethodLater(total_frames/24, self.cleanse_block_stun, f"{self.id}-cleanseBlockStun")
 
     def cleanse_block_stun(self, task):

@@ -277,6 +277,8 @@ class MainGame(ShowBase):
         base.enableMouse()
         self.toggle_mouse()
         self.logger.info(f"Received game finish where victory: {is_victory}")
+        
+        
         if self.ws is not None:
             self.ws.close(reason="Finished")
         if self.ws_handle_task is not None:
@@ -290,6 +292,9 @@ class MainGame(ShowBase):
         if self.anti_player is not None:
             self.anti_player.destroy()
         if is_victory:
+            victorySound = base.loader.loadSfx(getSoundPath("vicroy"))
+            self.background_music.stop()
+            victorySound.play()
             self.gui_manager.handle_custom(StateTransitionEvents.WIN)
         else:
             self.gui_manager.handle_custom(StateTransitionEvents.DEFEAT)
