@@ -15,6 +15,7 @@ class GuiBase(DirectObject.DirectObject):
         
     def destroy(self):
         self.logger.info(f"Destroying {self.readable_name}")
+        self.ignoreAll()
         for ui_element in self.ui_elements:
             ui_element.destroy()
             ui_element.removeNode()

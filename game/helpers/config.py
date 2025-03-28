@@ -106,7 +106,7 @@ def set_attack_authority(val: bool):
     os.environ[IS_ATTACKER_AUTHORITATIVE_ENV_VAR] = "true" if val else "false"
 
 def is_attacker_authority() -> bool:
-    return os.getenv(IS_ATTACKER_AUTHORITATIVE_ENV_VAR, "false") == "true"
+    return True
 
 def set_player_name(val: str):
     LOGGER.info(f"New name set: {val}")
