@@ -15,22 +15,17 @@ class GameEnd(GuiBase):
         buttonImages = loader.loadTexture("assets/textures/button_bg.png"),
         font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
 
-        state_label = "Victory!"
+        state_image = loader.loadTexture("assets/textures/victory.png")
 
         if not self.is_victory:
-            state_label = "Defeat"
-        
-        state_indicator = DirectLabel(text=(state_label),
-                    pos=(0,0,0.05), 
-                    scale=0.12, 
-                    relief=DGG.FLAT, 
-                    text_fg=(1,1,1,1),
-                    #pad = (1, 0.1),
-                    frameSize = (-4, 4, -1, 1),
-                    text_scale = 1.5,
-                    text_font=font,
-                    text_pos = (0, -0.3),
-                    frameColor = (1,1,1,0))
+            state_image = loader.loadTexture("assets/textures/defeat.png")
+
+        state_indicator = DirectFrame(
+            frameSize=(-0.8, 0.8, -0.8, 0.8),
+            pos=(0, 0, 0), 
+            frameColor = (1,1,1,1),
+            frameTexture = state_image,
+        )
         state_indicator.setTransparency(TransparencyAttrib.MAlpha)
         self.ui_elements.append(state_indicator)
 
