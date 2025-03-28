@@ -34,7 +34,7 @@ class Vector:
 class PlayerInfo:
     position: Vector | None = None
     health: int = 1 # this cannot default to 0 as 0 means defeat :)
-    enemy_health: int = 1
+    enemy_health: int = 1 # experimental
     lookRotation: float | None = None
     bodyRotation: float | None = None
     movement: Vector | None = None
