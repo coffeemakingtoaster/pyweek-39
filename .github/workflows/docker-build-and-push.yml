@@ -5,8 +5,9 @@ on:
     paths:
       - 'server/**.py'
       - 'shared/**.py'
-    branches:
-      - main
+      - '.github/workflows/*.yml'
+    #branches:
+      #- main
     tags:
       - '*'
 
