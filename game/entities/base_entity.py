@@ -21,6 +21,7 @@ from direct.particles.ParticleEffect import ParticleEffect
 from game.helpers.helpers import *
 import random
 
+from game.utils.sound import add_3d_sound_to_node
 from shared.types.player_info import PlayerAction, PlayerInfo
 from shared.types.status_message import StatusMessages
 
@@ -163,16 +164,19 @@ class EntityBase(DirectObject.DirectObject):
     def endBlock(self,task):
         self.is_in_block = False
     
-    def playSound(self,name):
+    def playSound(self,name, is_3d=False):
         if name == "sweep":
-            random.choice(self.sweepingSounds).play()
+            sound = random.choice(self.sweepingSounds)
         elif name == "hit":
-            random.choice(self.hitSounds).play()
+            sound = random.choice(self.hitSounds)
         else:
-            base.loader.loadSfx(getSoundPath(name)).play()
+            sound = base.loader.loadSfx(getSoundPath(name))
+        if not is_3d:
+            sound.play()
+        add_3d_sound_to_node(sound.getName(), self.body, loops=False)
     
-    def playSoundLater(self, name):
-        self.playSound(name)
+    def playSoundLater(self, name, is_3d=False):
+        self.playSound(name, is_3d)
         
     def turnSwordLethal(self,task):
         self.has_lethal_sword = True
