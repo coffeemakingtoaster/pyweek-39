@@ -7,8 +7,8 @@ setup(
             'gui_apps': {
                 'pyweek39': 'run_game.py',
             },
-            #'platforms': ['manylinux1_x86_64', 'macosx_10_6_x86_64', 'win_amd64'],
-            'platforms': ['win_amd64'],
+            'platforms': ['manylinux2014_x86_64', 'macosx_10_6_x86_64', 'win_amd64'],
+            #'platforms': ['win_amd64'],
             # Set up output logging, important for GUI apps!
             'log_filename': './logs/output.log',
             'log_append': False,

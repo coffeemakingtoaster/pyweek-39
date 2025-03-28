@@ -22,6 +22,7 @@ import uuid
 from game.networking.queue import check_queue_status, join_queue, leave_queue
 from game.networking.websocket import MatchWS
 from game.utils.name_generator import generate_name
+from game.utils.sound import add_3d_sound_to_node
 from shared.const.queue_status import QueueStatus
 from pandac.PandaModules import WindowProperties
 
@@ -175,7 +176,9 @@ class MainGame(ShowBase):
         
         self.waterfall.setTexture(self.textureStage1,texture,1)
         self.waterfall.setTexScale(self.textureStage1, 1, 1)
-        
+
+        add_3d_sound_to_node("waterfall", self.waterfall)
+
         taskMgr.add(self.shiftWaterfallTextureTask,"shift Task")
         
         for i in range(15):
