@@ -80,7 +80,7 @@ class EntityBase(DirectObject.DirectObject):
         self.inv_phase = 0.0
         self.current_hit_has_critted = False
         
-        self.particle_owner = self.body.attachNewNode("particle_owner")
+        self.particle_owner = render.attachNewNode("particle_owner")
         self.particle_owner.setShaderOff()
 
     def setupSounds(self):
@@ -410,12 +410,10 @@ class EntityBase(DirectObject.DirectObject):
 
             # Ensure the renderer is set before initialization
             p0 = p.getParticlesList()[0]  # Get the first particle system
-            
-
             p.start(parent=self.particle_owner, renderParent=self.particle_owner)
             p.setDepthWrite(False)
             p.setBin("fixed", 0)
-            p.setPos(self.body.getPos())
+            p.setPos(self.body.getPos()) 
 
             self.dashParticles.append(p)
             

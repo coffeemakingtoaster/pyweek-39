@@ -7,8 +7,6 @@ from direct.showbase.ShowBase import ShowBase
 from pandac.PandaModules import TransparencyAttrib
 import copy
 
-
-
 from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_ANTI_PLAYER_NAME, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, UPDATE_SHADOW_SETTINGS, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.const.player import MAIN_MENU_CAMERA_HEIGHT, MAIN_MENU_CAMERA_ROTATION_RADIUS, MAIN_MENU_CAMERA_ROTATION_SPEED, MAIN_MENU_PLAYER_POSITION
@@ -189,6 +187,17 @@ class MainGame(ShowBase):
             p.setBin("fixed", 0)
 
         self.__add_and_focus_main_menu_player()
+        
+        color = (0.5, 0.5, 0.5)
+        linfog = Fog("A linear-mode Fog node")
+        linfog.setColor(*color)
+        linfog.setLinearRange(1000, 1000)
+        #linfog.setExpDensity(0.1)            
+        linfog.setLinearFallback(20, 50, 80)
+        fogNode = render.attachNewNode(linfog) 
+        fogNode.setPos(0,0,-5)
+        fogNode.lookAt(0,0,-10)
+        render.setFog(linfog) 
 
     def waterFallMaker(self,waterfall):
         
@@ -426,4 +435,5 @@ class MainGame(ShowBase):
             return Task.cont
         else:
             self.anti_player.update(dt, self.player)
-        return Task.cont
+        return Task.contlinfog.setLinearFallback(20, 50, 80)
+
