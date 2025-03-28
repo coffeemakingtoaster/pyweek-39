@@ -141,7 +141,6 @@ class AntiPlayer(EntityBase):
             base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name,extraArgs=extraArgs)
             return
         base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name)
-
     
     def handleSwordCollisionEnd(self,entry):
         self.logger.debug(f"no longer colliding with {entry}")
@@ -193,6 +192,7 @@ class AntiPlayer(EntityBase):
         if len(update.actions) > 0:
             self.__handle_actions(update.actions, update.action_offsets)
         if self.health != update.health:
+            self.logger.error("Desync between received and perceived health")
             self.take_damage(self.health - update.health)
         if update.position is not None:
             # Use the locally calculated z coord to stop slight jittering midair
@@ -219,6 +219,8 @@ class AntiPlayer(EntityBase):
 
     def update(self, dt, player_pos=None):
         super().update(dt)
+        if self.body.is_empty():
+            return
         self.match_timer += dt
         self.apply_gravity(dt)
         flat_move = Vec2(self.movement_vector.x, self.movement_vector.y)

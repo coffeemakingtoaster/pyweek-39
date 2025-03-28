@@ -15,9 +15,16 @@ class Player:
         self.name = player_name
         self.logger = logging.getLogger(f"{__name__}-{self.id}")
         self.last_message: PlayerInfo | None = None
+        self.queued_message: PlayerInfo | None = None
 
     async def send_player_info(self, player_info: PlayerInfo):
         await self.ws.send_bytes(player_info.to_bytes())
+
+    async def __send_player_info(self, player_info: PlayerInfo):
+        if self.queued_message is None:
+            self.queued_message = player_info
+            return
+        self.queued_message = self.__merge_messages(player_info, self.queued_message)
 
     async def send_control_message(self, message: GameStatus):
         await self.ws.send_text(json.dumps(asdict(message, dict_factory=enum_friendly_factory)))
@@ -35,16 +42,24 @@ class Player:
             self.last_message = parsed_msg
             return
         # Priority packages are in action!
-        if len(self.last_message.actions) > 0:
+        self.last_message = self.__merge_messages(parsed_msg, self.last_message)
+
+    def __merge_messages(self, new: PlayerInfo, old: PlayerInfo) -> PlayerInfo:
+        if len(old.actions) > 0:
             # Prepend already saved actions
-            parsed_msg.actions = self.last_message.actions + parsed_msg.actions
-            parsed_msg.action_offsets = self.last_message.action_offsets + parsed_msg.action_offsets
-        self.last_message = parsed_msg
+            new.actions = old.actions + new.actions
+            new.action_offsets = old.action_offsets + new.action_offsets
+        return new
 
     def flush_last_message(self) -> PlayerInfo | None:
         msg = self.last_message
         self.last_message = None
         return msg
+
+    async def flush_outgoing_buffer(self):
+        if self.queued_message is not None:
+            await self.__send_player_info(self.queued_message)
+            self.queued_message = None
         
     def is_still_in_match(self) -> bool:
         return self.ws.client_state != WebSocketState.DISCONNECTED

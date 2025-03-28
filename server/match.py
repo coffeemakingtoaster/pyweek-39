@@ -117,5 +117,6 @@ class Match():
 
         while not self.game_finished and not self.terminated:
             await player.receive_data()
+            await player.flush_outgoing_buffer()
 
 
