@@ -1,0 +1,247 @@
+<CoordinateSystem> { Z-up } 
+<Material> White {
+  <Scalar> baser { 1.0 }
+  <Scalar> baseg { 1.0 }
+  <Scalar> baseb { 1.0 }
+  <Scalar> basea { 1.0 }
+  <Scalar> ambr { 1.0 }
+  <Scalar> ambg { 1.0 }
+  <Scalar> ambb { 1.0 }
+  <Scalar> amba { 1.0 }
+  <Scalar> emitr { 0.0 }
+  <Scalar> emitg { 0.0 }
+  <Scalar> emitb { 0.0 }
+  <Scalar> emita { 1.0 }
+  <Scalar> specr { 1.0 }
+  <Scalar> specg { 1.0 }
+  <Scalar> specb { 1.0 }
+  <Scalar> speca { 1.0 }
+  <Scalar> shininess { 0.5 }
+  <Scalar> roughness { 0.5 }
+  <Scalar> metallic { 0.0 }
+  <Scalar> ior { 1.4500000476837158 }
+  <Scalar> local { 1 }
+}
+
+<Texture> dust.png {
+  "./tex/dust.png"
+  <Scalar> format { rgb }
+  <Scalar> envtype { modulate }
+  <Scalar> uv-name { UVMap }
+  <Scalar> minfilter { linear_mipmap_linear }
+  <Scalar> magfilter { linear }
+  <Scalar> wrapu { repeat }
+  <Scalar> wrapv { repeat }
+  <Scalar> alpha { off }
+}
+
+  <Group> Plane {
+    <Transform> {
+      <Matrix4> {
+        1.0 0.0 0.0 0.0 
+        0.0 1.0 0.0 0.0 
+        0.0 0.0 1.0 0.0 
+        0.0 0.0 0.0 1.0 
+      }
+    }
+    
+    <VertexPool> Plane {
+    
+      <Vertex> 0 {
+        6.020425 17.631863 0.866141
+        <UV> UVMap {
+          0.000000 1.000000 
+        }
+        <Normal> { 0.000000 0.991424 0.130497 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 1 {
+        6.020425 17.631863 -21.892050
+        <UV> UVMap {
+          0.000000 1.000000 
+        }
+        <Normal> { 0.000000 1.000000 0.000000 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 2 {
+        -6.083723 17.631863 -21.892050
+        <UV> UVMap {
+          1.000000 1.000000 
+        }
+        <Normal> { 0.000000 1.000000 0.000000 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 3 {
+        -6.083723 17.631863 0.866141
+        <UV> UVMap {
+          1.000000 1.000000 
+        }
+        <Normal> { 0.000000 0.991424 0.130497 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 4 {
+        -6.083723 17.631863 0.866141
+        <UV> UVMap {
+          1.578619 2.758264 
+        }
+        <Normal> { 0.000000 0.991424 0.130497 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 5 {
+        -6.083723 17.407631 1.702988
+        <UV> UVMap {
+          1.578619 2.758264 
+        }
+        <Normal> { 0.000000 0.866024 0.499985 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 6 {
+        6.020425 17.407631 1.702988
+        <UV> UVMap {
+          -0.578619 2.758264 
+        }
+        <Normal> { 0.000000 0.866024 0.499985 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 7 {
+        6.020425 17.631863 0.866141
+        <UV> UVMap {
+          -0.578619 2.758264 
+        }
+        <Normal> { 0.000000 0.991424 0.130497 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 8 {
+        -6.083723 17.407631 1.702988
+        <UV> UVMap {
+          1.578619 2.758264 
+        }
+        <Normal> { 0.000000 0.866024 0.499985 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 9 {
+        -6.083723 16.795015 2.315603
+        <UV> UVMap {
+          1.578619 2.629935 
+        }
+        <Normal> { 0.000000 0.499985 0.866024 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 10 {
+        6.020425 16.795015 2.315603
+        <UV> UVMap {
+          -0.578619 2.629935 
+        }
+        <Normal> { 0.000000 0.499985 0.866024 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 11 {
+        6.020425 17.407631 1.702988
+        <UV> UVMap {
+          -0.578619 2.758264 
+        }
+        <Normal> { 0.000000 0.866024 0.499985 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 12 {
+        -6.083723 16.795015 2.315603
+        <UV> UVMap {
+          1.578619 2.629935 
+        }
+        <Normal> { 0.000000 0.499985 0.866024 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 13 {
+        -6.083723 15.958168 2.539835
+        <UV> UVMap {
+          1.578619 2.501605 
+        }
+        <Normal> { 0.000000 0.130497 0.991424 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 14 {
+        6.020425 15.958168 2.539835
+        <UV> UVMap {
+          -0.578619 2.501605 
+        }
+        <Normal> { 0.000000 0.130497 0.991424 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 15 {
+        6.020425 16.795015 2.315603
+        <UV> UVMap {
+          -0.578619 2.629935 
+        }
+        <Normal> { 0.000000 0.499985 0.866024 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 16 {
+        6.020425 -11.820800 2.539835
+        <UV> UVMap {
+          -0.578619 -1.758264 
+        }
+        <Normal> { 0.000000 0.000000 1.000000 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 17 {
+        6.020425 15.958168 2.539835
+        <UV> UVMap {
+          -0.578619 2.501605 
+        }
+        <Normal> { 0.000000 0.130497 0.991424 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 18 {
+        -6.083723 15.958168 2.539835
+        <UV> UVMap {
+          1.578619 2.501605 
+        }
+        <Normal> { 0.000000 0.130497 0.991424 }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 19 {
+        -6.083723 -11.820800 2.539835
+        <UV> UVMap {
+          1.578619 -1.758264 
+        }
+        <Normal> { 0.000000 0.000000 1.000000 }
+        <RGBA> { 1 1 1 1 }
+      }}
+    
+    
+    <Polygon> {
+      <TRef> { dust.png }
+      <MRef> { White }
+      <Normal> {0.000000 1.000000 0.000000}
+      <BFace> { 0 }
+      <VertexRef> { 0 1 2 3 <Ref> { Plane }} 
+    }
+    <Polygon> {
+      <TRef> { dust.png }
+      <MRef> { White }
+      <Normal> {0.000000 0.965926 0.258818}
+      <BFace> { 0 }
+      <VertexRef> { 4 5 6 7 <Ref> { Plane }} 
+    }
+    <Polygon> {
+      <TRef> { dust.png }
+      <MRef> { White }
+      <Normal> {0.000000 0.707106 0.707107}
+      <BFace> { 0 }
+      <VertexRef> { 8 9 10 11 <Ref> { Plane }} 
+    }
+    <Polygon> {
+      <TRef> { dust.png }
+      <MRef> { White }
+      <Normal> {0.000000 0.258819 0.965926}
+      <BFace> { 0 }
+      <VertexRef> { 12 13 14 15 <Ref> { Plane }} 
+    }
+    <Polygon> {
+      <TRef> { dust.png }
+      <MRef> { White }
+      <Normal> {0.000000 0.000000 1.000000}
+      <BFace> { 0 }
+      <VertexRef> { 16 17 18 19 <Ref> { Plane }} 
+    }
+  }

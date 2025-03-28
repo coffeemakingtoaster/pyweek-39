@@ -5,6 +5,7 @@ from panda3d.core import *
 
 from direct.showbase.ShowBase import ShowBase
 from pandac.PandaModules import TransparencyAttrib
+import copy
 
 
 
@@ -54,6 +55,7 @@ class MainGame(ShowBase):
         loadPrcFileData("", "interpolate-frames 1")
         load_config()
         
+        self.waterfallCount = 0
         self.mouse_locked = False
 
         self.player: None | Player = None
@@ -95,11 +97,11 @@ class MainGame(ShowBase):
     def buildMap(self):
         """ Build map and place dummy player for main menu """
         
-        #dlight = DirectionalLight('my dlight')
-        #dlight.color = (0.6,0.6,1.3,1)
+        dlight = DirectionalLight('my dlight')
+        dlight.color = (0.6,0.6,1.3,1)
         #dlight.color = (2,2,1.3,1)
-        #dlight.setDirection(Vec3(0,-1,-0.5))
-        #dlnp = render.attachNewNode(dlight)
+        dlight.setDirection(Vec3(0,1,-0.5))
+        dlnp = render.attachNewNode(dlight)
         #alight = AmbientLight("ambi light")
         #alight.color = (0.1,0.1,0.1,1)
         #ambientnp = render.attachNewNode(alight)
@@ -108,10 +110,10 @@ class MainGame(ShowBase):
         # Enable the shader generator for the receiving nodes
 
         # @Heuserus do we need this? This is the loc that was causing the particle issues 
-        # render.setShaderAuto()
+        render.setShaderAuto()
         
         #render.setLight(ambientnp) 
-        #render.setLight(dlnp)
+        render.setLight(dlnp)
         
         # Create a spotlight
         self.slight = Spotlight('slight')
@@ -153,25 +155,46 @@ class MainGame(ShowBase):
         self.treeTops.setZ(-2)
         self.treeTops.setShaderOff()
         self.treeTops.setLightOff()
-    
-        self.waterfall = loader.loadModel("assets/models/box.egg")
+        
+        self.river = self.loader.loadModel(getModelPath("river"))
+        self.river.reparentTo(self.render)
+        self.river.setZ(-2)
+        
+        texture = loader.loadTexture(getImagePath("pxArt (8)"))
+
+        # Try to find an existing texture stage
+        self.riverTextureStage = self.river.findTextureStage("dust.png")
+
+        self.river.setTexture(self.riverTextureStage, texture, 1)  # Use priority to force replace
+        taskMgr.add(self.shiftRiverTextureTask,"shift river Task")
+
+        
+        
+        self.waterfall = loader.loadModel(getModelPath("waterfall"))
+        self.waterfall2 = loader.loadModel(getModelPath("waterfall2"))
+        
+        self.waterFallMaker(self.waterfall)
+        self.waterFallMaker(self.waterfall2)
+        
+        '''
+        self.waterfall = loader.loadModel(getModelPath("waterfall"))
         self.waterfall.reparentTo(render)
         self.waterfall.setTransparency(TransparencyAttrib.MAlpha)
-        self.waterfall.setPos(-6,-8.5,-3.5)
-        self.waterfall.setScale(13,0.1,13.7)
+        self.waterfall.setPos(0,0,-2)
+        
 
         texture2 = loader.loadTexture(getImagePath("transWater2"))
         texture = loader.loadTexture(getImagePath("transWater"))
         transTexture = loader.loadTexture(getImagePath("blue"))
         
         self.waterfall.setTexture(transTexture)
-        self.textureStage0 = TextureStage("stage0")
+        self.textureStage0 = self.waterfall.findTextureStage("pxArt (8).png")
         self.textureStage0.setMode(TextureStage.MBlend)
         
         self.waterfall.setTexture(self.textureStage0,texture,1)
         self.waterfall.setTexScale(self.textureStage0, 2, 2)
         
-        self.textureStage1 = TextureStage("stage1")
+        self.textureStage1 = copy.copy(self.textureStage0)
         self.textureStage1.setMode(TextureStage.MAdd)
         
         self.waterfall.setTexture(self.textureStage1,texture,1)
@@ -181,8 +204,12 @@ class MainGame(ShowBase):
 
         taskMgr.add(self.shiftWaterfallTextureTask,"shift Task")
         
+        '''
+       
+        
         for i in range(15):
             p = ParticleEffect()
+            p.setShaderOff()
             p.loadConfig(getParticlePath("spray"))
             p.start(parent = render, renderParent = render)
             p.setPos(-5.5+i*0.8,-8,0.4)
@@ -192,6 +219,34 @@ class MainGame(ShowBase):
 
         self.__add_and_focus_main_menu_player()
 
+    def waterFallMaker(self,waterfall):
+        
+        waterfall.reparentTo(render)
+        waterfall.setTransparency(TransparencyAttrib.MAlpha)
+        waterfall.setPos(0,0,-2)
+        
+        self.waterfallCount +=1
+        texture2 = loader.loadTexture(getImagePath("transWater2"))
+        texture = loader.loadTexture(getImagePath("transWater"))
+        transTexture = loader.loadTexture(getImagePath("blue"))
+        
+        waterfall.setTexture(transTexture)
+        textureStage0 = waterfall.findTextureStage("pxArt (8).png")
+        textureStage0.setMode(TextureStage.MBlend)
+        
+        waterfall.setTexture(textureStage0,texture,1)
+        waterfall.setTexScale(textureStage0, 2, 2)
+        
+        textureStage1 = copy.copy(textureStage0)
+        textureStage1.setMode(TextureStage.MAdd)
+        
+        waterfall.setTexture(textureStage1,texture,1)
+        waterfall.setTexScale(textureStage1, 1, 1)
+
+        add_3d_sound_to_node("waterfall", self.waterfall)
+
+        taskMgr.add(self.shiftWaterfallTextureTask,("shift Task")+str(self.waterfallCount),extraArgs=[waterfall,textureStage0,textureStage1],appendTask = True)
+    
     def __update_shadow_settings(self, task=None):
         if self.slight is None:
             return
@@ -209,9 +264,13 @@ class MainGame(ShowBase):
         self.camera.reparentTo(render)
         self.camera_angle = 0
         
-    def shiftWaterfallTextureTask(self,task):
-        self.waterfall.setTexOffset(self.textureStage0, 0, (task.time*2) % 1.0 )
-        self.waterfall.setTexOffset(self.textureStage1, 0, (task.time*0.4) % 1.0 )
+    def shiftWaterfallTextureTask(self,waterfall,textureStage0,textureStage1,task):
+        waterfall.setTexOffset(textureStage0, 0, (task.time*2) % 1.0 )
+        waterfall.setTexOffset(textureStage1, 0, (task.time*0.4) % 1.0 )
+        return Task.cont
+    
+    def shiftRiverTextureTask(self,task):
+        self.river.setTexOffset(self.riverTextureStage,0,(task.time*-0.2) %1.0)
         return Task.cont
     
     def __finish_game(self, is_victory):

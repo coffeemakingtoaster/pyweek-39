@@ -209,6 +209,7 @@ class EntityBase(DirectObject.DirectObject):
             frame = anim.getFrame()
             anim.pose(frame)
             p = ParticleEffect()
+            p.setShaderOff()
             p.loadConfig(getParticlePath("blood2"))
             p.setPos(event.getSurfacePoint(render))
             normal = event.getSurfaceNormal(render)
@@ -401,6 +402,7 @@ class EntityBase(DirectObject.DirectObject):
             # 6 -8
             # -5,5 -8
             p = ParticleEffect()
+            p.setShaderOff()
             p.loadConfig(getParticlePath("water_dash2"))
 
             # Ensure the renderer is set before initialization

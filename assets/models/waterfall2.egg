@@ -1,0 +1,437 @@
+<CoordinateSystem> { Z-up } 
+<Material> Pond {
+  <Scalar> baser { 1.0 }
+  <Scalar> baseg { 1.0 }
+  <Scalar> baseb { 1.0 }
+  <Scalar> basea { 1.0 }
+  <Scalar> ambr { 1.0 }
+  <Scalar> ambg { 1.0 }
+  <Scalar> ambb { 1.0 }
+  <Scalar> amba { 1.0 }
+  <Scalar> emitr { 0.0 }
+  <Scalar> emitg { 0.0 }
+  <Scalar> emitb { 0.0 }
+  <Scalar> emita { 1.0 }
+  <Scalar> specr { 1.0 }
+  <Scalar> specg { 1.0 }
+  <Scalar> specb { 1.0 }
+  <Scalar> speca { 1.0 }
+  <Scalar> shininess { 0.5 }
+  <Scalar> roughness { 0.0 }
+  <Scalar> metallic { 0.0 }
+  <Scalar> ior { 1.4500000476837158 }
+  <Scalar> local { 1 }
+}
+
+<Texture> "pxArt (8).png" {
+  "./tex/pxArt (8).png"
+  <Scalar> format { rgba }
+  <Scalar> envtype { modulate }
+  <Scalar> uv-name { UVMap }
+  <Scalar> minfilter { linear_mipmap_linear }
+  <Scalar> magfilter { linear }
+  <Scalar> wrapu { repeat }
+  <Scalar> wrapv { repeat }
+  <Scalar> alpha { off }
+}
+
+  <Group> Plane.009 {
+    <Transform> {
+      <Matrix4> {
+        1.0 0.0 0.0 0.0 
+        0.0 1.0 0.0 0.0 
+        0.0 0.0 1.0 0.0 
+        0.0 0.0 0.0 1.0 
+      }
+    }
+    
+    <VertexPool> Plane.009 {
+    
+      <Vertex> 0 {
+        6.536337 120.076637 66.618355
+        <UV> UVMap {
+          0.946850 4.989483 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 1 {
+        9.933260 121.902184 66.618355
+        <UV> UVMap {
+          1.461941 4.989483 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 2 {
+        8.107718 125.299110 66.618355
+        <UV> UVMap {
+          1.185125 4.989483 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 3 {
+        4.710794 123.473564 66.618355
+        <UV> UVMap {
+          0.670035 4.989483 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 4 {
+        9.933260 121.902184 66.618355
+        <UV> UVMap {
+          1.461941 4.989483 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 5 {
+        6.536337 120.076637 66.618355
+        <UV> UVMap {
+          0.946850 4.989483 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 6 {
+        6.536337 120.076637 49.391533
+        <UV> UVMap {
+          0.946850 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 7 {
+        9.933260 121.902184 49.391533
+        <UV> UVMap {
+          1.461941 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 8 {
+        9.933260 121.902184 49.391533
+        <UV> UVMap {
+          1.461941 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 9 {
+        6.536337 120.076637 49.391533
+        <UV> UVMap {
+          0.946850 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 10 {
+        6.619773 118.280991 49.391533
+        <UV> UVMap {
+          0.959502 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 11 {
+        6.043067 114.467972 49.391533
+        <UV> UVMap {
+          0.872053 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 12 {
+        6.043067 114.467972 49.391533
+        <UV> UVMap {
+          0.872053 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 13 {
+        6.619773 118.280991 49.391533
+        <UV> UVMap {
+          0.959502 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 14 {
+        2.373466 119.400208 49.391533
+        <UV> UVMap {
+          0.315615 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 15 {
+        1.796760 115.587189 49.391533
+        <UV> UVMap {
+          0.228166 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 16 {
+        1.796760 115.587189 49.391533
+        <UV> UVMap {
+          0.228166 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 17 {
+        1.796760 115.587189 14.255814
+        <UV> UVMap {
+          0.228166 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 18 {
+        2.373466 119.400208 14.255814
+        <UV> UVMap {
+          0.315615 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 19 {
+        2.373466 119.400208 49.391533
+        <UV> UVMap {
+          0.315615 3.997044 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 20 {
+        1.796760 115.587189 14.255814
+        <UV> UVMap {
+          0.228166 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 21 {
+        2.373466 119.400208 14.255814
+        <UV> UVMap {
+          0.315615 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 22 {
+        -3.388479 109.289833 14.255814
+        <UV> UVMap {
+          -0.558093 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 23 {
+        -0.176401 111.423904 14.255814
+        <UV> UVMap {
+          -0.071033 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 24 {
+        -0.176401 111.423904 14.255814
+        <UV> UVMap {
+          -0.071033 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 25 {
+        -3.388479 109.289833 14.255814
+        <UV> UVMap {
+          -0.558093 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 26 {
+        -0.652026 104.967331 14.255814
+        <UV> UVMap {
+          -0.143154 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 27 {
+        2.560051 107.101402 14.255814
+        <UV> UVMap {
+          0.343907 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 28 {
+        2.560051 107.101402 14.255814
+        <UV> UVMap {
+          0.343907 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 29 {
+        -0.652026 104.967331 14.255814
+        <UV> UVMap {
+          -0.143154 1.972867 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 30 {
+        -0.652026 104.967331 -0.266121
+        <UV> UVMap {
+          -0.143154 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 31 {
+        2.560051 107.101402 -0.266121
+        <UV> UVMap {
+          0.343907 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 32 {
+        2.560051 107.101402 -0.266121
+        <UV> UVMap {
+          0.343907 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 33 {
+        -0.652026 104.967331 -0.266121
+        <UV> UVMap {
+          -0.143154 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 34 {
+        0.518692 95.814796 -0.266121
+        <UV> UVMap {
+          0.034368 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 35 {
+        3.628829 93.534721 -0.266121
+        <UV> UVMap {
+          0.505971 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 36 {
+        3.628829 93.534721 -0.266121
+        <UV> UVMap {
+          0.505971 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 37 {
+        0.518692 95.814796 -0.266121
+        <UV> UVMap {
+          0.034368 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 38 {
+        -1.906693 91.107590 -0.266121
+        <UV> UVMap {
+          -0.333405 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 39 {
+        1.203443 88.827515 -0.266121
+        <UV> UVMap {
+          0.138200 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 40 {
+        1.203443 88.827515 -0.266121
+        <UV> UVMap {
+          0.138200 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 41 {
+        -1.906693 91.107590 -0.266121
+        <UV> UVMap {
+          -0.333405 1.136256 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 42 {
+        -1.906693 91.107590 -85.641930
+        <UV> UVMap {
+          -0.333405 -3.782261 
+        }
+        <RGBA> { 1 1 1 1 }
+      }
+      <Vertex> 43 {
+        1.203443 88.827515 -85.641930
+        <UV> UVMap {
+          0.138200 -3.782261 
+        }
+        <RGBA> { 1 1 1 1 }
+      }}
+    
+    
+    <Polygon> {
+      <TRef> { "pxArt (8).png" }
+      <MRef> { Pond }
+      <Normal> {0.000000 0.000000 1.000000}
+      <BFace> { 0 }
+      <VertexRef> { 0 1 2 3 <Ref> { Plane.009 }} 
+    }
+    <Polygon> {
+      <TRef> { "pxArt (8).png" }
+      <MRef> { Pond }
+      <Normal> {0.473383 -0.880857 0.000000}
+      <BFace> { 0 }
+      <VertexRef> { 4 5 6 7 <Ref> { Plane.009 }} 
+    }
+    <Polygon> {
+      <TRef> { "pxArt (8).png" }
+      <MRef> { Pond }
+      <Normal> {0.000000 0.000000 1.000000}
+      <BFace> { 0 }
+      <VertexRef> { 8 9 10 11 <Ref> { Plane.009 }} 
+    }
+    <Polygon> {
+      <TRef> { "pxArt (8).png" }
+      <MRef> { Pond }
+      <Normal> {0.000000 0.000000 1.000000}
+      <BFace> { 0 }
+      <VertexRef> { 12 13 14 15 <Ref> { Plane.009 }} 
+    }
+    <Polygon> {
+      <TRef> { "pxArt (8).png" }
+      <MRef> { Pond }
+      <Normal> {0.988755 -0.149546 0.000000}
+      <BFace> { 0 }
+      <VertexRef> { 16 17 18 19 <Ref> { Plane.009 }} 
+    }
+    <Polygon> {
+      <TRef> { "pxArt (8).png" }
+      <MRef> { Pond }
+      <Normal> {0.000000 0.000000 1.000000}
+      <BFace> { 0 }
+      <VertexRef> { 20 21 22 23 <Ref> { Plane.009 }} 
+    }
+    <Polygon> {
+      <TRef> { "pxArt (8).png" }
+      <MRef> { Pond }
+      <Normal> {0.000000 0.000000 1.000000}
+      <BFace> { 0 }
+      <VertexRef> { 24 25 26 27 <Ref> { Plane.009 }} 
+    }
+    <Polygon> {
+      <TRef> { "pxArt (8).png" }
+      <MRef> { Pond }
+      <Normal> {0.553387 -0.832925 0.000000}
+      <BFace> { 0 }
+      <VertexRef> { 28 29 30 31 <Ref> { Plane.009 }} 
+    }
+    <Polygon> {
+      <TRef> { "pxArt (8).png" }
+      <MRef> { Pond }
+      <Normal> {0.000000 0.000000 1.000000}
+      <BFace> { 0 }
+      <VertexRef> { 32 33 34 35 <Ref> { Plane.009 }} 
+    }
+    <Polygon> {
+      <TRef> { "pxArt (8).png" }
+      <MRef> { Pond }
+      <Normal> {0.000000 0.000000 1.000000}
+      <BFace> { 0 }
+      <VertexRef> { 36 37 38 39 <Ref> { Plane.009 }} 
+    }
+    <Polygon> {
+      <TRef> { "pxArt (8).png" }
+      <MRef> { Pond }
+      <Normal> {-0.591247 -0.806490 0.000000}
+      <BFace> { 0 }
+      <VertexRef> { 40 41 42 43 <Ref> { Plane.009 }} 
+    }
+  }
