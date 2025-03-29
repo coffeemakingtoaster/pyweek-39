@@ -46,7 +46,7 @@ class MainGame(ShowBase):
         self.queue_task = None
         self.ws_handle_task = None
         self.logger.debug("Window setup done...")
-        base.camLens.setNear(0.1)
+        base.camLens.setNear(0.01)
         base.camLens.setFov(120)
         
         base.cTrav = CollisionTraverser()
