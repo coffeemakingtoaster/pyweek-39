@@ -27,5 +27,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Dish_Deception_Win
+          name: Flow_Win
           path: ./build/win_amd64/
