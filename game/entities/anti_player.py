@@ -76,7 +76,7 @@ class AntiPlayer(EntityBase):
         self.inAttack = True
         self.inBlock = False
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.playSoundLater, name=f"{self.id}-playSoundSweep", extraArgs=["sweep", True])
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=20, fn=self.turnSwordLethal, name=f"{self.id}-makeSwordLethalTask")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.turnSwordLethal, name=f"{self.id}-makeSwordLethalTask")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=28, fn=self.turnSwordHarmless, name=f"{self.id}-makeSwordHarmlessTask")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name=f"{self.id}-endAttackTask")
 

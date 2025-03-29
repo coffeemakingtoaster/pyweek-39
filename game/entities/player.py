@@ -78,7 +78,7 @@ class Player(EntityBase):
             self.sword.play("sweep"+str(self.sweepCount))
                 
             frames = self.sword.getAnimControl("sweep"+str(self.sweepCount)).getNumFrames()
-            base.taskMgr.doMethodLater(20/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
+            base.taskMgr.doMethodLater(15/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
             base.taskMgr.doMethodLater(28/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
             base.taskMgr.doMethodLater((frames-2)/24, self.endAttack,f"{self.id}-endAttackTask")
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.SWEEP_2 if True else PlayerAction.SWEEP_1], action_offsets=[self.match_timer], health=self.health)])
