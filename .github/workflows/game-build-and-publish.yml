@@ -47,8 +47,8 @@ jobs:
         if: ${{ matrix.os == 'windows' }}
         run: |
           New-Item -ItemType Directory -Path artifact;
-          Copy-Item -Path .\build\win_amd64\* -Destination .\artifact\build -Recurse;
-          Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 00000000 -Force
+          Copy-Item -Path .\build\win_amd64 -Destination .\artifact\build -Recurse;
+          Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 00000000 -Force;
           New-Item -ItemType SymbolicLink -Path ./artifact/flow.exe -Target ./artifact/build/flow.exe -RunAsAdmin;
         shell: pwsh
 
