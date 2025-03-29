@@ -53,7 +53,7 @@ class Player(EntityBase):
         if not self.is_in_attack and not self.is_in_block:
             self.is_in_attack = True
             self.is_in_block = False
-            base.taskMgr.doMethodLater(5/24,self.playSoundLater,f"{self.id}-playSoundStab", extraArgs=["stab", True])
+            base.taskMgr.doMethodLater(5/24,self.playSoundLater,f"{self.id}-playSoundStab", extraArgs=["stab"])
             self.sword.play("stab")
             frames = self.sword.getAnimControl("stab").getNumFrames()
             base.taskMgr.doMethodLater(25/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
@@ -70,7 +70,7 @@ class Player(EntityBase):
         if not self.is_in_attack and not self.is_in_block:
             
             self.is_in_attack = True
-            base.taskMgr.doMethodLater(14/24, self.playSoundLater, f"{self.id}-playSoundSweep", extraArgs=["sweep",True])
+            base.taskMgr.doMethodLater(14/24, self.playSoundLater, f"{self.id}-playSoundSweep", extraArgs=["sweep"])
             if self.sweep2:
                 self.sword.play("sweep2")
                 self.sweep2 = False

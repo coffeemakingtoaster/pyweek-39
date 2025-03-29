@@ -173,6 +173,7 @@ class EntityBase(DirectObject.DirectObject):
             sound = base.loader.loadSfx(getSoundPath(name))
         if not is_3d:
             sound.play()
+            return 
         add_3d_sound_to_node(sound.getName(), self.body, loops=False)
     
     def playSoundLater(self, name, is_3d=False):
@@ -348,9 +349,7 @@ class EntityBase(DirectObject.DirectObject):
         self.endBlock(None) 
         self.play_blocked_animation(frame_offset)
 
-        self.logger.error("here")
         if self.id == "player" and self.online and is_attacker_authority():
-            self.logger.error("sent")
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.GOT_BLOCKED], action_offsets=[self.match_timer])])
            
     def play_blocked_animation(self, frame_offset=0):

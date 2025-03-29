@@ -63,7 +63,7 @@ class Bot(EntityBase):
         if not self.is_in_attack:
             self.is_in_attack = True
             self.is_in_block = False
-            base.taskMgr.doMethodLater(14/24, self.playSoundLater, f"{self.id}-playSoundSweep", extraArgs=["sweep"])
+            base.taskMgr.doMethodLater(14/24, self.playSoundLater, f"{self.id}-playSoundSweep", extraArgs=["sweep", True])
             if self.sweep2:
                 self.sword.play("sweep2")
                 self.sweep2 = False
