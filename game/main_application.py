@@ -295,6 +295,7 @@ class MainGame(ShowBase):
         if fast_exit:
             return
         
+        taskMgr.remove("startLoopMusicTask")
         
         if is_victory:
             victorySound = base.loader.loadSfx(getSoundPath("vicroy"))

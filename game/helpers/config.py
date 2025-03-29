@@ -74,7 +74,6 @@ def get_music_volume():
     return base.musicManager.getVolume()
             
 def set_music_volume(value):
-    LOGGER.info(f"settings {value}")
     base.musicManager.setVolume(value)
     
 def get_fullscreen_value():
