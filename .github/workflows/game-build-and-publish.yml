@@ -2,8 +2,8 @@ name: build-and-release
 
 on:
   push:
-    #tags:
-    #- "v*.*.*"
+    tags:
+    - "v*.*.*"
 
 jobs:
   build:
@@ -46,10 +46,7 @@ jobs:
       - name: prep windows
         if: ${{ matrix.os == 'windows' }}
         run: |
-          New-Item -ItemType Directory -Path artifact;
-          Copy-Item -Path .\build\win_amd64 -Destination .\artifact\build -Recurse;
-          Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "ConsentPromptBehaviorAdmin" -Value 00000000 -Force;
-          New-Item -ItemType SymbolicLink -Path ./artifact/flow.exe -Target ./artifact/build/flow.exe;
+          Copy-Item -Path .\build\win_amd64 -Destination .\artifact -Recurse;
         shell: pwsh
 
       - uses: actions/upload-artifact@v4
