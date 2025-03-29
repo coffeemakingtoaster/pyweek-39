@@ -38,7 +38,7 @@ class Bot(EntityBase):
             base.taskMgr.doMethodLater(frames/24,self.endAttack,f"{self.id}-endAttackTask")
     
     def start_dash(self,player,task):
-        if self.body.isEmpty():
+        if self.body.is_empty():
             return
         self.is_dashing = True
         # Get positions

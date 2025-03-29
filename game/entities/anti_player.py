@@ -75,7 +75,7 @@ class AntiPlayer(EntityBase):
         self.sword.play("sweep2" if is_alternate_sweep else "sweep")
         self.inAttack = True
         self.inBlock = False
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.playSoundLater, name=f"{self.id}-playSoundSweep", extraArgs=["sweep"])
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.playSoundLater, name=f"{self.id}-playSoundSweep", extraArgs=["sweep", True])
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=20, fn=self.turnSwordLethal, name=f"{self.id}-makeSwordLethalTask")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=28, fn=self.turnSwordHarmless, name=f"{self.id}-makeSwordHarmlessTask")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name=f"{self.id}-endAttackTask")
@@ -125,7 +125,7 @@ class AntiPlayer(EntityBase):
             return
         self.sword.play("stab", fromFrame=frame_offset)
         self.logger.debug(f"Frame offset is {frame_offset}")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=5, fn=self.playSoundLater, name=f"{self.id}-playSoundStab", extraArgs=["stab"])
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=5, fn=self.playSoundLater, name=f"{self.id}-playSoundStab", extraArgs=["stab", True])
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.turnSwordLethal, name=f"{self.id}-makeSwordLethalTask")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.start_dash, name=f"{self.id}-startDashingTask")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.turnSwordHarmless, name=f"{self.id}-makeSwordHarmlessTask")
