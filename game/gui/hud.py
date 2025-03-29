@@ -1,9 +1,9 @@
 from game.const.events import GUI_UPDATE_ANTI_HP, GUI_UPDATE_ANTI_PLAYER_NAME, GUI_UPDATE_LATENCY, GUI_UPDATE_PLAYER_HP
-from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
+from game.const.colors import TEXT_SECONDARY_COLOR
 from game.gui.gui_base import GuiBase
 from panda3d.core import TransparencyAttrib
 
-from direct.gui.DirectGui import DirectButton, DirectLabel, DirectFrame, DGG, OnscreenImage
+from direct.gui.DirectGui import DirectLabel, DirectFrame, DGG
 
 from game.gui.hp_bar import HpBar
 
@@ -22,8 +22,7 @@ class Hud(GuiBase):
         latency_box.setTransparency(TransparencyAttrib.MAlpha)
         self.ui_elements.append(latency_box)
 
-        self.latency_indicator = DirectLabel(text=("Ping: N/A"),
-                    parent=latency_box,
+        self.latency_indicator = DirectLabel(text=("Ping: N/A"), parent=latency_box,
                     pos=(0,0,0.015), 
                     scale=0.12, 
                     relief=DGG.FLAT, 

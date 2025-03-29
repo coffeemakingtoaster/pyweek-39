@@ -7,20 +7,22 @@ from direct.showbase.ShowBase import ShowBase
 from pandac.PandaModules import TransparencyAttrib
 import copy
 
-from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_ANTI_PLAYER_NAME, NETWORK_SEND_PRIORITY_EVENT, START_GAME_EVENT, UPDATE_SHADOW_SETTINGS, WIN_EVENT
+from game.gui.const import GuiStates, StateTransitionEvents
+
+from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_FORCE_MAIN_MENU_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, GUI_UPDATE_ANTI_PLAYER_NAME, NETWORK_SEND_PRIORITY_EVENT, RESET_PLAYER_CAMERA, START_GAME_EVENT, UPDATE_SHADOW_SETTINGS, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.const.player import MAIN_MENU_CAMERA_HEIGHT, MAIN_MENU_CAMERA_ROTATION_RADIUS, MAIN_MENU_CAMERA_ROTATION_SPEED, MAIN_MENU_PLAYER_POSITION
-from game.entities import anti_player
 from game.entities.anti_player import AntiPlayer
 from game.entities.bot import Bot
 from game.entities.player import Player
 from game.helpers.config import get_player_name, load_config, is_attacker_authority
 from game.helpers.helpers import *
-from game.gui.gui_manager import GuiManager, GuiStates, StateTransitionEvents
+from game.gui.gui_manager import GuiManager
 import uuid
 
 from game.networking.queue import check_queue_status, join_queue, leave_queue
 from game.networking.websocket import MatchWS
+from game.utils.input import disable_mouse, enable_mouse
 from game.utils.name_generator import generate_name
 from game.utils.sound import add_3d_sound_to_node
 from shared.const.queue_status import QueueStatus
@@ -68,6 +70,7 @@ class MainGame(ShowBase):
         self.accept(GUI_PLAY_EVENT, self.gui_manager.handle_custom, [StateTransitionEvents.PLAY])
         self.accept(GUI_MAIN_MENU_EVENT, self.gui_manager.handle_custom, [StateTransitionEvents.MAIN_MENU])
         self.accept(GUI_QUEUE_EVENT, self.gui_manager.handle_custom, [StateTransitionEvents.QUEUE])
+        self.accept(GUI_FORCE_MAIN_MENU_EVENT, self.__force_main_menu)
         self.logger.debug("Gui handling and state machine initialized...")
 
         # General event handling
@@ -77,6 +80,7 @@ class MainGame(ShowBase):
         self.accept(WIN_EVENT, self.__finish_game, [True])
         self.accept(DEFEAT_EVENT, self.__finish_game, [False])
         self.accept(UPDATE_SHADOW_SETTINGS, self.__update_shadow_settings)
+        self.accept(RESET_PLAYER_CAMERA, self.__position_player_camera)
 
         self.accept(NETWORK_SEND_PRIORITY_EVENT, self.__priority_ws_send)
 
@@ -93,20 +97,18 @@ class MainGame(ShowBase):
 
         self.buildMap()
 
+    def __force_main_menu(self):
+        if self.gui_manager.is_ingame():
+            self.__finish_game(False, fast_exit=True)
+        self.gui_manager.handle_custom(StateTransitionEvents.FORCE_MAIN_MENU)
+
     def buildMap(self):
         """ Build map and place dummy player for main menu """
         
         dlight = DirectionalLight('my dlight')
         dlight.color = (0.6,0.6,1.3,1)
-        #dlight.color = (2,2,1.3,1)
         dlight.setDirection(Vec3(0,1,-0.5))
         dlnp = render.attachNewNode(dlight)
-        #alight = AmbientLight("ambi light")
-        #alight.color = (0.1,0.1,0.1,1)
-        #ambientnp = render.attachNewNode(alight)
-        # Use a 512x512 resolution shadow map
-        #dlight.setShadowCaster(True,1028,1028)
-        # Enable the shader generator for the receiving nodes
 
         # @Heuserus do we need this? This is the loc that was causing the particle issues 
         render.setShaderAuto()
@@ -125,10 +127,7 @@ class MainGame(ShowBase):
         slnp.setPos(0, 50, 50)  # Position the spotlight
         slnp.setHpr(0, -135, 0)  # Make the spotlight point at the model
         self.render.setLight(slnp)
-        
-        #dlight.getLens().setNearFar(1, 100)  # Adjust based on scene scale
-        #dlight.getLens().setFilmSize(50, 50) 
-        
+       
         #cubeMap = loader.loadCubeMap(getImagePath("skybox"))
         self.spaceSkyBox = loader.loadModel(getModelPath("skysphere"))
         self.spaceSkyBox.setScale(200)
@@ -181,8 +180,6 @@ class MainGame(ShowBase):
         p.loadConfig(getParticlePath("leaves"))
         p.start(parent = self.particle_owner, renderParent = self.particle_owner)
         p.setPos(12,15,0)
-        #p.setDepthWrite(False)
-        #p.setBin("fixed", 0)
         
         
         for i in range(15):
@@ -265,11 +262,9 @@ class MainGame(ShowBase):
         self.river.setTexOffset(self.riverTextureStage,0,(task.time*-0.2) %1.0)
         return Task.cont
     
-    def __finish_game(self, is_victory):
-        base.enableMouse()
-        self.toggle_mouse()
+    def __finish_game(self, is_victory, fast_exit=None):
+        enable_mouse()
         self.logger.info(f"Received game finish where victory: {is_victory}")
-        
         
         if self.ws is not None:
             self.ws.close(reason="Finished")
@@ -283,6 +278,8 @@ class MainGame(ShowBase):
         self.__add_and_focus_main_menu_player()
         if self.anti_player is not None:
             self.anti_player.destroy()
+        if fast_exit:
+            return
         if is_victory:
             victorySound = base.loader.loadSfx(getSoundPath("vicroy"))
             self.background_music.stop()
@@ -316,18 +313,6 @@ class MainGame(ShowBase):
             self.__start_game(match_id, False)
             return Task.done
 
-    def toggle_mouse(self):
-        if self.mouse_locked:
-            self.mouse_locked = False
-            props = WindowProperties()
-            props.setCursorHidden(False)
-            base.win.requestProperties(props)
-        else:
-            self.mouse_locked = True
-            props = WindowProperties()
-            props.setCursorHidden(True)
-            base.win.requestProperties(props)
-    
     def startLoopMusic(self,task):
         self.background_music = base.loader.loadMusic(getMusicPath("music_mid"))
         self.background_music.setLoop(True)
@@ -340,29 +325,14 @@ class MainGame(ShowBase):
         taskMgr.doMethodLater(70.171,self.startLoopMusic,"startLoopMusicTask")
         
         self.is_online = not is_offline
-        base.disableMouse()
-        self.toggle_mouse()
+        disable_mouse()
         
-        '''
-        testbox = CollisionSphere(0,0,0,3)
-        testboxNode = render.attachNewNode(CollisionNode("testbox"))
-        testboxNode.node().addSolid(testbox)
-        testboxNode.show()
-        '''
-       
         if self.player is not None:
-            
-            
             self.player.removeNode()
+
         self.player = Player(self.camera,self.win, self.is_online)
-        
-        # Reset rotation after main menu 
-        self.camera.setHpr(0,0,0)
-        self.camera.reparentTo(self.player.head)
-        #self.camera.setPos(0,-1,3)
-        #self.camera.setHpr(0,-60,0)
-        self.camera.setPos(0,0.1,0.4)
-        
+        self.__position_player_camera()
+               
         if is_offline:
             self.logger.info("Starting game in offline mode...")
             self.match_id = None
@@ -385,7 +355,16 @@ class MainGame(ShowBase):
         messenger.send(GUI_PLAY_EVENT)
         if is_offline:
             messenger.send(GUI_UPDATE_ANTI_PLAYER_NAME, [generate_name()])
-           
+
+    def __position_player_camera(self, update_pointer=True):
+        if type(self.player) is Player and self.player is not None:
+            self.camera.setHpr(0,0,0)
+            self.camera.reparentTo(self.player.head)
+            self.camera.setPos(0,0.1,0.4)
+            self.player.head.setP(0)
+            if update_pointer:
+                self.win.movePointer(0, self.win.getXSize() // 2, self.win.getYSize() // 2)
+                  
     def __process_ws_message(self, msg):
         if self.anti_player is not None:
             # Player info package
@@ -442,14 +421,19 @@ class MainGame(ShowBase):
 
         # Set camera position and look at the center
         self.camera.setPos(x, y, MAIN_MENU_CAMERA_HEIGHT)
-        self.camera.lookAt(self.player)
+        self.camera.lookAt(MAIN_MENU_PLAYER_POSITION)
 
     def __main_loop(self, task):
         dt = self.clock.dt
 
-        if self.gui_manager.gui_state_machine.getCurrentOrNextState() != GuiStates.RUNNING.value:
+        if not self.gui_manager.is_ingame():
             self.rotate_camera(dt)
             return Task.cont
+
+        # Fix issue within settings overlay and camera pos
+        if self.gui_manager.gui_state_machine.getCurrentOrNextState() == GuiStates.SETTINGS_OVERLAY.value:
+            self.__position_player_camera(update_pointer=False)
+
         if type(self.player) is not Actor:
             self.player.update(dt)
 

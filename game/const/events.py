@@ -5,12 +5,14 @@ CANCEL_QUEUE_EVENT = "cancel_queue"
 WIN_EVENT = "win"
 DEFEAT_EVENT = "defeat"
 UPDATE_SHADOW_SETTINGS = "update_shadow_settings"
+RESET_PLAYER_CAMERA = "reset_player_camera"
 
 # Networking events
 NETWORK_SEND_PRIORITY_EVENT = "network_priority"
 
 # Gui events
 GUI_RETURN_EVENT = "gui_return"
+GUI_FORCE_MAIN_MENU_EVENT = "sudo_goto_main_menu"
 GUI_SETTINGS_EVENT = "gui_settings"
 GUI_PLAY_EVENT = "gui_play"
 GUI_MAIN_MENU_EVENT = "gui_main_menu"

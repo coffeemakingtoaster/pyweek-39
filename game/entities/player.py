@@ -81,7 +81,7 @@ class Player(EntityBase):
             base.taskMgr.doMethodLater(20/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
             base.taskMgr.doMethodLater(28/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
             base.taskMgr.doMethodLater((frames-2)/24, self.endAttack,f"{self.id}-endAttackTask")
-            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.SWEEP_1 if self.sweep else PlayerAction.SWEEP_2], action_offsets=[self.match_timer], health=self.health)])
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.SWEEP_2 if self.sweep2 else PlayerAction.SWEEP_1], action_offsets=[self.match_timer], health=self.health)])
     
     def block(self):
         if self.is_block_stunned:
@@ -114,6 +114,10 @@ class Player(EntityBase):
                 self.take_damage(self.health - player_info.enemy_health, force=True)
     
     def update_camera(self, dt):
+        # Check if mouse is enabled
+        # https://docs.panda3d.org/1.10/python/_modules/direct/showbase/ShowBase#ShowBase.disableMouse
+        if base.mouse2cam.has_parent():
+            return
         md = self.window.getPointer(0)
         x = md.getX() - self.window.getXSize() / 2
         y = md.getY() - self.window.getYSize() / 2

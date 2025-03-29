@@ -1,17 +1,19 @@
-from game.const.events import GUI_RETURN_EVENT, UPDATE_SHADOW_SETTINGS
+from direct.task.Task import messenger
+from game.const.events import GUI_FORCE_MAIN_MENU_EVENT, GUI_RETURN_EVENT, UPDATE_SHADOW_SETTINGS
 from game.gui.gui_base import GuiBase
 from panda3d.core import TextNode, TransparencyAttrib
 
-from game.helpers.config import get_player_name, save_config, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled, set_attack_authority, is_attacker_authority
+from game.gui.gui_manager import StateTransitionEvents
+from game.helpers.config import get_player_name, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled, set_attack_authority, is_attacker_authority
 
-from direct.gui.DirectGui import DirectButton, DirectCheckButton, DirectEntry, DirectSlider, DirectLabel, DirectFrame, DGG, OnscreenImage
+from direct.gui.DirectGui import DirectButton, DirectCheckButton, DirectEntry, DirectSlider, DirectLabel, DirectFrame, DGG
 
 from os.path import join
 
 from game.const.colors import TEXT_SECONDARY_COLOR, TEXT_PRIMARY_COLOR
 
 class SettingsMenu(GuiBase):
-    def __init__(self) -> None:
+    def __init__(self, is_overlay = False) -> None:
         super().__init__("SettingsMenu")
         buttonImages = loader.loadTexture("assets/textures/button_bg.png"),
         font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
@@ -154,8 +156,8 @@ class SettingsMenu(GuiBase):
             text="SFX volume",
             text_fg=(TEXT_SECONDARY_COLOR),
             text_font = font,
-            relief=None,  
-            scale=0.1, 
+            relief=None,
+            scale=0.1,
             pos=(0.5,0,-0.15)
         )
         self.menu_elements.append(sfx_slider_text)
@@ -214,13 +216,32 @@ class SettingsMenu(GuiBase):
         good_shadow_checkbox.setTransparency(TransparencyAttrib.MAlpha)
         self.menu_elements.append(good_shadow_checkbox)
 
-        main_menu_button = DirectButton(
+        if is_overlay:
+            return_button = DirectButton(
+                parent = menu_box,
+                text=("Close"),
+                text_fg=(TEXT_PRIMARY_COLOR),
+                text_font = font,
+                relief=DGG.FLAT, 
+                pos=(0.5,0,-0.6), 
+                scale=0.1, 
+                frameTexture = buttonImages,
+                #pad = (1, 0.1),
+                frameSize = (-4, 4, -1, 1),
+                text_scale=0.75,
+                frameColor = (1,1,1,1),
+                text_pos = (0, -0.2),
+                command=self.return_to_previous)
+            return_button.setTransparency(TransparencyAttrib.MAlpha)
+            self.menu_elements.append(return_button)
+
+        force_main_menu_button = DirectButton(
             parent = menu_box,
             text=("Main Menu"),
             text_fg=(TEXT_PRIMARY_COLOR),
             text_font = font,
             relief=DGG.FLAT, 
-            pos=(0,0,-0.6), 
+            pos=(-0.5,0,-0.6) if is_overlay else (0,0,-0.6), 
             scale=0.1, 
             frameTexture = buttonImages,
             #pad = (1, 0.1),
@@ -228,12 +249,16 @@ class SettingsMenu(GuiBase):
             text_scale=0.75,
             frameColor = (1,1,1,1),
             text_pos = (0, -0.2),
-            command=self.return_to_main_menu)
-        main_menu_button.setTransparency(TransparencyAttrib.MAlpha)
-        self.menu_elements.append(main_menu_button)
+            command=self.__force_main_menu)
+        force_main_menu_button.setTransparency(TransparencyAttrib.MAlpha)
+        self.menu_elements.append(force_main_menu_button)
 
-    def return_to_main_menu(self):
+
+    def return_to_previous(self):
         messenger.send(GUI_RETURN_EVENT)
+
+    def __force_main_menu(self):
+        messenger.send(GUI_FORCE_MAIN_MENU_EVENT)
 
     def toggle_fullscreen(self, status):
         set_fullscreen_value(status == 1)
