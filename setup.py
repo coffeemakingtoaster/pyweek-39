@@ -4,7 +4,7 @@ import platform
 platforms = {
     "Linux": ['manylinux2014_x86_64'],
     "Windows": ['win_amd64'],
-    "Darwin": ['macosx_10_6_x86_64'],
+    "Darwin": ['macosx_10_9_x86_64'],
 }
 
 setup(

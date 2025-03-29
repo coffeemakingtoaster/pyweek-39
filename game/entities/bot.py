@@ -61,7 +61,6 @@ class Bot(EntityBase):
             return
 
         if not self.is_in_attack and not self.is_in_block:
-            
             self.is_in_attack = True
             base.taskMgr.doMethodLater(14/24, self.playSoundLater, f"{self.id}-playSoundSweep", extraArgs=["sweep"])
             
@@ -83,7 +82,9 @@ class Bot(EntityBase):
         if not self.is_in_block:
             self.is_in_attack = True
             self.is_in_block = True
-            self.sword.play("block1")
+            current_block_anim = self.block_animations.pop(0)
+            self.sword.play(current_block_anim)
+            self.block_animations.append(current_block_anim)
             
             taskMgr.remove(f"{self.id}-endAttackTask")
             taskMgr.remove(f"{self.id}-makeSwordLethalTask")

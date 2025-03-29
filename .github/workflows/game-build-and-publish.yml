@@ -7,7 +7,6 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
     strategy:
       matrix:
         os: [windows, ubuntu, macos]
@@ -31,5 +30,28 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Flow_${{ matrix.os }}
+          name: flow_${{ matrix.os }}
           path: ./build/
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: build
+
+      - run: zip -r linux.zip build/flow_ubuntu
+
+      - run: zip -r windows.zip build/flow_windows
+
+      - run: zip -r macos.zip build/flow_macos
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            linux.zip
+            macos.zip
+            windows.zip
