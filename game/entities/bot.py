@@ -148,7 +148,7 @@ class Bot(EntityBase):
             self.stab(player) if random.randint(1,100) else None
             
         else:
-            self.stab(player) if random.randint(1,500) else None
+            #self.stab(player) if random.randint(1,500) else None
             #self.jump() if random.randint(1,200) else None
             # 1 in 100 chance to block -> this is per tick :)
             self.sweep() if random.randint(1,100) else None

@@ -340,7 +340,8 @@ class EntityBase(DirectObject.DirectObject):
         self.turnSwordSword(None)
         self.end_dash(None)
         self.endAttack(None)
-        taskMgr.remove(f"{self.id}-endAttackTask")
+        taskMgr.remove(f"{self.id}-endBlockTask")
+        self.endBlock(None) 
         self.play_blocked_animation(frame_offset)
 
         self.logger.error("here")

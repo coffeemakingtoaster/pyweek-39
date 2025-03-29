@@ -31,6 +31,7 @@ from shared.types.status_message import StatusMessages
 from shared.utils.validation import parse_game_status, parse_player_info
 
 from direct.particles.ParticleEffect import ParticleEffect
+from direct.actor.Actor import Actor
 
 class MainGame(ShowBase):
     def __init__(self) -> None:
@@ -247,8 +248,11 @@ class MainGame(ShowBase):
         self.logger.info("Place camera and player")
         if self.player is not None:
             self.player.destroy()
-        self.player = Player(self.camera, self.win, False, non_interactive=True)
-        self.player.body.setPos(MAIN_MENU_PLAYER_POSITION)
+        self.player = Actor(getModelPath("idle_actor"),{"idle": getModelPath("idle_actor-Idle")})
+        self.player.setPos(MAIN_MENU_PLAYER_POSITION)
+        self.player.loop("idle")
+        
+        self.player.reparentTo(render)
         self.camera.reparentTo(render)
         self.camera_angle = 0
         
@@ -347,7 +351,9 @@ class MainGame(ShowBase):
         '''
        
         if self.player is not None:
-            self.player.destroy()
+            
+            
+            self.player.removeNode()
         self.player = Player(self.camera,self.win, self.is_online)
         
         # Reset rotation after main menu 
@@ -436,7 +442,7 @@ class MainGame(ShowBase):
 
         # Set camera position and look at the center
         self.camera.setPos(x, y, MAIN_MENU_CAMERA_HEIGHT)
-        self.camera.lookAt(self.player.body)
+        self.camera.lookAt(self.player)
 
     def __main_loop(self, task):
         dt = self.clock.dt
