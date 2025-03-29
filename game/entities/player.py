@@ -6,6 +6,7 @@ from game.helpers.config import is_attacker_authority
 from game.helpers.helpers import *
 from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue
 from shared.types.player_info import PlayerAction, PlayerInfo, Vector
+import random
 
 
 class Player(EntityBase):
@@ -71,18 +72,18 @@ class Player(EntityBase):
             
             self.is_in_attack = True
             base.taskMgr.doMethodLater(14/24, self.playSoundLater, f"{self.id}-playSoundSweep", extraArgs=["sweep"])
-            if self.sweep2:
-                self.sword.play("sweep2")
-                self.sweep2 = False
-            else:
-                self.sword.play("sweep")
-                self.sweep2 = True
-            frames = self.sword.getAnimControl("sweep").getNumFrames()
+            
+            if self.sweepCount == 4:
+                self.sweepCount = 1
+            self.sword.play("sweep"+str(self.sweepCount))
+                
+            frames = self.sword.getAnimControl("sweep"+str(self.sweepCount)).getNumFrames()
             base.taskMgr.doMethodLater(20/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
             base.taskMgr.doMethodLater(28/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
             base.taskMgr.doMethodLater((frames-2)/24, self.endAttack,f"{self.id}-endAttackTask")
-            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.SWEEP_2 if self.sweep2 else PlayerAction.SWEEP_1], action_offsets=[self.match_timer], health=self.health)])
-    
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.SWEEP_2 if True else PlayerAction.SWEEP_1], action_offsets=[self.match_timer], health=self.health)])
+            self.sweepCount += 1
+            
     def block(self):
         if self.is_block_stunned:
             return
@@ -90,7 +91,8 @@ class Player(EntityBase):
         if not self.is_in_block:
             
             self.is_in_block = True
-            self.sword.play("block")
+            blockAnims = ["block1","block2"]
+            self.sword.play(random.choice(blockAnims))
             
             self.endAttack(None)
             
@@ -99,7 +101,7 @@ class Player(EntityBase):
             taskMgr.remove(f"{self.id}-makeSwordHarmlessTask")
             taskMgr.remove(f"{self.id}-startDashingTask")
             
-            frames = self.sword.getAnimControl("block").getNumFrames()
+            frames = self.sword.getAnimControl("block1").getNumFrames()
             base.taskMgr.doMethodLater(1/24, self.turnSwordBlock,f"{self.id}-makeSwordBlockTask")
             base.taskMgr.doMethodLater(15/24, self.turnSwordSword,f"{self.id}-makeSwordSword")
             base.taskMgr.doMethodLater(frames/24, self.endBlock,f"{self.id}-endBlockTask")

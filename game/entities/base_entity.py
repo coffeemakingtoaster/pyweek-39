@@ -41,7 +41,7 @@ class EntityBase(DirectObject.DirectObject):
         self.is_in_block = False
         self.has_lethal_sword = False
         self.has_blocking_sword = False
-        self.sweep2 = False
+        self.sweepCount = 1
         self.is_dashing = False
         self.hit_handled = False
         self.is_block_stunned = False
@@ -137,10 +137,10 @@ class EntityBase(DirectObject.DirectObject):
         self.headHitBoxBlockedNodePath.reparentTo(head_joint)
         
         self.sword = Actor(getModelPath("sword"),{"stab":getModelPath("sword-Stab"),
-                                                  "block":getModelPath("sword-Block"),
+                                                  "block1":getModelPath("sword-Block"),
                                                   "block2":getModelPath("sword-Block2"),
                                                   "being-blocked":getModelPath("sword-being-blocked"),
-                                                  "sweep":getModelPath("sword-Sweep"),
+                                                  "sweep1":getModelPath("sword-Sweep"),
                                                   "sweep2":getModelPath("sword-Sweep2"),
                                                   "sweep3":getModelPath("sword-Sweep3")})
         self.sword.reparentTo(self.head)

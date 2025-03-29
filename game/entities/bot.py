@@ -50,30 +50,30 @@ class Bot(EntityBase):
         direction_y = player_position.y - body_position.y
 
         # Calculate angle in degrees
-        angle = degrees(atan2(direction_y, direction_x))-90
+        angle = degrees(atan2(direction_y, direction_x))-80
 
         # Set the heading (H) to face the player
         self.body.setH(angle)
         
      
     def sweep(self):
-        if self.is_block_stunned:
+        if self.is_block_stunned :
             return
 
-        if not self.is_in_attack:
+        if not self.is_in_attack and not self.is_in_block:
+            
             self.is_in_attack = True
-            self.is_in_block = False
-            base.taskMgr.doMethodLater(14/24, self.playSoundLater, f"{self.id}-playSoundSweep", extraArgs=["sweep", True])
-            if self.sweep2:
-                self.sword.play("sweep2")
-                self.sweep2 = False
+            base.taskMgr.doMethodLater(14/24, self.playSoundLater, f"{self.id}-playSoundSweep", extraArgs=["sweep"])
+            if self.sweepCount == 3:
+                self.sword.play("sweep"+str(self.sweepCount))
+                self.sweepCount = 0
             else:
-                self.sword.play("sweep")
-                self.sweep2 = True
-            frames = self.sword.getAnimControl("sweep").getNumFrames()
+                self.sword.play("sweep"+str(self.sweepCount))
+                self.sweepCount += 1
+            frames = self.sword.getAnimControl("sweep1").getNumFrames()
             base.taskMgr.doMethodLater(20/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
             base.taskMgr.doMethodLater(28/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
-            base.taskMgr.doMethodLater(frames/24,self.endAttack,f"{self.id}-endAttackTask")
+            base.taskMgr.doMethodLater((35)/24, self.endAttack,f"{self.id}-endAttackTask")
     
     def block(self):
         if self.is_block_stunned:
@@ -82,14 +82,14 @@ class Bot(EntityBase):
         if not self.is_in_block:
             self.is_in_attack = True
             self.is_in_block = True
-            self.sword.play("block")
+            self.sword.play("block1")
             
             taskMgr.remove(f"{self.id}-endAttackTask")
             taskMgr.remove(f"{self.id}-makeSwordLethalTask")
             taskMgr.remove(f"{self.id}-makeSwordHarmlessTask")
             taskMgr.remove(f"{self.id}-startDashingTask")
             
-            frames = self.sword.getAnimControl("block").getNumFrames()
+            frames = self.sword.getAnimControl("block1").getNumFrames()
             base.taskMgr.doMethodLater(1/24, self.turnSwordBlock,f"{self.id}-makeSwordBlockTask")
             base.taskMgr.doMethodLater(15/24, self.turnSwordSword,f"{self.id}-makeSwordSword")
             base.taskMgr.doMethodLater(frames/24, self.endBlock,f"{self.id}-endBlockTask")
