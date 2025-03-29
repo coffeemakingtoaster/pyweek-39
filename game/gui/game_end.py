@@ -16,7 +16,7 @@ class GameEnd(GuiBase):
         font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
         
         backdrop = DirectFrame(
-            frameSize=(-0.8, 0.8, -0.8, 0.8),
+            frameSize=(-1, 1, -0.6, 0.6),
             pos=(0, 0, 0.3), 
             frameColor = (1,1,1,1),
             frameTexture = "assets/textures/end_game_backdrop.png",
