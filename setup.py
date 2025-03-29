@@ -1,11 +1,11 @@
 from setuptools import setup
 
 setup(
-    name='Pyweek39',
+    name='Flow',
     options={
         'build_apps': {
             'gui_apps': {
-                'pyweek39': 'run_game.py',
+                'flow': 'run_game.py',
             },
             #'platforms': ['manylinux2014_x86_64', 'macosx_10_6_x86_64', 'win_amd64'],
             'platforms': ['win_amd64'],

@@ -1,0 +1,24 @@
+from enum import Enum
+
+class GuiStates(Enum):
+    RUNNING = "RUNNING"
+    SETTINGS = "SETTINGS"
+    MAIN_MENU = "MAIN_MENU"
+    GAME_END_SCREEN_WIN = "GAME_END_SCREEN_WIN"
+    GAME_END_SCREEN_DEFEAT = "GAME_END_SCREEN_DEFEAT"
+    SETTINGS_OVERLAY = "SETTINGS_OVERLAY"
+    QUEUE = "QUEUE"
+    LIMBO = "LIMBO"
+
+class StateTransitionEvents(Enum):
+    ESC = "ESC"
+    RETURN = "RETURN"
+    SETTINGS = "GOTO_SETTINGS"
+    MAIN_MENU = "GOTO_MAIN_MENU"
+    QUEUE = "QUEUE"
+    PLAY = "PLAY"
+    FORCE_MAIN_MENU = "FORCE_GOTO_MAIN_MENU"
+    WIN = "WIN"
+    DEFEAT = "DEFEAT"
+
+
