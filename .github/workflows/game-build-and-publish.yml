@@ -28,10 +28,37 @@ jobs:
       - name: build
         run: python3 setup.py build_apps 
 
+      - name: prep macos 
+        if: ${{ matrix.os == 'ubuntu' || matrix.os == 'macos' }}
+        run: |
+          mkdir ./artifact
+          cp -r ./build/macosx_10_9_x86_64/* ./artifact/
+
+      - name: prep linux
+        if: ${{ matrix.os == 'ubuntu' }}
+        run: |
+          mkdir ./artifact 
+          cp -r ./build/manylinux2014_x86_64/ ./artifact/build 
+          echo "cd ./build && ./flow" > ./artifact/flow
+          chmod +x ./artifact/build/flow 
+          chmod +x ./artifact/flow 
+
+      - name: prep windows
+        if: ${{ matrix.os == 'windows' }}
+        run: |
+          mkdir ./artifact
+          cp -r ./build/win_amd64/ ./artifact/build 
+
+      - name: link windows
+        if: ${{ matrix.os == 'windows' }}
+        run: New-Item -ItemType SymbolicLink -Path ./artifact/build/flow.exe -Target ./artifact/flow.exe
+        shell: pwsh
+
+
       - uses: actions/upload-artifact@v4
         with:
           name: flow_${{ matrix.os }}
-          path: ./build/
+          path: ./artifact/
 
   release:
     needs: [build]
@@ -41,11 +68,11 @@ jobs:
         with:
           path: build
 
-      - run: zip -r linux.zip build/flow_ubuntu
+      - run: zip -r linux.zip build/flow_ubuntu/artifact
 
-      - run: zip -r windows.zip build/flow_windows
+      - run: zip -r windows.zip build/flow_windows/artifact
 
-      - run: zip -r macos.zip build/flow_macos
+      - run: zip -r macos.zip build/flow_macos/artifact
 
       - name: Release
         uses: softprops/action-gh-release@v2
