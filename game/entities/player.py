@@ -1,3 +1,4 @@
+from direct.stdpy.threading import current_thread
 from game.const.events import NETWORK_SEND_PRIORITY_EVENT
 from game.const.player import BASE_HEALTH, DASH_SPEED, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
@@ -75,13 +76,12 @@ class Player(EntityBase):
             
             if self.sweepCount == 4:
                 self.sweepCount = 1
-            self.sword.play("sweep"+str(self.sweepCount))
-                
-            frames = self.sword.getAnimControl("sweep"+str(self.sweepCount)).getNumFrames()
+            self.sword.play(f"sweep{self.sweepCount}")
+            frames = self.sword.getAnimControl(f"sweep{self.sweepCount}").getNumFrames()
             base.taskMgr.doMethodLater(20/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
             base.taskMgr.doMethodLater(28/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
             base.taskMgr.doMethodLater((frames-2)/24, self.endAttack,f"{self.id}-endAttackTask")
-            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.SWEEP_2 if True else PlayerAction.SWEEP_1], action_offsets=[self.match_timer], health=self.health)])
+            messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction(3 + self.sweepCount)], action_offsets=[self.match_timer], health=self.health)])
             self.sweepCount += 1
             
     def block(self):
@@ -91,8 +91,9 @@ class Player(EntityBase):
         if not self.is_in_block:
             
             self.is_in_block = True
-            blockAnims = ["block1","block2"]
-            self.sword.play(random.choice(blockAnims))
+            current_block_anim = self.block_animations.pop(0)
+            self.sword.play(current_block_anim)
+            self.block_animations.append(current_block_anim)
             
             self.endAttack(None)
             

@@ -66,13 +66,13 @@ class AntiPlayer(EntityBase):
         self.vertical_velocity = JUMP_VELOCITY - (GRAVITY * offset)
         self.body.setZ(self.body.getZ() + (self.vertical_velocity * offset))
 
-    def __sweep_safe(self, is_alternate_sweep=False, frame_offset=0):
+    def __sweep_safe(self, sweep_animation_no=1, frame_offset=0):
         # sweep and sweep2 have the same duration
-        total_frames = self.sword.getAnimControl("sweep").getNumFrames()
+        total_frames = self.sword.getAnimControl("sweep1").getNumFrames()
         if frame_offset > total_frames:
             self.logger.warning(f"Skipped sweep animation because latency exceeded frame count {frame_offset}")
             return
-        self.sword.play("sweep2" if is_alternate_sweep else "sweep")
+        self.sword.play(f"sweep{sweep_animation_no}")
         self.inAttack = True
         self.inBlock = False
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.playSoundLater, name=f"{self.id}-playSoundSweep", extraArgs=["sweep", True])
@@ -80,28 +80,29 @@ class AntiPlayer(EntityBase):
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=28, fn=self.turnSwordHarmless, name=f"{self.id}-makeSwordHarmlessTask")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name=f"{self.id}-endAttackTask")
 
-    def sweep(self, is_alternate_sweep=False, start_time=0.0):
+    def sweep(self, sweep_animation_no=1, start_time=0.0):
         if not self.is_puppet or start_time == 0.0:
-            self.__sweep_safe(is_alternate_sweep=is_alternate_sweep)
+            self.__sweep_safe(sweep_animation_no=sweep_animation_no)
             return
         offset = self.match_timer - start_time
         messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
         start_frame = int(offset * 24)
         self.logger.debug(f"Block started at frame {start_frame}")
-        self.__sweep_safe(is_alternate_sweep=is_alternate_sweep, frame_offset=start_frame)
+        self.__sweep_safe(sweep_animation_no=sweep_animation_no, frame_offset=start_frame)
 
     def __block_safe(self, frame_offset=0):
-        total_frames = self.sword.getAnimControl("block").getNumFrames()
+        total_frames = self.sword.getAnimControl("block1").getNumFrames()
         if frame_offset > total_frames:
             self.logger.warning(f"Skipped block animation because latency exceeded frame count {frame_offset}")
             return
-        self.sword.play("block")
+        current_block = self.block_animations.pop(0)
+        self.sword.play(current_block)
+        self.block_animations.append(current_block)
         self.inAttack = True
         self.inBlock = True
         taskMgr.remove(f"{self.id}-endAttackTask")
         taskMgr.remove(f"{self.id}-makeSwordLethalTask")
         taskMgr.remove(f"{self.id}-makeSwordHarmlessTask")
-        frames = self.sword.getAnimControl("block").getNumFrames()
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=5, fn=self.turnSwordBlock, name=f"{self.id}-makeSwordBlockTask")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turnSwordSword, name=f"{self.id}-makeSwordSwordTask")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turnSwordSword, name=f"{self.id}-makeSwordSwordTask")
@@ -170,7 +171,9 @@ class AntiPlayer(EntityBase):
                 case PlayerAction.SWEEP_1:
                     self.sweep(start_time=offset)
                 case PlayerAction.SWEEP_2:
-                    self.sweep(is_alternate_sweep=True, start_time=offset)
+                    self.sweep(sweep_animation_no=2, start_time=offset)
+                case PlayerAction.SWEEP_3:
+                    self.sweep(sweep_animation_no=3, start_time=offset)
                 case PlayerAction.GOT_BLOCKED:
                     self.__remote_block(offset)
                 case _:

@@ -46,6 +46,8 @@ class EntityBase(DirectObject.DirectObject):
         self.hit_handled = False
         self.is_block_stunned = False
         self.dashParticles = []
+
+        self.block_animations = ["block1", "block2"]
         
         self.setupSounds()
 
