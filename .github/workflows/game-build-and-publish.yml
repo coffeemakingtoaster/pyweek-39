@@ -45,9 +45,7 @@ jobs:
 
       - name: prep windows
         if: ${{ matrix.os == 'windows' }}
-        run: |
-          mkdir ./artifact
-          cp -r ./build/win_amd64/ ./artifact/build 
+        run: mkdir ./artifact && cp -r ./build/win_amd64/ ./artifact/build 
 
       - name: link windows
         if: ${{ matrix.os == 'windows' }}
