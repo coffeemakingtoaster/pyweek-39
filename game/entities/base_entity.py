@@ -256,8 +256,9 @@ class EntityBase(DirectObject.DirectObject):
         
     def hitOver(self,blood,task):
         self.hit_handled = False
-        blood.cleanup()
-        blood.removeNode()
+        if blood is not None:
+            blood.cleanup()
+            blood.removeNode()
 
     def take_damage(self, damage_value: int, force = False):
         # Player only takes damage after network said so
@@ -330,13 +331,15 @@ class EntityBase(DirectObject.DirectObject):
         base.taskMgr.doMethodLater(0, self.turnSwordSword,f"{self.id}-makeSwordSword")
                 
     def handle_blocked_hit(self, entry, force=False, frame_offset=0):
+        
         if self.is_puppet and is_attacker_authority() and not force:
             return
 
         self.logger.debug(f"My attack was blocked {force}")
+        
         if self.hit_handled and not force:
             return
-
+        self.hit_handled = True
         # force is over network...no need to verify that
         if not force:
             if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
@@ -348,6 +351,7 @@ class EntityBase(DirectObject.DirectObject):
         taskMgr.remove(f"{self.id}-endBlockTask")
         self.endBlock(None) 
         self.play_blocked_animation(frame_offset)
+        taskMgr.doMethodLater(0.5, self.hitOver,"hitOver", extraArgs=[None], appendTask=True)
 
         if self.id == "player" and self.online and is_attacker_authority():
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.GOT_BLOCKED], action_offsets=[self.match_timer])])
