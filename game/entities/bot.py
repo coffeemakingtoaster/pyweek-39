@@ -144,7 +144,7 @@ class Bot(EntityBase):
         self.action_check_cooldown = BOT_WAIT_TIME_BETWEEN_ACTION_CHECKS
         if player.is_in_attack:
             # 1 in 100 chance to block -> this is per tick :)
-            self.block() if random.randint(1,100) else None
+            self.block() if random.randint(1,800) else None
         if 7 > dist_to_player > 3:
             # 1 in 100 chance to block -> this is per tick :)
             
@@ -167,10 +167,10 @@ class Bot(EntityBase):
             return direction.normalized() * DASH_SPEED
         delta = (self.body.getPos(render) - player_position).length()
         if delta < 1:
-            return self.body.getRelativeVector(self.head, Vec3.forward()).normalized() * MOVEMENT_SPEED * -1 
+            return self.body.getRelativeVector(self.head, Vec3.forward()).normalized() * MOVEMENT_SPEED*0.8 * -1 
         if delta < 3:
             return Vec3(0,0,self.vertical_velocity)
-        return self.body.getRelativeVector(self.head, Vec3.forward()) * MOVEMENT_SPEED
+        return self.body.getRelativeVector(self.head, Vec3.forward()) * MOVEMENT_SPEED*0.8
             
     def update(self, dt, player=None):
         

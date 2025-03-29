@@ -100,6 +100,9 @@ class MainGame(ShowBase):
     def __force_main_menu(self):
         if self.gui_manager.is_ingame():
             self.__finish_game(False, fast_exit=True)
+            self.background_music.stop()
+            
+            self.main_menu_music.play()
         self.gui_manager.handle_custom(StateTransitionEvents.FORCE_MAIN_MENU)
 
     def buildMap(self):
@@ -180,6 +183,12 @@ class MainGame(ShowBase):
         p.loadConfig(getParticlePath("leaves"))
         p.start(parent = self.particle_owner, renderParent = self.particle_owner)
         p.setPos(12,15,0)
+        
+        p = ParticleEffect()
+        p.loadConfig(getParticlePath("leaves"))
+        p.start(parent = self.particle_owner, renderParent = self.particle_owner)
+        p.setPos(-8,22,0)
+        
         
         
         for i in range(15):
@@ -285,6 +294,8 @@ class MainGame(ShowBase):
             self.anti_player.destroy()
         if fast_exit:
             return
+        
+        
         if is_victory:
             victorySound = base.loader.loadSfx(getSoundPath("vicroy"))
             self.background_music.stop()
@@ -292,6 +303,9 @@ class MainGame(ShowBase):
             self.main_menu_music.play()
             self.gui_manager.handle_custom(StateTransitionEvents.WIN)
         else:
+            self.background_music.stop()
+            
+            self.main_menu_music.play()
             self.gui_manager.handle_custom(StateTransitionEvents.DEFEAT)
 
     def __enter_queue(self):
