@@ -208,6 +208,10 @@ class MainGame(ShowBase):
         fogNode.lookAt(0,0,-10)
         render.setFog(linfog) 
         '''
+        self.main_menu_music =  base.loader.loadMusic(getMusicPath("main_menu"))
+        self.main_menu_music.setLoop(True)
+        self.main_menu_music.play()
+        
 
     def waterFallMaker(self,waterfall):
         waterfall.reparentTo(render)
@@ -287,6 +291,7 @@ class MainGame(ShowBase):
             victorySound = base.loader.loadSfx(getSoundPath("vicroy"))
             self.background_music.stop()
             victorySound.play()
+            self.main_menu_music.play()
             self.gui_manager.handle_custom(StateTransitionEvents.WIN)
         else:
             self.gui_manager.handle_custom(StateTransitionEvents.DEFEAT)
@@ -334,6 +339,8 @@ class MainGame(ShowBase):
         self.background_music.play()
     
     def __start_game(self, match_id="", is_offline=True):
+        
+        self.main_menu_music.stop()
         
         self.background_music = base.loader.loadMusic(getMusicPath("music_start"))
         self.background_music.play()

@@ -138,9 +138,11 @@ class EntityBase(DirectObject.DirectObject):
         
         self.sword = Actor(getModelPath("sword"),{"stab":getModelPath("sword-Stab"),
                                                   "block":getModelPath("sword-Block"),
+                                                  "block2":getModelPath("sword-Block2"),
                                                   "being-blocked":getModelPath("sword-being-blocked"),
                                                   "sweep":getModelPath("sword-Sweep"),
-                                                  "sweep2":getModelPath("sword-Sweep2")})
+                                                  "sweep2":getModelPath("sword-Sweep2"),
+                                                  "sweep3":getModelPath("sword-Sweep3")})
         self.sword.reparentTo(self.head)
         
         sword_joint = self.sword.exposeJoint(None, "modelRoot", "Bone")
@@ -188,7 +190,7 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         
     def turnSwordBlock(self,task):
-        self.logger.debug("block")
+        #self.logger.debug("block")
         self.has_blocking_sword = True
         # Enable block body
         self.bodyHitBoxBlockedNodePath.node().setCollideMask(self.own_collision_mask)
@@ -198,7 +200,7 @@ class EntityBase(DirectObject.DirectObject):
         self.headHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         
     def turnSwordSword(self,task):
-        self.logger.debug("unblock")
+        #self.logger.debug("unblock")
         self.has_blocking_sword = False
         self.hitBlocked = False
         # Disable block body
@@ -229,6 +231,9 @@ class EntityBase(DirectObject.DirectObject):
         taskMgr.doMethodLater(1, self.hitOver,"hitOver", extraArgs=[p], appendTask=True)
 
     def handle_hit(self, event):
+        
+        print("I hit an enemy")
+        
         """I hit an enemy"""
         if not self.hit_handled and self.sword.getCurrentAnim() is not None:
             if self.is_puppet and is_attacker_authority():
@@ -269,7 +274,7 @@ class EntityBase(DirectObject.DirectObject):
             #self.logger.debug("Network update own health")
 
         self.health -= damage_value
-        self.logger.debug(f"Now at {self.health} HP")
+        #self.logger.debug(f"Now at {self.health} HP")
         messenger.send(GUI_UPDATE_PLAYER_HP if self.id == "player" else GUI_UPDATE_ANTI_HP, [self.health])
         # Server handles online win states
         if self.online:
@@ -284,7 +289,7 @@ class EntityBase(DirectObject.DirectObject):
                     messenger.send(WIN_EVENT)
 
     def handle_body_damage(self, entry):
-        self.logger.debug("My body was hit")
+        #self.logger.debug("My body was hit")
         # ensure that this is the sword in case any topology is changed at some point
         assert entry.getFromNodePath().getName().endswith("-sHbnp")
 
@@ -324,7 +329,7 @@ class EntityBase(DirectObject.DirectObject):
             #self.take_damage(1)
     
     def handle_block(self):
-        self.logger.debug("I blocked an attack")
+        #self.logger.debug("I blocked an attack")
         self.inv_phase = 0.1
         self.is_in_block = False
         self.is_in_attack = False
@@ -335,7 +340,7 @@ class EntityBase(DirectObject.DirectObject):
         if self.is_puppet and is_attacker_authority() and not force:
             return
 
-        self.logger.debug(f"My attack was blocked {force}")
+        #self.logger.debug(f"My attack was blocked {force}")
         
         if self.hit_handled and not force:
             return
@@ -343,7 +348,7 @@ class EntityBase(DirectObject.DirectObject):
         # force is over network...no need to verify that
         if not force:
             if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
-                    self.logger.debug("Was from behind, no block occured")
+                    #self.logger.debug("Was from behind, no block occured")
                     return
         self.turnSwordSword(None)
         self.end_dash(None)
@@ -357,7 +362,7 @@ class EntityBase(DirectObject.DirectObject):
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.GOT_BLOCKED], action_offsets=[self.match_timer])])
            
     def play_blocked_animation(self, frame_offset=0):
-        self.logger.debug(f"My attack was blocked {frame_offset}")
+        #self.logger.debug(f"My attack was blocked {frame_offset}")
         self.playSound("blocked_hit")
         self.sword.play("being-blocked", fromFrame=frame_offset)
         self.is_block_stunned = True
@@ -421,8 +426,8 @@ class EntityBase(DirectObject.DirectObject):
         own_back_hor = render.getRelativeVector(self.body, Vec3.back())
         own_back_hor.setZ(0)
         deg_delta = abs(enemy_body_orientation_hor.normalized().angleDeg(own_back_hor.normalized()))
-        self.draw_debug_ray(self.body.getPos(), self.body.getPos() + own_back_hor)
-        self.draw_debug_ray(self.body.getPos(), self.body.getPos() + enemy_body_orientation_hor, color=(0,1,0,1))
+        #self.draw_debug_ray(self.body.getPos(), self.body.getPos() + own_back_hor)
+        #self.draw_debug_ray(self.body.getPos(), self.body.getPos() + enemy_body_orientation_hor, color=(0,1,0,1))
         return deg_delta > (BLOCK_RANGE_DEG/2)
 
     def draw_debug_ray(self, start, end, color=(1, 0, 0, 1)):

@@ -50,7 +50,7 @@ class Bot(EntityBase):
         direction_y = player_position.y - body_position.y
 
         # Calculate angle in degrees
-        angle = degrees(atan2(direction_y, direction_x))-80
+        angle = degrees(atan2(direction_y, direction_x))-90
 
         # Set the heading (H) to face the player
         self.body.setH(angle)
@@ -125,7 +125,8 @@ class Bot(EntityBase):
 
         # Apply rotation
         self.body.setH(angle_h)
-        self.head.setP(angle_p)
+        if not self.is_in_attack:
+            self.head.setP(angle_p)
 
     def attack_if_possible(self, player: Player):
         # We wait a bit longer until we try again
