@@ -450,8 +450,8 @@ class MainGame(ShowBase):
         if self.gui_manager.gui_state_machine.getCurrentOrNextState() != GuiStates.RUNNING.value:
             self.rotate_camera(dt)
             return Task.cont
-
-        self.player.update(dt)
+        if type(self.player) is not Actor:
+            self.player.update(dt)
 
         if self.is_online:
             self.anti_player.update(dt)
