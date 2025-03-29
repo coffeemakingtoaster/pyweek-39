@@ -64,16 +64,17 @@ class Bot(EntityBase):
             
             self.is_in_attack = True
             base.taskMgr.doMethodLater(14/24, self.playSoundLater, f"{self.id}-playSoundSweep", extraArgs=["sweep"])
-            if self.sweepCount == 3:
-                self.sword.play("sweep"+str(self.sweepCount))
-                self.sweepCount = 0
-            else:
-                self.sword.play("sweep"+str(self.sweepCount))
-                self.sweepCount += 1
-            frames = self.sword.getAnimControl("sweep1").getNumFrames()
+            
+            if self.sweepCount == 4:
+                self.sweepCount = 1
+            self.sword.play("sweep"+str(self.sweepCount))
+                
+            frames = self.sword.getAnimControl("sweep"+str(self.sweepCount)).getNumFrames()
             base.taskMgr.doMethodLater(20/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
             base.taskMgr.doMethodLater(28/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
-            base.taskMgr.doMethodLater((35)/24, self.endAttack,f"{self.id}-endAttackTask")
+            base.taskMgr.doMethodLater((frames-2)/24, self.endAttack,f"{self.id}-endAttackTask")
+            
+            self.sweepCount += 1
     
     def block(self):
         if self.is_block_stunned:
