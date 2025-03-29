@@ -1,4 +1,11 @@
 from setuptools import setup
+import platform
+
+platforms = {
+    "Linux": ['manylinux2014_x86_64'],
+    "Windows": ['win_amd64'],
+    "Darwin": ['macosx_10_6_x86_64'],
+}
 
 setup(
     name='Flow',
@@ -7,8 +14,7 @@ setup(
             'gui_apps': {
                 'flow': 'run_game.py',
             },
-            #'platforms': ['manylinux2014_x86_64', 'macosx_10_6_x86_64', 'win_amd64'],
-            'platforms': ['win_amd64'],
+            'platforms': platforms.get(platform.system(), ["win_amd64"]), # default to windows
             # Set up output logging, important for GUI apps!
             'log_filename': './logs/output.log',
             'log_append': False,
