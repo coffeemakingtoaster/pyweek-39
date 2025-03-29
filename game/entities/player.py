@@ -1,9 +1,9 @@
 from direct.stdpy.threading import current_thread
-from game.const.events import NETWORK_SEND_PRIORITY_EVENT
+from game.const.events import NETWORK_SEND_PRIORITY_EVENT, UPDATE_PLAYER_LOOK_SENSITIVITY
 from game.const.player import BASE_HEALTH, DASH_SPEED, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
 from game.entities.base_entity import EntityBase
 from direct.actor.Actor import Actor
-from game.helpers.config import is_attacker_authority
+from game.helpers.config import get_look_sensitivity, is_attacker_authority
 from game.helpers.helpers import *
 from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue
 from shared.types.player_info import PlayerAction, PlayerInfo, Vector
@@ -13,7 +13,7 @@ import random
 class Player(EntityBase):
     def __init__(self,camera,window,online, non_interactive=False) -> None:
         super().__init__(window, "player", online, "Player")
-        self.mouse_sens = 0.1 #MOUSE_SENS
+        self.mouse_sens = get_look_sensitivity()
         self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
         self.camera = camera
                 
@@ -33,6 +33,10 @@ class Player(EntityBase):
         self.accept("lshift", self.stab)
         self.accept("mouse1",self.sweep)
         self.accept("mouse3", self.block)
+        self.accept(UPDATE_PLAYER_LOOK_SENSITIVITY, self.__update_player_sens)
+
+    def __update_player_sens(self):
+        self.mouse_sens = get_look_sensitivity()
 
     def set_movement_status(self, direction):
         self.movement_status[direction] = 1

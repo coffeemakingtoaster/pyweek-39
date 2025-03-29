@@ -4,7 +4,7 @@ from game.gui.gui_base import GuiBase
 from panda3d.core import TextNode, TransparencyAttrib
 
 from game.gui.gui_manager import StateTransitionEvents
-from game.helpers.config import get_player_name, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled, set_attack_authority, is_attacker_authority
+from game.helpers.config import get_look_sensitivity, get_player_name, set_look_sensitivity, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled, set_attack_authority, is_attacker_authority
 
 from direct.gui.DirectGui import DirectButton, DirectCheckButton, DirectEntry, DirectSlider, DirectLabel, DirectFrame, DGG
 
@@ -127,8 +127,8 @@ class SettingsMenu(GuiBase):
             relief=None, 
             text_fg=(TEXT_SECONDARY_COLOR),
             text_font = font,
-            scale=0.1, 
-            pos=(-0.5,0,-0.15)
+            scale=0.05, 
+            pos=(-0.8,0,-0.15)
         )
         self.menu_elements.append(music_slider_text)
 
@@ -136,10 +136,10 @@ class SettingsMenu(GuiBase):
             parent = menu_box,
             pageSize=1, 
             range=(0,100), 
-            pos=(-0.5,0,-0.25), 
+            pos=(-0.8,0,-0.25), 
             value=int(current_music_volume * 100),
             thumb_image_scale = 0.5,
-            scale=0.06, 
+            scale=0.03, 
             thumb_image = checkbox_image,
             thumb_scale = 0.2,
             frameSize =  (-3, 3, -0.5, 0.5),
@@ -157,8 +157,8 @@ class SettingsMenu(GuiBase):
             text_fg=(TEXT_SECONDARY_COLOR),
             text_font = font,
             relief=None,
-            scale=0.1,
-            pos=(0.5,0,-0.15)
+            scale=0.05,
+            pos=(0,0,-0.15)
         )
         self.menu_elements.append(sfx_slider_text)
 
@@ -166,8 +166,8 @@ class SettingsMenu(GuiBase):
             parent = menu_box,
             pageSize=1, 
             range=(0,100), 
-            pos=(0.5,0,-0.25),  
-            scale=0.06, 
+            pos=(0,0,-0.25),  
+            scale=0.03, 
             thumb_image = checkbox_image,
             thumb_image_scale = 0.5,
             frameSize =  (-3, 3, -0.5, 0.5),
@@ -177,13 +177,43 @@ class SettingsMenu(GuiBase):
         self.sfx_volume_slider.setTransparency(TransparencyAttrib.MAlpha)
         self.menu_elements.append(self.sfx_volume_slider)
 
+        current_look_sens = get_look_sensitivity()
+        look_sens_text = DirectLabel(
+            parent = menu_box,
+            text="Look sensitivity",
+            relief=None, 
+            text_fg=(TEXT_SECONDARY_COLOR),
+            text_font = font,
+            scale=0.05, 
+            pos=(0.8,0,-0.15)
+        )
+        self.menu_elements.append(look_sens_text)
+
+        self.look_sens_slider = DirectSlider(
+            parent = menu_box,
+            pageSize=1, 
+            range=(0,100), 
+            pos=(0.8,0,-0.25), 
+            value=int(current_look_sens * 100),
+            thumb_image_scale = 0.5,
+            scale=0.03, 
+            thumb_image = checkbox_image,
+            thumb_scale = 0.2,
+            frameSize =  (-3, 3, -0.5, 0.5),
+            thumb_relief = None,  
+            command=self.update_look_sens,
+            geom_scale=(10, 1, 1)
+            )
+        self.look_sens_slider.setTransparency(TransparencyAttrib.MAlpha)
+        self.menu_elements.append(self.look_sens_slider)
+
         play_sample_sfx_button = DirectButton(
             parent = menu_box,
             text=("Test sound"),
             text_fg=(TEXT_PRIMARY_COLOR),
             text_font = font,
             relief=DGG.FLAT,
-            pos=(0.5,0,-0.4), 
+            pos=(0,0,-0.4), 
             scale=0.05, 
             frameTexture = buttonImages,
             #pad = (1, 0.1),
@@ -253,7 +283,6 @@ class SettingsMenu(GuiBase):
         force_main_menu_button.setTransparency(TransparencyAttrib.MAlpha)
         self.menu_elements.append(force_main_menu_button)
 
-
     def return_to_previous(self):
         messenger.send(GUI_RETURN_EVENT)
 
@@ -285,6 +314,10 @@ class SettingsMenu(GuiBase):
     def play_sample_sound(self):
         sample_sfx = base.loader.loadSfx(join("assets", "sfx", "sample.wav"))
         sample_sfx.play()
+
+    def update_look_sens(self):
+        value = self.look_sens_slider["value"]
+        set_look_sensitivity(value/100)
 
     def update_fps(self, status):
         set_fps_counter_enabled(status == 1)
