@@ -62,11 +62,11 @@ jobs:
         with:
           path: build
 
-      - run: zip -r linux.zip build/flow_ubuntu/artifact
+      - run: zip -r linux.zip build/flow_ubuntu
 
-      - run: zip -r windows.zip build/flow_windows/artifact
+      - run: zip -r windows.zip build/flow_windows
 
-      - run: zip -r macos.zip build/flow_macos/artifact
+      - run: zip -r macos.zip build/flow_macos
 
       - name: Release
         uses: softprops/action-gh-release@v2
