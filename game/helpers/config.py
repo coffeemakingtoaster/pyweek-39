@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from panda3d.core import WindowProperties
 import json
 
@@ -108,6 +109,15 @@ def set_attack_authority(val: bool):
 def is_attacker_authority() -> bool:
     return True
 
+def sanitize_name(s: str) -> str:
+    """
+    Thank you chatgpt
+    Removes all non-URL-friendly characters from a string.
+    Allowed characters: alphanumeric, hyphens (-), underscores (_), and periods (.).
+    """
+    return re.sub(r'[^a-zA-Z0-9_.-]', '', s)
+
 def set_player_name(val: str):
+    val = sanitize_name(val)
     LOGGER.info(f"New name set: {val}")
     os.environ[PLAYER_NAME_ENV_VAR] = val
