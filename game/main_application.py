@@ -259,13 +259,14 @@ class MainGame(ShowBase):
         return Task.cont
     
     def shiftRiverTextureTask(self,task):
-        self.river.setTexOffset(self.riverTextureStage,0,(task.time*-0.2) %1.0)
+        self.river.setTexOffset(self.riverTextureStage,0,(task.time*-0.2) % 1.0)
         return Task.cont
     
     def __finish_game(self, is_victory, fast_exit=None):
         enable_mouse()
         self.logger.info(f"Received game finish where victory: {is_victory}")
-        
+        self.gui_manager.set_online(False)
+       
         if self.ws is not None:
             self.ws.close(reason="Finished")
         if self.ws_handle_task is not None:
@@ -325,6 +326,8 @@ class MainGame(ShowBase):
         taskMgr.doMethodLater(70.171,self.startLoopMusic,"startLoopMusicTask")
         
         self.is_online = not is_offline
+        self.gui_manager.set_online(not is_offline)
+
         disable_mouse()
         
         if self.player is not None:

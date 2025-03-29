@@ -13,7 +13,7 @@ from os.path import join
 from game.const.colors import TEXT_SECONDARY_COLOR, TEXT_PRIMARY_COLOR
 
 class SettingsMenu(GuiBase):
-    def __init__(self, is_overlay = False) -> None:
+    def __init__(self, is_overlay = False, is_online=False) -> None:
         super().__init__("SettingsMenu")
         buttonImages = loader.loadTexture("assets/textures/button_bg.png"),
         font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
@@ -219,7 +219,7 @@ class SettingsMenu(GuiBase):
         if is_overlay:
             return_button = DirectButton(
                 parent = menu_box,
-                text=("Close"),
+                text=("Continue"),
                 text_fg=(TEXT_PRIMARY_COLOR),
                 text_font = font,
                 relief=DGG.FLAT, 
@@ -237,8 +237,8 @@ class SettingsMenu(GuiBase):
 
         force_main_menu_button = DirectButton(
             parent = menu_box,
-            text=("Main Menu"),
-            text_fg=(TEXT_PRIMARY_COLOR),
+            text=("Leave" if is_online else "Main Menu"),
+            text_fg=((1,0,0,1) if is_overlay else TEXT_PRIMARY_COLOR),
             text_font = font,
             relief=DGG.FLAT, 
             pos=(-0.5,0,-0.6) if is_overlay else (0,0,-0.6), 

@@ -68,6 +68,9 @@ class GuiManager():
         self.gui_state_machine.request(request_input.value)
         self.__update_displayed_gui()
 
+    def set_online(self, is_online: bool):
+        self.is_online = is_online 
+
     def is_ingame(self):
         return self.gui_state_machine.getCurrentOrNextState() in [GuiStates.RUNNING.value, GuiStates.SETTINGS_OVERLAY.value]
 
@@ -122,7 +125,7 @@ class GuiManager():
                 self.currently_displayed_gui_state = GuiStates.SETTINGS
             case GuiStates.SETTINGS_OVERLAY.value:
                 enable_mouse()
-                self.current_ui = SettingsMenu(True)
+                self.current_ui = SettingsMenu(is_overlay=True,is_online=self.is_online)
                 self.currently_displayed_gui_state = GuiStates.SETTINGS_OVERLAY
             case _:
                 self.logger.warning(f"State {target_state} not yet implemented by gui manager. Returning to main menu")
