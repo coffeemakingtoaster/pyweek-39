@@ -181,7 +181,6 @@ class EntityBase(DirectObject.DirectObject):
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         
     def turn_sword_block(self,task):
-        #self.logger.debug("block")
         self.has_blocking_sword = True
         # Enable block body
         self.bodyHitBoxBlockedNodePath.node().setCollideMask(self.own_collision_mask)
@@ -191,7 +190,6 @@ class EntityBase(DirectObject.DirectObject):
         self.headHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         
     def turn_sword_sword(self,task):
-        #self.logger.debug("unblock")
         self.has_blocking_sword = False
         self.hitBlocked = False
         # Disable block body
@@ -344,7 +342,6 @@ class EntityBase(DirectObject.DirectObject):
         if frame_offset > total_frames:
             self.logger.warning(f"Skipped attack animation because latency exceeded frame count {frame_offset}")
             return
-        self.logger.debug("Scheduling")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=5, fn=self.turn_sword_block, name=f"{self.id}-makeSwordBlockTask")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turn_sword_sword, name=f"{self.id}-makeSwordSwordTask")
         self.schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turn_sword_sword, name=f"{self.id}-makeSwordSwordTask")

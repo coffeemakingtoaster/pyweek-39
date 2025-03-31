@@ -92,7 +92,6 @@ class Bot(EntityBase):
         if self.is_in_block or self.is_in_attack:
             return
 
-        self.logger.debug("Getting distance")
         dist_to_player = (self.body.getPos(render) - player.getPos(render)).length()
         # Player is too far away?
         if dist_to_player > 7:
