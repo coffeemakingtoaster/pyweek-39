@@ -8,7 +8,7 @@ from direct.gui.DirectGui import DirectButton, DirectFrame, DGG
 import sys
 
 from game.gui.gui_base import GuiBase
-from game.helpers.helpers import getFontPath, getTexturePath
+from game.helpers.helpers import getTexturePath
 
 class MainMenu(GuiBase):
     def __init__(self):

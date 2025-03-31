@@ -7,7 +7,7 @@ from panda3d.core import TransparencyAttrib
 
 from direct.gui.DirectGui import DirectButton, DirectLabel, DirectFrame, DGG
 
-from game.helpers.helpers import getFontPath, getTexturePath
+from game.helpers.helpers import getTexturePath
 
 class GameEnd(GuiBase):
     def __init__(self, is_victory):
