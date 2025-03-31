@@ -10,9 +10,8 @@ from direct.task.Task import messenger
 
 from game.const import player
 from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, NO_BIT_MASK, PLAYER_BIT_MASK
-from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, NETWORK_SEND_PRIORITY_EVENT, WIN_EVENT
+from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, NETWORK_SEND_PRIORITY_EVENT, SET_PLAYER_NO_EVENT, START_MATCH_TIMER_EVENT, WIN_EVENT
 from game.const.player import ALLOWED_WORD_CENTER_DISTANCE, BASE_HEALTH, BLOCK_RANGE_DEG, GRAVITY, MOVEMENT_SPEED, PLAYER_1_SPAWN, PLAYER_2_SPAWN, POST_HIT_INV_DURATION, WORLD_CENTER_POINT
-from game.helpers.config import is_attacker_authority
 from game.helpers.helpers import getModelPath
 from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule, CollisionHandlerEvent, LineSegs, NodePath, Mat3,Quat
 
@@ -49,7 +48,7 @@ class EntityBase(DirectObject.DirectObject):
 
         self.block_animations = ["block1", "block2"]
         
-        self.setupSounds()
+        self.setup_sounds()
 
         self.vertical_velocity = 0
         self.match_timer = 0.0
@@ -64,47 +63,45 @@ class EntityBase(DirectObject.DirectObject):
         # Receive damage event -> being hit
         head_damage_event = f"{'enemy' if self.id == 'player' else 'player'}-sHbnp-collision-into-{self.id}-hHbnp"
         body_damage_event = f"{'enemy' if self.id == 'player' else 'player'}-sHbnp-collision-into-{self.id}-bHbnp"
-        self.accept(head_damage_event, self.handle_head_damage) 
-        self.accept(body_damage_event, self.handle_body_damage)
-        self.accept(f"{head_damage_event}-blocked", self.handle_head_damage) 
-        self.accept(f"{body_damage_event}-blocked", self.handle_body_damage)
+        self.accept(head_damage_event, self.handle_being_hit) 
+        self.accept(body_damage_event, self.handle_being_hit)
+        self.accept(f"{head_damage_event}-blocked", self.handle_being_hit) 
+        self.accept(f"{body_damage_event}-blocked", self.handle_being_hit)
 
         # Deal damage event -> hitting someone and being blocked
         blocked_head_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-hHbnp-blocked"
         blocked_body_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-bHbnp-blocked"
-        self.accept(blocked_head_hit_event, self.handle_blocked_hit)
-        self.accept(blocked_body_hit_event, self.handle_blocked_hit)
+        self.accept(blocked_head_hit_event, self.handle_attack_being_blocked)
+        self.accept(blocked_body_hit_event, self.handle_attack_being_blocked)
         
         # Deal damage event -> hitting someone and being blocked
         head_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-hHbnp"
         body_hit_event = f"{self.id}-sHbnp-collision-into-{'enemy' if self.id == 'player' else 'player'}-bHbnp"
-        self.accept(head_hit_event, self.handle_hit)
-        self.accept(body_hit_event, self.handle_hit)
+        self.accept(head_hit_event, self.handle_hitting_enemy)
+        self.accept(body_hit_event, self.handle_hitting_enemy)
 
         self.hitBlocked = False
         self.inv_phase = 0.0
-        self.current_hit_has_critted = False
         
         self.particle_owner = render.attachNewNode("particle_owner")
         self.particle_owner.setShaderOff()
 
-    def setupSounds(self):
-        self.sweepingSounds = []
-        self.hitSounds = []
-        for i in range(7):
-            self.sweepingSounds.append(base.loader.loadSfx(getSoundPath("swipe"+str(i+1))))
-        for i in range(4):
-            self.hitSounds.append(base.loader.loadSfx(getSoundPath("hit"+str(i+1))))
+        self.accept(SET_PLAYER_NO_EVENT, self.set_player)
+        self.accept(START_MATCH_TIMER_EVENT, self.start_match_timer)
+
+    def setup_sounds(self):
+        self.sweeping_sounds = [base.loader.loadSfx(getSoundPath("swipe"+str(i+1))) for i in range(7)]
+        self.hit_sounds = [base.loader.loadSfx(getSoundPath("hit"+str(i+1))) for i in range(4)]
 
     def set_player(self, playerId: StatusMessages):
         assert playerId in [StatusMessages.PLAYER_1, StatusMessages.PLAYER_2]
-        if playerId == StatusMessages.PLAYER_1:
-            self.body.setX(PLAYER_1_SPAWN[0])
-            self.body.setY(PLAYER_1_SPAWN[1])
-            return
-        self.body.setX(PLAYER_2_SPAWN[0])
-        self.body.setY(PLAYER_2_SPAWN[1])
-        self.body.setH(180)
+        spawn = PLAYER_1_SPAWN if playerId == StatusMessages.PLAYER_1 else PLAYER_2_SPAWN
+        if self.id != "player":
+            spawn = PLAYER_2_SPAWN if playerId == StatusMessages.PLAYER_1 else PLAYER_1_SPAWN
+        self.body.setX(spawn[0])
+        self.body.setY(spawn[1])
+        if spawn == PLAYER_2_SPAWN:
+            self.body.setH(180)
     
     def __construct(self):
         self.body = Actor(getModelPath("body"))
@@ -162,36 +159,33 @@ class EntityBase(DirectObject.DirectObject):
         self.shoes.reparentTo(self.body)
         self.body.setPos(0, 0, 0.5)
         
-    def endAttack(self,task):
+    def end_attack(self,task):
         self.is_in_attack = False
     
-    def endBlock(self,task):
+    def end_block(self,task):
         self.is_in_block = False
     
-    def playSound(self,name, is_3d=False):
+    def play_sound(self,name, is_3d=False):
         if name == "sweep":
-            sound = random.choice(self.sweepingSounds)
+            sound = random.choice(self.sweeping_sounds)
         elif name == "hit":
-            sound = random.choice(self.hitSounds)
+            sound = random.choice(self.hit_sounds)
         else:
             sound = base.loader.loadSfx(getSoundPath(name))
         if not is_3d:
             sound.play()
             return 
         add_3d_sound_to_node(sound.getName(), self.body, loops=False)
-    
-    def playSoundLater(self, name, is_3d=False):
-        self.playSound(name, is_3d)
         
-    def turnSwordLethal(self,task):
+    def turn_sword_lethal(self,task):
         self.has_lethal_sword = True
         self.swordHitBoxNodePath.node().setCollideMask(self.opposing_collision_mask)
         
-    def turnSwordHarmless(self,task):
+    def turn_sword_harmless(self,task):
         self.has_lethal_sword = False
         self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         
-    def turnSwordBlock(self,task):
+    def turn_sword_block(self,task):
         #self.logger.debug("block")
         self.has_blocking_sword = True
         # Enable block body
@@ -201,7 +195,7 @@ class EntityBase(DirectObject.DirectObject):
         self.bodyHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         self.headHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
         
-    def turnSwordSword(self,task):
+    def turn_sword_sword(self,task):
         #self.logger.debug("unblock")
         self.has_blocking_sword = False
         self.hitBlocked = False
@@ -212,10 +206,8 @@ class EntityBase(DirectObject.DirectObject):
         self.bodyHitBoxNodePath.node().setCollideMask(self.own_collision_mask)
         self.headHitBoxNodePath.node().setCollideMask(self.own_collision_mask)
 
-        #TODO: interrupt block when hit anyway -> this still applicable? @Heuserus
-
     def show_sword_hit(self, start, direction):
-        self.playSound("hit")
+        self.play_sound("hit")
         p = ParticleEffect()
         p.setShaderOff()
         p.loadConfig(getParticlePath("blood2"))
@@ -229,16 +221,11 @@ class EntityBase(DirectObject.DirectObject):
         p.setScale(1)
         p.start(parent = self.particle_owner, renderParent = self.particle_owner)
 
+        taskMgr.doMethodLater(1, self.hit_over,"hitOver", extraArgs=[p], appendTask=True)
 
-        taskMgr.doMethodLater(1, self.hitOver,"hitOver", extraArgs=[p], appendTask=True)
-
-    def handle_hit(self, event):
-        
-        print("I hit an enemy")
-        
-        """I hit an enemy"""
+    def handle_hitting_enemy(self, event):
         if not self.hit_handled and self.sword.getCurrentAnim() is not None:
-            if self.is_puppet and is_attacker_authority():
+            if self.is_puppet:
                 self.swordHitBoxNodePath.node().setCollideMask(NO_BIT_MASK)
                 return
 
@@ -251,32 +238,19 @@ class EntityBase(DirectObject.DirectObject):
 
             self.show_sword_hit(event.getSurfacePoint(render), event.getSurfaceNormal(render))
             
-            taskMgr.doMethodLater(2/24,self.continueStrike,"continueStrike",extraArgs=[animName,frame],appendTask=True)
-            # Does this work in online?
-            '''
-            if not self.is_puppet:
-                messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.DEAL_DAMAGE], action_offsets=[self.match_timer])])
-            '''
-            
-    def continueStrike(self,animName,frame,task):
+            taskMgr.doMethodLater(2/24,self.continue_strike,"continueStrike",extraArgs=[animName,frame],appendTask=True)
+              
+    def continue_strike(self,animName,frame,task):
         self.sword.play(animName,fromFrame=frame)
         
-    def hitOver(self,blood,task):
+    def hit_over(self,blood,task):
         self.hit_handled = False
         if blood is not None:
             blood.cleanup()
             blood.removeNode()
 
     def take_damage(self, damage_value: int, force = False):
-        # Player only takes damage after network said so
-        #if self.id == "player" and is_attacker_authority():
-            #if self.online and not force:
-                #self.logger.debug("Skipped own damage as we wait for server")
-                #return
-            #self.logger.debug("Network update own health")
-
         self.health -= damage_value
-        #self.logger.debug(f"Now at {self.health} HP")
         messenger.send(GUI_UPDATE_PLAYER_HP if self.id == "player" else GUI_UPDATE_ANTI_HP, [self.health])
         # Server handles online win states
         if self.online:
@@ -290,9 +264,7 @@ class EntityBase(DirectObject.DirectObject):
                 if not self.is_puppet:
                     messenger.send(WIN_EVENT)
 
-    def handle_body_damage(self, entry):
-        #self.logger.debug("My body was hit")
-        # ensure that this is the sword in case any topology is changed at some point
+    def handle_being_hit(self, entry):
         assert entry.getFromNodePath().getName().endswith("-sHbnp")
 
         if not self.__collision_into_was_from_behind(entry.getFromNodePath()):
@@ -300,72 +272,43 @@ class EntityBase(DirectObject.DirectObject):
                 return
             if self.has_blocking_sword:
                 self.hitBlocked = True
-                self.handle_block()
+                self.handle_blocking_an_attack()
                 return
 
         if self.inv_phase <= 0.0:
-            self.current_hit_has_critted = False
             self.take_damage(1)
             self.inv_phase = POST_HIT_INV_DURATION
 
-    def handle_head_damage(self, entry):
-        # ensure that this is the sword in case any topology is changed at some point
-        assert entry.getFromNodePath().getName().endswith("-sHbnp")
-        if not self.__collision_into_was_from_behind(entry.getFromNodePath()):
-            if self.hitBlocked:
-                return
-        
-            if self.has_blocking_sword:
-                self.hitBlocked = True
-                self.handle_block()
-                return
-       
-        # Direct head hit
-        if self.inv_phase <= 0:
-            self.current_hit_has_critted = True
-            self.take_damage(1)
-            self.inv_phase = POST_HIT_INV_DURATION
-        # Hit that hit body first, then head
-        elif not self.current_hit_has_critted and self.inv_phase >= 0:
-            self.current_hit_has_critted = True
-            #self.take_damage(1)
-    
-    def handle_block(self):
+    def handle_blocking_an_attack(self):
         #self.logger.debug("I blocked an attack")
         self.inv_phase = 0.1
         self.is_in_block = False
         self.is_in_attack = False
-        base.taskMgr.doMethodLater(0, self.turnSwordSword,f"{self.id}-makeSwordSword")
+        base.taskMgr.doMethodLater(0, self.turn_sword_sword,f"{self.id}-makeSwordSword")
                 
-    def handle_blocked_hit(self, entry, force=False, frame_offset=0):
-        
-        if self.is_puppet and is_attacker_authority() and not force:
+    def handle_attack_being_blocked(self, entry, force=False, frame_offset=0):
+        if (self.is_puppet or self.hit_handled) and not force:
             return
 
-        #self.logger.debug(f"My attack was blocked {force}")
-        
-        if self.hit_handled and not force:
-            return
         self.hit_handled = True
         # force is over network...no need to verify that
         if not force:
             if self.__collision_into_was_from_behind(entry.getIntoNodePath()):
-                    #self.logger.debug("Was from behind, no block occured")
                     return
-        self.turnSwordSword(None)
+        self.turn_sword_sword(None)
         self.end_dash(None)
-        self.endAttack(None)
+        self.end_attack(None)
         taskMgr.remove(f"{self.id}-endBlockTask")
-        self.endBlock(None) 
+        self.end_block(None) 
         self.play_blocked_animation(frame_offset)
-        taskMgr.doMethodLater(0.5, self.hitOver,"hitOver", extraArgs=[None], appendTask=True)
+        taskMgr.doMethodLater(0.5, self.hit_over,"hitOver", extraArgs=[None], appendTask=True)
 
-        if self.id == "player" and self.online and is_attacker_authority():
+        if self.id == "player" and self.online:
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.GOT_BLOCKED], action_offsets=[self.match_timer])])
            
     def play_blocked_animation(self, frame_offset=0):
         #self.logger.debug(f"My attack was blocked {frame_offset}")
-        self.playSound("blocked_hit")
+        self.play_sound("blocked_hit")
         self.sword.play("being-blocked", fromFrame=frame_offset)
         self.is_block_stunned = True
         total_frames = self.sword.getAnimControl("being-blocked").getNumFrames()
@@ -382,12 +325,62 @@ class EntityBase(DirectObject.DirectObject):
     def end_dash(self,task):
         self.is_dashing = False
         self.vertical_velocity = -0.01
-        taskMgr.doMethodLater(1, self.cleanUpParticles, "cleanUpSplashTask")
+        taskMgr.doMethodLater(1, self.cleanup_particles, "cleanUpSplashTask")
+
+    def schedule_stab_tasks(self, frame_offset=0):
+        total_frames = self.sword.getAnimControl("stab").getNumFrames()
+        if frame_offset > total_frames:
+            self.logger.warning(f"Skipped attack animation because latency exceeded frame count {frame_offset}")
+            return
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=5, fn=self.play_sound, name=f"{self.id}-playSoundStab", extraArgs=["stab", True])
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.turn_sword_lethal, name=f"{self.id}-makeSwordLethalTask")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.start_dash, name=f"{self.id}-startDashingTask")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.turn_sword_harmless, name=f"{self.id}-makeSwordHarmlessTask")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.end_dash, name=f"{self.id}-endDashingTask")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.end_attack, name=f"{self.id}-endAttackTask")
+
+    def schedule_block_tasks(self, frame_offset=0):
+        taskMgr.remove(f"{self.id}-endAttackTask")
+        taskMgr.remove(f"{self.id}-makeSwordLethalTask")
+        taskMgr.remove(f"{self.id}-makeSwordHarmlessTask")
+        taskMgr.remove(f"{self.id}-startDashingTask")
+
+        total_frames = self.sword.getAnimControl("block1").getNumFrames()
+        if frame_offset > total_frames:
+            self.logger.warning(f"Skipped attack animation because latency exceeded frame count {frame_offset}")
+            return
+        self.logger.debug("Scheduling")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=5, fn=self.turn_sword_block, name=f"{self.id}-makeSwordBlockTask")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turn_sword_sword, name=f"{self.id}-makeSwordSwordTask")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turn_sword_sword, name=f"{self.id}-makeSwordSwordTask")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.end_block, name=f"{self.id}-endBlockTask")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.end_attack, name=f"{self.id}-endAttackTask")
+
+    def schedule_sweep_tasks(self, frame_offset=0):
+        total_frames = self.sword.getAnimControl("sweep1").getNumFrames()
+        if frame_offset > total_frames:
+            self.logger.warning(f"Skipped attack animation because latency exceeded frame count {frame_offset}")
+            return
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.play_sound, name=f"{self.id}-playSoundSweep", extraArgs=["sweep", True])
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.turn_sword_lethal, name=f"{self.id}-makeSwordLethalTask")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=28, fn=self.turn_sword_harmless, name=f"{self.id}-makeSwordHarmlessTask")
+        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.end_attack, name=f"{self.id}-endAttackTask")
+
+    def start_sweep_animation(self, frame_offset=0):
+        current_block = self.block_animations.pop(0)
+        self.sword.play(current_block, fromFrame=frame_offset)
+        self.block_animations.append(current_block)
+
+    def start_block_animation(self, frame_offset=0):
+        current_block = self.block_animations.pop(0)
+        self.sword.play(current_block, fromFrame=frame_offset)
+        self.block_animations.append(current_block)
     
-    def cleanUpParticles(self,task):
+    def cleanup_particles(self,task):
         for p in self.dashParticles:
             p.cleanup()
         self.dashParticles = []
+
     def start_match_timer(self):
         self.match_timer = 0.0
 
@@ -428,24 +421,10 @@ class EntityBase(DirectObject.DirectObject):
         own_back_hor = render.getRelativeVector(self.body, Vec3.back())
         own_back_hor.setZ(0)
         deg_delta = abs(enemy_body_orientation_hor.normalized().angleDeg(own_back_hor.normalized()))
-        #self.draw_debug_ray(self.body.getPos(), self.body.getPos() + own_back_hor)
-        #self.draw_debug_ray(self.body.getPos(), self.body.getPos() + enemy_body_orientation_hor, color=(0,1,0,1))
         return deg_delta > (BLOCK_RANGE_DEG/2)
 
-    def draw_debug_ray(self, start, end, color=(1, 0, 0, 1)):
-        """Draws a debug ray from start to end with the given color."""
-        lines = LineSegs()
-        lines.setColor(*color)  # Set color (RGBA)
-        lines.setThickness(2.0)  # Set line thickness
-        lines.moveTo(start)
-        lines.drawTo(end)
-
-        # Convert to a NodePath and attach it to the render tree
-        line_node = NodePath(lines.create())
-        line_node.reparentTo(render)
-
     def getPos(self, ref: NodePath):
-        """ Stupid wrapper to avoid having to write .body in bot """
+        """ Stupid wrapper to avoid having to write .body """
         if self.body.is_empty():
             return Vec3(0,0,0)
         return self.body.getPos(ref)
@@ -462,12 +441,7 @@ class EntityBase(DirectObject.DirectObject):
         base.taskMgr.doMethodLater((wanted_frame - offset_frame)/24, fn, name)
 
     def update(self, dt):
-        
         if self.is_dashing and self.body.getZ() < 0.8 and self.body.getX() > -5.5 and self.body.getX() < 6 and self.body.getY() < 16 and self.body.getY() > -8:
-            # -5,5 16
-            # 6 16
-            # 6 -8
-            # -5,5 -8
             p = ParticleEffect()
             p.setShaderOff()
             p.loadConfig(getParticlePath("water_dash2"))

@@ -1,38 +1,36 @@
 import logging
 import math
 from direct.task.Task import Task, messenger
-from panda3d.core import *
 
 from direct.showbase.ShowBase import ShowBase
-from pandac.PandaModules import TransparencyAttrib
-import copy
 
+from game.entities.map import Map
 from game.gui.const import GuiStates, StateTransitionEvents
 
-from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_FORCE_MAIN_MENU_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, GUI_UPDATE_ANTI_PLAYER_NAME, NETWORK_SEND_PRIORITY_EVENT, RESET_PLAYER_CAMERA, START_GAME_EVENT, UPDATE_SHADOW_SETTINGS, WIN_EVENT
+from panda3d.core import WindowProperties, CollisionTraverser, loadPrcFileData
+
+
+from game.const.events import CANCEL_QUEUE_EVENT, DEFEAT_EVENT, ENTER_QUEUE_EVENT, GUI_FORCE_MAIN_MENU_EVENT, GUI_MAIN_MENU_EVENT, GUI_PLAY_EVENT, GUI_QUEUE_EVENT, GUI_RETURN_EVENT, GUI_SETTINGS_EVENT, GUI_UPDATE_ANTI_PLAYER_NAME, NETWORK_SEND_PRIORITY_EVENT, RESET_PLAYER_CAMERA, SET_PLAYER_NO_EVENT, START_GAME_EVENT, WIN_EVENT
 from game.const.networking import TIME_BETWEEN_PACKAGES_IN_S
 from game.const.player import MAIN_MENU_CAMERA_HEIGHT, MAIN_MENU_CAMERA_ROTATION_RADIUS, MAIN_MENU_CAMERA_ROTATION_SPEED, MAIN_MENU_PLAYER_POSITION
 from game.entities.anti_player import AntiPlayer
 from game.entities.bot import Bot
 from game.entities.player import Player
-from game.helpers.config import get_player_name, load_config, is_attacker_authority
+from game.helpers.config import get_player_name, load_config
 from game.helpers.helpers import *
 from game.gui.gui_manager import GuiManager
 import uuid
 
+from game.helpers.sound import SoundHelper
 from game.networking.queue import check_queue_status, join_queue, leave_queue
 from game.networking.websocket import MatchWS
 from game.utils.input import disable_mouse, enable_mouse
 from game.utils.name_generator import generate_name
-from game.utils.sound import add_3d_sound_to_node
 from shared.const.queue_status import QueueStatus
-from pandac.PandaModules import WindowProperties
 
 from shared.types.player_info import PlayerInfo
 from shared.types.status_message import StatusMessages
-from shared.utils.validation import parse_game_status, parse_player_info
 
-from direct.particles.ParticleEffect import ParticleEffect
 from direct.actor.Actor import Actor
 
 class MainGame(ShowBase):
@@ -79,7 +77,6 @@ class MainGame(ShowBase):
         self.accept(CANCEL_QUEUE_EVENT, self.__cancel_queue)
         self.accept(WIN_EVENT, self.__finish_game, [True])
         self.accept(DEFEAT_EVENT, self.__finish_game, [False])
-        self.accept(UPDATE_SHADOW_SETTINGS, self.__update_shadow_settings)
         self.accept(RESET_PLAYER_CAMERA, self.__position_player_camera)
 
         self.accept(NETWORK_SEND_PRIORITY_EVENT, self.__priority_ws_send)
@@ -93,166 +90,18 @@ class MainGame(ShowBase):
         self.time_since_last_package: int = 1_000_000
         self.camera_angle = 0
 
-        self.slight = None
+        self.map = Map()
+        self.map.build_map()
+        self.sound_handler = SoundHelper()
+        self.sound_handler.start_main_menu_music()
 
-        self.buildMap()
+        self.__add_and_focus_main_menu_player()
 
     def __force_main_menu(self):
         if self.gui_manager.is_ingame():
             self.__finish_game(False, fast_exit=True)
-            self.background_music.stop()
-            
-            self.main_menu_music.play()
+            self.sound_handler.start_main_menu_music()
         self.gui_manager.handle_custom(StateTransitionEvents.FORCE_MAIN_MENU)
-
-    def buildMap(self):
-        """ Build map and place dummy player for main menu """
-        
-        dlight = DirectionalLight('my dlight')
-        dlight.color = (0.6,0.6,1.3,1)
-        dlight.setDirection(Vec3(0,1,-0.5))
-        dlnp = render.attachNewNode(dlight)
-
-        # @Heuserus do we need this? This is the loc that was causing the particle issues 
-        render.setShaderAuto()
-        
-        #render.setLight(ambientnp) 
-        render.setLight(dlnp)
-        
-        # Create a spotlight
-        self.slight = Spotlight('slight')
-        self.slight.setColor((2, 2, 3, 1))  # Set light color
-
-        self.__update_shadow_settings()
-        
-        slnp = self.render.attachNewNode(self.slight)
-         # Position and rotate the spotlight
-        slnp.setPos(0, 50, 50)  # Position the spotlight
-        slnp.setHpr(0, -135, 0)  # Make the spotlight point at the model
-        self.render.setLight(slnp)
-       
-        #cubeMap = loader.loadCubeMap(getImagePath("skybox"))
-        self.spaceSkyBox = loader.loadModel(getModelPath("skysphere"))
-        self.spaceSkyBox.setScale(200)
-        self.spaceSkyBox.setZ(-40)
-        self.spaceSkyBox.setH(90)
-        self.spaceSkyBox.setBin('background', 0)
-        self.spaceSkyBox.setDepthWrite(0)
-        self.spaceSkyBox.setTwoSided(True)
-        #self.spaceSkyBox.setTexGen(TextureStage.getDefault(), TexGenAttrib.MWorldCubeMap)
-        self.spaceSkyBox.reparentTo(render)
-        self.spaceSkyBox.setLightOff()
-        #self.spaceSkyBox.setTexture(cubeMap, 1)
-        
-        self.map = self.loader.loadModel("assets/models/map.egg")
-        
-        self.map.reparentTo(self.render)
-        
-        self.map.setZ(-2)
-        self.map.setShaderAuto()
-        
-        self.treeTops = self.loader.loadModel(getModelPath("treeTops"))
-        self.treeTops.reparentTo(self.render)
-        self.treeTops.setZ(-2)
-        self.treeTops.setShaderOff()
-        self.treeTops.setLightOff()
-        
-        self.river = self.loader.loadModel(getModelPath("river"))
-        self.river.reparentTo(self.render)
-        self.river.setZ(-2)
-        
-        texture = loader.loadTexture(getImagePath("pxArt (8)"))
-
-        # Try to find an existing texture stage
-        self.riverTextureStage = self.river.findTextureStage("dust.png")
-
-        self.river.setTexture(self.riverTextureStage, texture, 1)  # Use priority to force replace
-        taskMgr.add(self.shiftRiverTextureTask,"shift river Task")
-        
-        self.waterfall = loader.loadModel(getModelPath("waterfall"))
-        self.waterfall2 = loader.loadModel(getModelPath("waterfall2"))
-        
-        self.waterFallMaker(self.waterfall)
-        self.waterFallMaker(self.waterfall2)
-        
-        self.particle_owner = render.attachNewNode("particle_owner")
-        self.particle_owner.setShaderOff()
-        
-        
-        p = ParticleEffect()
-        p.loadConfig(getParticlePath("leaves"))
-        p.start(parent = self.particle_owner, renderParent = self.particle_owner)
-        p.setPos(12,15,0)
-        
-        p = ParticleEffect()
-        p.loadConfig(getParticlePath("leaves"))
-        p.start(parent = self.particle_owner, renderParent = self.particle_owner)
-        p.setPos(-8,22,0)
-        
-        
-        
-        for i in range(15):
-            p = ParticleEffect()
-            p.loadConfig(getParticlePath("spray"))
-            p.start(parent = self.particle_owner, renderParent = self.particle_owner)
-            p.setPos(-5.5+i*0.8,-8,0.4)
-            
-            p.setDepthWrite(False)
-            p.setBin("fixed", 0)
-
-        self.__add_and_focus_main_menu_player()
-
-        '''
-        color = (0.5, 0.5, 0.5)
-        linfog = Fog("A linear-mode Fog node")
-        linfog.setColor(*color)
-        linfog.setLinearRange(1000, 1000)
-        #linfog.setExpDensity(0.1)            
-        linfog.setLinearFallback(20, 50, 80)
-        fogNode = render.attachNewNode(linfog) 
-        fogNode.setPos(0,0,-5)
-        fogNode.lookAt(0,0,-10)
-        render.setFog(linfog) 
-        '''
-        self.main_menu_music =  base.loader.loadMusic(getMusicPath("main_menu"))
-        self.main_menu_music.setLoop(True)
-        self.main_menu_music.play()
-        
-
-    def waterFallMaker(self,waterfall):
-        waterfall.reparentTo(render)
-        waterfall.setTransparency(TransparencyAttrib.MAlpha)
-        waterfall.setPos(0,0,-2)
-        
-        self.waterfallCount +=1
-        texture2 = loader.loadTexture(getImagePath("transWater2"))
-        texture = loader.loadTexture(getImagePath("transWater"))
-        transTexture = loader.loadTexture(getImagePath("blue"))
-        
-        waterfall.setTexture(transTexture)
-        textureStage0 = waterfall.findTextureStage("pxArt (8).png")
-        textureStage0.setMode(TextureStage.MBlend)
-        
-        waterfall.setTexture(textureStage0,texture,1)
-        waterfall.setTexScale(textureStage0, 2, 2)
-        
-        textureStage1 = copy.copy(textureStage0)
-        textureStage1.setMode(TextureStage.MAdd)
-        
-        waterfall.setTexture(textureStage1,texture,1)
-        waterfall.setTexScale(textureStage1, 1, 1)
-
-        add_3d_sound_to_node("waterfall", self.waterfall, delay=1)
-
-        taskMgr.add(self.shiftWaterfallTextureTask,("shift Task")+str(self.waterfallCount),extraArgs=[waterfall,textureStage0,textureStage1],appendTask = True)
-    
-    def __update_shadow_settings(self, task=None):
-        if self.slight is None:
-            return
-        if is_attacker_authority():
-            self.slight.setShadowCaster(True, 2048, 2048) 
-        else:
-            self.slight.setShadowCaster(True, 512, 512) 
 
     def __add_and_focus_main_menu_player(self):
         self.logger.info("Place camera and player")
@@ -265,15 +114,6 @@ class MainGame(ShowBase):
         self.player.reparentTo(render)
         self.camera.reparentTo(render)
         self.camera_angle = 0
-        
-    def shiftWaterfallTextureTask(self,waterfall,textureStage0,textureStage1,task):
-        waterfall.setTexOffset(textureStage0, 0, (task.time*2) % 1.0 )
-        waterfall.setTexOffset(textureStage1, 0, (task.time*0.4) % 1.0 )
-        return Task.cont
-    
-    def shiftRiverTextureTask(self,task):
-        self.river.setTexOffset(self.riverTextureStage,0,(task.time*-0.2) % 1.0)
-        return Task.cont
     
     def __finish_game(self, is_victory, fast_exit=None):
         enable_mouse()
@@ -295,18 +135,12 @@ class MainGame(ShowBase):
         if fast_exit:
             return
         
-        taskMgr.remove("startLoopMusicTask")
-        
         if is_victory:
-            victorySound = base.loader.loadSfx(getSoundPath("vicroy"))
-            self.background_music.stop()
-            victorySound.play()
-            self.main_menu_music.play()
+            self.sound_handler.play_victory_sound()
+            self.sound_handler.start_main_menu_music()
             self.gui_manager.handle_custom(StateTransitionEvents.WIN)
         else:
-            self.background_music.stop()
-            
-            self.main_menu_music.play()
+            self.sound_handler.start_main_menu_music()
             self.gui_manager.handle_custom(StateTransitionEvents.DEFEAT)
 
     def __enter_queue(self):
@@ -334,24 +168,13 @@ class MainGame(ShowBase):
             self.__start_game(match_id, False)
             return Task.done
 
-    def startLoopMusic(self,task):
-        self.background_music = base.loader.loadMusic(getMusicPath("music_mid"))
-        self.background_music.setLoop(True)
-        self.background_music.play()
-    
     def __start_game(self, match_id="", is_offline=True):
-        
-        self.main_menu_music.stop()
-        
-        self.background_music = base.loader.loadMusic(getMusicPath("music_start"))
-        self.background_music.play()
-        taskMgr.doMethodLater(70.171,self.startLoopMusic,"startLoopMusicTask")
-        
+        self.sound_handler.start_combat_music()
+                
         self.is_online = not is_offline
-        self.gui_manager.set_online(not is_offline)
+        self.gui_manager.set_online(self.is_online)
 
         disable_mouse()
-        
         if self.player is not None:
             self.player.removeNode()
 
@@ -362,13 +185,12 @@ class MainGame(ShowBase):
             self.logger.info("Starting game in offline mode...")
             self.match_id = None
             self.anti_player = Bot(self.win)
-            self.player.set_player(StatusMessages.PLAYER_1)
-            self.anti_player.set_player(StatusMessages.PLAYER_2)
+            messenger.send(SET_PLAYER_NO_EVENT, [StatusMessages.PLAYER_1])
             self.player.start_match_timer()
             self.anti_player.start_match_timer()
         else:
             self.logger.info("Starting online game...")
-            self.anti_player = AntiPlayer(self.win, self.is_online)
+            self.anti_player = AntiPlayer(self.win)
             if self.queue_task is not None:
                 self.queue_task.remove()
             self.queue_task = None
@@ -390,36 +212,9 @@ class MainGame(ShowBase):
             if update_pointer:
                 self.win.movePointer(0, self.win.getXSize() // 2, self.win.getYSize() // 2)
                   
-    def __process_ws_message(self, msg):
-        if self.anti_player is not None:
-            # Player info package
-            if (player_info := parse_player_info(msg)) is not None:
-                self.player.update_state(player_info)
-                self.anti_player.set_state(player_info)
-                return
-            if (game_status := parse_game_status(msg)) is not None:
-                match game_status.message:
-                    case StatusMessages.DEFEAT.value:
-                        messenger.send(DEFEAT_EVENT)
-                    case StatusMessages.VICTORY.value:
-                        messenger.send(WIN_EVENT)
-                    case StatusMessages.PLAYER_NAME.value:
-                        self.logger.debug(f"enemy named {game_status.detail}")
-                        self.anti_player.set_name(game_status.detail)
-                        messenger.send(GUI_UPDATE_ANTI_PLAYER_NAME, [game_status.detail])
-                    case StatusMessages.PLAYER_1.value:
-                        self.player.set_player(StatusMessages.PLAYER_1)
-                        self.anti_player.set_player(StatusMessages.PLAYER_2)
-                    case StatusMessages.PLAYER_2.value:
-                        self.player.set_player(StatusMessages.PLAYER_2)
-                        self.anti_player.set_player(StatusMessages.PLAYER_1)
-                    case StatusMessages.LOBBY_STARTING.value:
-                        self.player.start_match_timer()
-                        self.anti_player.start_match_timer()
-                    case _:
-                        self.logger.warning(f"Status message contained status {game_status.message} which is not implemented")
-                return
-            self.logger.warning(f"Message was thrown out: {msg}")
+    def __process_ws_message(self, player_info: PlayerInfo):
+        self.player.update_state(player_info)
+        self.anti_player.set_state(player_info)
 
     def __priority_ws_send(self, packet: PlayerInfo):
         if not self.is_online:

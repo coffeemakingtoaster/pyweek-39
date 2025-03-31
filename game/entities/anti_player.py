@@ -1,37 +1,30 @@
 from typing import List
-from game.const.events import GUI_UPDATE_LATENCY, NETWORK_SEND_PRIORITY_EVENT
+from game.const.events import GUI_UPDATE_ANTI_PLAYER_NAME, GUI_UPDATE_LATENCY, NETWORK_SEND_PRIORITY_EVENT
 from game.const.networking import POSITION_DIFF_THRESHOLD
 from game.const.player import DASH_SPEED, GRAVITY, JUMP_VELOCITY
 from game.entities.base_entity import EntityBase
-from game.helpers.config import is_attacker_authority
 from game.helpers.helpers import *
 from panda3d.core import Vec3, Vec2, TextNode
 from shared.types.player_info import PlayerAction, PlayerInfo
 from game.utils.name_generator import generate_name
 
 class AntiPlayer(EntityBase):
-    def __init__(self, window, is_puppet=False) -> None:
+    def __init__(self, window) -> None:
         self.name = generate_name()
-        super().__init__(window, "enemy", is_puppet, f"Enemy {'(online)' if is_puppet else '(local)'}")
+        super().__init__(window, "enemy", True, f"Enemy (online)")
 
         self.name_tag = None
         self.name_tag_node = None
 
-        self.is_puppet = is_puppet
+        self.is_puppet = True
 
         self.movement_vector = Vec3(0,0,0)
         self.correction_vector = Vec3(0,0,0)
 
-        self.accept("q", self.debug_stab)
-        self.accept("e", self.debug_block)
-        self.accept("f", self.debug_sweep)
-
         self.__add_name_tag()
 
-        if self.is_puppet:
-            self.logger.info(f"Created enemy for opponent")
-        else:
-            self.logger.info(f"Created bot enemy")
+        self.accept(GUI_UPDATE_ANTI_PLAYER_NAME, self.__update_name)
+        self.logger.info(f"Created representation for network opponent")
  
     def __add_name_tag(self):
         self.name_tag = TextNode(f"{self.id}-name")
@@ -43,124 +36,65 @@ class AntiPlayer(EntityBase):
         self.name_tag_node = self.body.attachNewNode(self.name_tag)
         self.name_tag_node.setScale(0.3)
         self.name_tag_node.setBillboardPointEye()
-        self.__update_name()
+        self.__update_name_tag()
 
-    def __update_name(self):
+    def __update_name_tag(self):
         if self.name_tag is not None and self.name_tag_node is not None:
             self.name_tag.setText(self.name)
             self.logger.info(f"Enemy now named {self.name}")
             self.name_tag_node.setPos(0,0,1)
 
-    def set_name(self, name: str):
+    def __update_name(self, name: str):
         self.name = name
-        self.__update_name()
+        self.__update_name_tag()
 
-    def jump(self, start_time: float = 0.0):
-        if start_time == 0.0 and not self.is_puppet:
-            self.vertical_velocity = JUMP_VELOCITY
-            return
-        offset = self.match_timer - start_time
+    def jump(self, offset: float):
         messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
         # calc current jump pos based on time offset
         # base velocity - gravity * offset
         self.vertical_velocity = JUMP_VELOCITY - (GRAVITY * offset)
         self.body.setZ(self.body.getZ() + (self.vertical_velocity * offset))
 
-    def __sweep_safe(self, sweep_animation_no=1, frame_offset=0):
-        # sweep and sweep2 have the same duration
+    def sweep(self, sweep_animation_no: int, offset: float):
+        messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
+        start_frame = int(offset * 24)
+        self.logger.debug(f"Block started at frame {start_frame}")
         total_frames = self.sword.getAnimControl("sweep1").getNumFrames()
-        if frame_offset > total_frames:
-            self.logger.warning(f"Skipped sweep animation because latency exceeded frame count {frame_offset}")
+        if start_frame > total_frames:
             return
         self.sword.play(f"sweep{sweep_animation_no}")
         self.inAttack = True
         self.inBlock = False
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.playSoundLater, name=f"{self.id}-playSoundSweep", extraArgs=["sweep", True])
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=14, fn=self.turnSwordLethal, name=f"{self.id}-makeSwordLethalTask")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=28, fn=self.turnSwordHarmless, name=f"{self.id}-makeSwordHarmlessTask")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name=f"{self.id}-endAttackTask")
+        self.schedule_sweep_tasks(start_frame)
 
-    def sweep(self, sweep_animation_no=1, start_time=0.0):
-        if not self.is_puppet or start_time == 0.0:
-            self.__sweep_safe(sweep_animation_no=sweep_animation_no)
-            return
-        offset = self.match_timer - start_time
+    def block(self, offset: float):
         messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
         start_frame = int(offset * 24)
         self.logger.debug(f"Block started at frame {start_frame}")
-        self.__sweep_safe(sweep_animation_no=sweep_animation_no, frame_offset=start_frame)
-
-    def __block_safe(self, frame_offset=0):
         total_frames = self.sword.getAnimControl("block1").getNumFrames()
-        if frame_offset > total_frames:
-            self.logger.warning(f"Skipped block animation because latency exceeded frame count {frame_offset}")
+        if start_frame > total_frames:
             return
-        current_block = self.block_animations.pop(0)
-        self.sword.play(current_block)
-        self.block_animations.append(current_block)
+        self.start_block_animation(start_frame)
         self.inAttack = True
         self.inBlock = True
-        taskMgr.remove(f"{self.id}-endAttackTask")
-        taskMgr.remove(f"{self.id}-makeSwordLethalTask")
-        taskMgr.remove(f"{self.id}-makeSwordHarmlessTask")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=5, fn=self.turnSwordBlock, name=f"{self.id}-makeSwordBlockTask")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turnSwordSword, name=f"{self.id}-makeSwordSwordTask")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=15, fn=self.turnSwordSword, name=f"{self.id}-makeSwordSwordTask")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endBlock, name=f"{self.id}-endBlockTask")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endBlock, name=f"{self.id}-endAttackTask")
+        self.schedule_block_tasks(start_frame)
 
-    def block(self, start_time=0.0):
-        if not self.is_puppet or start_time == 0.0:
-            self.__block_safe()
-            return
-        offset = self.match_timer - start_time
-        messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
+    def stab(self, offset: float):
         start_frame = int(offset * 24)
-        self.logger.debug(f"Block started at frame {start_frame}")
-        self.__block_safe(start_frame)
-
-    def __stab_safe(self, frame_offset=0):
         total_frames = self.sword.getAnimControl("stab").getNumFrames()
-        if frame_offset > total_frames:
-            self.logger.warning(f"Skipped attack animation because latency exceeded frame count {frame_offset}")
+        if start_frame > total_frames:
             return
-        self.sword.play("stab", fromFrame=frame_offset)
-        self.logger.debug(f"Frame offset is {frame_offset}")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=5, fn=self.playSoundLater, name=f"{self.id}-playSoundStab", extraArgs=["stab", True])
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.turnSwordLethal, name=f"{self.id}-makeSwordLethalTask")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=25, fn=self.start_dash, name=f"{self.id}-startDashingTask")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.turnSwordHarmless, name=f"{self.id}-makeSwordHarmlessTask")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=32, fn=self.end_dash, name=f"{self.id}-endDashingTask")
-        self.schedule_or_run(offset_frame=frame_offset, wanted_frame=total_frames, fn=self.endAttack, name=f"{self.id}-endAttackTask")
-        
-    def handleSwordCollisionEnd(self,entry):
-        self.logger.debug(f"no longer colliding with {entry}")
-
-    def debug_stab(self):
-        self.stab()
-
-    def debug_block(self):
-        self.block()
-
-    def debug_sweep(self):
-        self.sweep()
-
-    def stab(self, start_time: float = 0.0):
-        # AI controlled
-        if not self.is_puppet or start_time == 0.0:
-            self.__stab_safe()
-            return
-        offset = self.match_timer - start_time
-        messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
-        start_frame = int(offset * 24)
         self.logger.debug(f"Stab started at frame {start_frame}")
-        self.__stab_safe(start_frame)
+        self.sword.play("stab", fromFrame=start_frame)
+        self.schedule_stab_tasks(start_frame)
 
     def __handle_actions(self, actions: List[PlayerAction], offsets: List[float]):
         assert len(actions) == len(offsets)
         self.logger.debug(f"Handling {len(actions)} remote actions")
         for action in actions:
-            offset = offsets.pop(0)
+            start_time = offsets.pop(0)
+            offset = self.match_timer - start_time
+            messenger.send(GUI_UPDATE_LATENCY, [offset * 1000])
             match action:
                 case PlayerAction.JUMP:
                     self.jump(offset)
@@ -169,11 +103,11 @@ class AntiPlayer(EntityBase):
                 case PlayerAction.BLOCK:
                     self.block(offset)
                 case PlayerAction.SWEEP_1:
-                    self.sweep(start_time=offset)
+                    self.sweep(sweep_animation_no=1, offset=offset)
                 case PlayerAction.SWEEP_2:
-                    self.sweep(sweep_animation_no=2, start_time=offset)
+                    self.sweep(sweep_animation_no=2, offset=offset)
                 case PlayerAction.SWEEP_3:
-                    self.sweep(sweep_animation_no=3, start_time=offset)
+                    self.sweep(sweep_animation_no=3, offset=offset)
                 case PlayerAction.GOT_BLOCKED:
                     self.__remote_block(offset)
                 case _:
@@ -181,7 +115,7 @@ class AntiPlayer(EntityBase):
 
     def __remote_block(self, start_time):
         self.logger.debug("Network block")
-        self.handle_blocked_hit(None, force=True, frame_offset=int(self.match_timer - start_time) * 24)
+        self.handle_attack_being_blocked(None, force=True, frame_offset=int(self.match_timer - start_time) * 24)
 
     def set_state(self, update: PlayerInfo):
         if not self.is_puppet:
@@ -190,9 +124,7 @@ class AntiPlayer(EntityBase):
         # an attack package does not! contain any other info
         if len(update.actions) > 0:
             self.__handle_actions(update.actions, update.action_offsets)
-        if self.health != update.health and not is_attacker_authority():
-            self.logger.debug("Network update enemy health")
-            self.take_damage(self.health - update.health)
+
         if update.position is not None:
             # Use the locally calculated z coord to stop slight jittering midair
             networkPos = Vec3(update.position.x, update.position.y, self.body.getZ())
