@@ -45,13 +45,9 @@ jobs:
 
       - name: prep windows
         if: ${{ matrix.os == 'windows' }}
-        run: mkdir ./artifact && cp -r ./build/win_amd64/ ./artifact/build 
-
-      - name: link windows
-        if: ${{ matrix.os == 'windows' }}
-        run: New-Item -ItemType SymbolicLink -Path ./artifact/build/flow.exe -Target ./artifact/flow.exe
+        run: |
+          Copy-Item -Path .\build\win_amd64 -Destination .\artifact -Recurse;
         shell: pwsh
-
 
       - uses: actions/upload-artifact@v4
         with:
@@ -66,11 +62,11 @@ jobs:
         with:
           path: build
 
-      - run: zip -r linux.zip build/flow_ubuntu/artifact
+      - run: zip -r linux.zip build/flow_ubuntu
 
-      - run: zip -r windows.zip build/flow_windows/artifact
+      - run: zip -r windows.zip build/flow_windows
 
-      - run: zip -r macos.zip build/flow_macos/artifact
+      - run: zip -r macos.zip build/flow_macos
 
       - name: Release
         uses: softprops/action-gh-release@v2
