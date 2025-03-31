@@ -5,12 +5,21 @@ from direct.showbase.PythonUtil import os
 
 from panda3d.core import Vec3
 
+
+def getFontPath(name):
+    file_path = os.path.join(os.getcwd(), "assets", "fonts", name+".ttf")
+    return Filename.fromOsSpecific(file_path).getFullpath()
+
 def getModelPath(name):
     file_path = os.path.join(os.getcwd(), "assets", "models", name+".egg")
     return Filename.fromOsSpecific(file_path).getFullpath()
 
 def getImagePath(name):
     file_path = os.path.join(os.getcwd(), "assets", "images", name+".png")
+    return Filename.fromOsSpecific(file_path).getFullpath()
+
+def getTexturePath(name):
+    file_path = os.path.join(os.getcwd(), "assets", "textures", name+".png")
     return Filename.fromOsSpecific(file_path).getFullpath()
 
 def getParticlePath(name):

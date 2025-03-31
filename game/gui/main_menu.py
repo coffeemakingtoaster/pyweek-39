@@ -8,6 +8,7 @@ from direct.gui.DirectGui import DirectButton, DirectFrame, DGG
 import sys
 
 from game.gui.gui_base import GuiBase
+from game.helpers.helpers import getFontPath, getTexturePath
 
 class MainMenu(GuiBase):
     def __init__(self):
@@ -16,14 +17,13 @@ class MainMenu(GuiBase):
         self.ui_elements = []
         self.menu_elements = []
 
-        buttonImages = loader.loadTexture("assets/textures/button_bg.png"),
-        font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
+        buttonImages = loader.loadTexture(getTexturePath("button_bg"))
 
         menu_box = DirectFrame( 
             frameSize=(-2, 2, -0.2, 0.2),
             pos=(0, 0, -0.85), 
             frameColor = (1,1,1,1),
-            frameTexture = "assets/textures/main_menu_board.png"
+            frameTexture = getTexturePath("main_menu_board"),
         )
         menu_box.setTransparency(TransparencyAttrib.MAlpha)
         self.ui_elements.append(menu_box)
@@ -40,7 +40,7 @@ class MainMenu(GuiBase):
                     frameSize = (-3, 3, -1, 1),
                     text_scale = 1,
                     text_pos = (0, -0.3),
-                    text_font=font,
+                    text_font=self.font,
                     frameColor = (1,1,1,1))
         start_button.setTransparency(TransparencyAttrib.MAlpha)
         self.menu_elements.append(start_button)
@@ -57,7 +57,7 @@ class MainMenu(GuiBase):
                     frameSize = (-3, 3, -1, 1),
                     text_scale = 1,
                     text_pos = (0, -0.3),
-                    text_font=font,
+                    text_font=self.font,
                     frameColor = (1,1,1,1))
         queue_button.setTransparency(TransparencyAttrib.MAlpha)
         self.menu_elements.append(queue_button)
@@ -74,7 +74,7 @@ class MainMenu(GuiBase):
                     #pad = (1, 0.1),
                     frameSize = (-3, 3, -1, 1),
                     text_scale = 1,
-                    text_font=font,
+                    text_font=self.font,
                     text_pos = (0, -0.3),
                     frameColor = (1,1,1,1))
         settings_button.setTransparency(TransparencyAttrib.MAlpha)
@@ -91,7 +91,7 @@ class MainMenu(GuiBase):
                     #text_align = TextNode.ACenter, 
                     #pad = (1, 0.1),
                     frameSize = (-3, 3, -1, 1),
-                    text_font=font,
+                    text_font=self.font,
                     text_scale = 1,
                     text_pos = (0, -0.3),
                     frameColor = (1,1,1,1))

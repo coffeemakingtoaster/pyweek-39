@@ -56,7 +56,7 @@ class Map(DirectObject):
         self.spaceSkyBox.setLightOff()
         #self.spaceSkyBox.setTexture(cubeMap, 1)
         
-        self.map = base.loader.loadModel("assets/models/map.egg")
+        self.map = base.loader.loadModel(getModelPath("map"))
         
         self.map.reparentTo(render)
         

@@ -7,29 +7,30 @@ from panda3d.core import TransparencyAttrib
 
 from direct.gui.DirectGui import DirectButton, DirectLabel, DirectFrame, DGG
 
+from game.helpers.helpers import getFontPath, getTexturePath
+
 class GameEnd(GuiBase):
     def __init__(self, is_victory):
         super().__init__("GameEnd")
         self.is_victory = is_victory
 
-        buttonImages = loader.loadTexture("assets/textures/button_bg.png"),
-        font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
+        buttonImages = loader.loadTexture(getTexturePath("button_bg")),
         
         backdrop = DirectFrame(
             frameSize=(-1, 1, -0.6, 0.6),
             pos=(0, 0, 0.3), 
             frameColor = (1,1,1,1),
-            frameTexture = "assets/textures/end_game_backdrop.png",
+            frameTexture = getTexturePath("end_game_backdrop"),
         )
         backdrop.setTransparency(TransparencyAttrib.MAlpha)
         self.ui_elements.append(backdrop)
 
 
-        state_image = loader.loadTexture("assets/textures/victory.png")
+        state_image = loader.loadTexture(getTexturePath("victory"))
         text = "victory"
 
         if not self.is_victory:
-            state_image = loader.loadTexture("assets/textures/defeat.png")
+            state_image = loader.loadTexture(getTexturePath("defeat"))
             text = "defeat"
 
         state_indicator = DirectFrame(
@@ -45,7 +46,7 @@ class GameEnd(GuiBase):
             scale=0.07,
             pos=(0,0,-0.3),
             text_fg=(TEXT_PRIMARY_COLOR) if self.is_victory else (1,0,0,1),
-            text_font=font,
+            text_font=self.font,
             text=text,
             frameColor = (1,1,1,0)
         )
@@ -61,7 +62,7 @@ class GameEnd(GuiBase):
                     #pad = (1, 0.1),
                     frameSize = (-4, 4, -1, 1),
                     frameTexture = buttonImages,
-                    text_font=font,
+                    text_font=self.font,
                     text_scale = 1,
                     text_pos = (0, -0.3),
                     frameColor = (1,1,1,1))

@@ -11,8 +11,6 @@ class HpBar(GuiBase):
         self.scale = scale
         self.name = name
 
-        self.font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
-
         self.base = DirectFrame( 
             frameSize=(-0.01, 0.001, -0.01, 0.01),
             pos=base_pos, 

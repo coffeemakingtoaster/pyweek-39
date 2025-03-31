@@ -6,18 +6,17 @@ from panda3d.core import TransparencyAttrib
 from direct.gui.DirectGui import DirectLabel, DirectFrame, DGG
 
 from game.gui.hp_bar import HpBar
+from game.helpers.helpers import getTexturePath
 
 class Hud(GuiBase):
     def __init__(self):
         super().__init__("HUD")
         
-        font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
-
         latency_box = DirectFrame( 
             frameSize=(-0.3, 0.3, -0.05, 0.05),
             pos=(1.3, 0, -0.85), 
             frameColor = (1,1,1,1),
-            frameTexture = "assets/textures/main_menu_board.png"
+            frameTexture = getTexturePath("main_menu_board")
         )
         latency_box.setTransparency(TransparencyAttrib.MAlpha)
         self.ui_elements.append(latency_box)
@@ -28,7 +27,7 @@ class Hud(GuiBase):
                     relief=DGG.FLAT, 
                     text_fg=(TEXT_SECONDARY_COLOR),
                     #pad = (1, 0.1),
-                    text_font = font,
+                    text_font = self.font,
                     frameSize = (-2, 2, -0.5, 0.2),
                     text_scale = 0.5,
                     text_pos = (0, -0.3),
