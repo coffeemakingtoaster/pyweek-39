@@ -3,7 +3,6 @@ from direct.gui.DirectGui import DirectFrame, DirectLabel, OnscreenImage
 from game.const.player import BASE_HEALTH
 from game.gui.gui_base import GuiBase
 from panda3d.core import TransparencyAttrib
-from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
 
 class HpBar(GuiBase):
 
@@ -11,8 +10,6 @@ class HpBar(GuiBase):
         super().__init__()
         self.scale = scale
         self.name = name
-
-        self.font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
 
         self.base = DirectFrame( 
             frameSize=(-0.01, 0.001, -0.01, 0.01),

@@ -1,10 +1,8 @@
 import logging
 from direct.showbase import DirectObject
-from direct.gui.DirectGui import OnscreenImage
-from os.path import join
-from panda3d.core import Filename
 
-from direct.showbase.PythonUtil import os
+from game.helpers.helpers import getFontPath
+
 
 class GuiBase(DirectObject.DirectObject):
     def __init__(self, readable_name="GuiBase"):
@@ -12,7 +10,8 @@ class GuiBase(DirectObject.DirectObject):
         self.logger = logging.getLogger(__name__)
         self.readable_name = readable_name
         self.ui_elements = []
-        
+        self.font = loader.loadFont(getFontPath("the_last_shuriken"))
+       
     def destroy(self):
         self.logger.info(f"Destroying {self.readable_name}")
         self.ignoreAll()

@@ -3,10 +3,10 @@ from game.const.events import CANCEL_QUEUE_EVENT, GUI_RETURN_EVENT
 from game.gui.gui_base import GuiBase
 from panda3d.core import TransparencyAttrib
 
-from direct.gui.DirectGui import DirectButton, DirectLabel, DirectFrame, DGG
+from direct.gui.DirectGui import DirectButton, DirectFrame, DGG
 from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
+from game.helpers.helpers import getTexturePath
 
-from game.gui.gui_base import GuiBase
 
 class QueueMenu(GuiBase):
     def __init__(self):
@@ -15,14 +15,13 @@ class QueueMenu(GuiBase):
         self.ui_elements = []
         self.menu_elements = []
 
-        buttonImages = loader.loadTexture("assets/textures/button_bg.png"),
-        font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
+        buttonImages = loader.loadTexture(getTexturePath("button_bg"))
 
         menu_box = DirectFrame( 
             frameSize=(-1.75, 1.75, -0.2, 0.2),
             pos=(0, 0, -0.85), 
             frameColor = (1,1,1,1),
-            frameTexture = "assets/textures/main_menu_board.png"
+            frameTexture = getTexturePath("main_menu_board"),
         )
         menu_box.setTransparency(TransparencyAttrib.MAlpha)
         self.ui_elements.append(menu_box)
@@ -35,7 +34,7 @@ class QueueMenu(GuiBase):
                     text_fg=(TEXT_SECONDARY_COLOR),
                     #pad = (1, 0.1),
                     frameSize = (-4, 4, -1, 1),
-                    text_font=font,
+                    text_font=self.font,
                     text_scale = 1,
                     text_pos = (0, -0.3),
                     frameColor = (1,1,1,0))
@@ -51,7 +50,7 @@ class QueueMenu(GuiBase):
                     relief=DGG.FLAT, 
                     text_fg=(TEXT_PRIMARY_COLOR),
                     #pad = (1, 0.1),
-                    text_font=font,
+                    text_font=self.font,
                     frameSize = (-4, 4, -1, 1),
                     text_scale = 1,
                     text_pos = (0, -0.3),

@@ -3,22 +3,21 @@ from game.const.events import GUI_FORCE_MAIN_MENU_EVENT, GUI_RETURN_EVENT, UPDAT
 from game.gui.gui_base import GuiBase
 from panda3d.core import TextNode, TransparencyAttrib
 
-from game.gui.gui_manager import StateTransitionEvents
-from game.helpers.config import get_look_sensitivity, get_player_name, set_look_sensitivity, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled, set_attack_authority, is_attacker_authority
+from game.helpers.config import get_look_sensitivity, get_player_name, set_look_sensitivity, set_music_volume, set_player_name, set_sfx_volume, set_fullscreen_value, get_music_volume, get_sfx_volume, get_fullscreen_value, get_fps_counter_enabled, set_fps_counter_enabled, set_shadow_map_quality, should_use_good_shadows
 
 from direct.gui.DirectGui import DirectButton, DirectCheckButton, DirectEntry, DirectSlider, DirectLabel, DirectFrame, DGG
 
 from os.path import join
 
 from game.const.colors import TEXT_SECONDARY_COLOR, TEXT_PRIMARY_COLOR
+from game.helpers.helpers import getTexturePath
 
 class SettingsMenu(GuiBase):
     def __init__(self, is_overlay = False, is_online=False) -> None:
         super().__init__("SettingsMenu")
-        buttonImages = loader.loadTexture("assets/textures/button_bg.png"),
-        font = loader.loadFont("assets/fonts/the_last_shuriken.ttf")
-        checkbox_image = loader.loadTexture("assets/textures/checkbox.png")
-        checkbox_checked_image = loader.loadTexture("assets/textures/checkbox_checked.png")
+        buttonImages = loader.loadTexture(getTexturePath("button_bg"))
+        checkbox_image = loader.loadTexture(getTexturePath("checkbox"))
+        checkbox_checked_image = loader.loadTexture(getTexturePath("checkbox_checked"))
 
         self.menu_elements = []
 
@@ -26,7 +25,7 @@ class SettingsMenu(GuiBase):
             frameSize=(-1.4, 1.4, -0.8, 0.8),
             pos=(0, 0, 0), 
             frameColor = (1,1,1,1),
-            frameTexture = "assets/textures/settings_menu_board.png"
+            frameTexture = getTexturePath("settings_menu_board"),
         )
         menu_box.setTransparency(TransparencyAttrib.MAlpha)
         self.ui_elements.append(menu_box)
@@ -38,7 +37,7 @@ class SettingsMenu(GuiBase):
             pos=(0,0,0.5), 
             relief=None, 
             text_fg=(TEXT_SECONDARY_COLOR), 
-            text_font = font, 
+            text_font = self.font, 
             text_align = TextNode.ACenter)
         )
 
@@ -56,7 +55,7 @@ class SettingsMenu(GuiBase):
             text_scale = 0.7,
             numLines = 1, 
             focus = 0, 
-            text_font=font
+            text_font=self.font
         )
         self.menu_elements.append(self.player_name_input)
 
@@ -64,7 +63,7 @@ class SettingsMenu(GuiBase):
             parent = menu_box,
             text=("Confirm"),
             text_fg=(TEXT_PRIMARY_COLOR),
-            text_font = font,
+            text_font = self.font,
             relief=DGG.FLAT,
             pos = (0.5, 0, 0.275),
             scale=0.05, 
@@ -91,7 +90,7 @@ class SettingsMenu(GuiBase):
             boxImageScale = 0.5,
             boxRelief = None,
             text_fg=(TEXT_SECONDARY_COLOR),
-            text_font = font,
+            text_font = self.font,
             text_scale = 0.7,
             pad = (0.5,0), 
             text_align = TextNode.ALeft
@@ -112,7 +111,7 @@ class SettingsMenu(GuiBase):
             boxImage = (checkbox_image, checkbox_checked_image),
             boxImageScale = 0.5,
             text_fg=(TEXT_SECONDARY_COLOR),
-            text_font = font,
+            text_font = self.font,
             text_scale = 0.7,
             pad = (1,0), 
             text_align = TextNode.ALeft
@@ -126,7 +125,7 @@ class SettingsMenu(GuiBase):
             text="Music volume",
             relief=None, 
             text_fg=(TEXT_SECONDARY_COLOR),
-            text_font = font,
+            text_font = self.font,
             scale=0.05, 
             pos=(-0.8,0,-0.15)
         )
@@ -155,7 +154,7 @@ class SettingsMenu(GuiBase):
             parent = menu_box,
             text="SFX volume",
             text_fg=(TEXT_SECONDARY_COLOR),
-            text_font = font,
+            text_font = self.font,
             relief=None,
             scale=0.05,
             pos=(0,0,-0.15)
@@ -183,7 +182,7 @@ class SettingsMenu(GuiBase):
             text="Look sensitivity",
             relief=None, 
             text_fg=(TEXT_SECONDARY_COLOR),
-            text_font = font,
+            text_font = self.font,
             scale=0.05, 
             pos=(0.8,0,-0.15)
         )
@@ -211,7 +210,7 @@ class SettingsMenu(GuiBase):
             parent = menu_box,
             text=("Test sound"),
             text_fg=(TEXT_PRIMARY_COLOR),
-            text_font = font,
+            text_font = self.font,
             relief=DGG.FLAT,
             pos=(0,0,-0.4), 
             scale=0.05, 
@@ -230,7 +229,7 @@ class SettingsMenu(GuiBase):
             text="Use better shadows", 
             pos=(-1,0,-0.4), 
             scale=0.05, 
-            indicatorValue=is_attacker_authority(), 
+            indicatorValue=should_use_good_shadows(), 
             command=self.set_shadow_map_quality,
             relief=None,
             boxImage = (checkbox_image, checkbox_checked_image),
@@ -238,7 +237,7 @@ class SettingsMenu(GuiBase):
             boxImageScale = 0.5,
             boxRelief = None,
             text_fg=(TEXT_SECONDARY_COLOR),
-            text_font = font,
+            text_font = self.font,
             text_scale = 0.7,
             pad = (0.5,0), 
             text_align = TextNode.ALeft
@@ -251,7 +250,7 @@ class SettingsMenu(GuiBase):
                 parent = menu_box,
                 text=("Continue"),
                 text_fg=(TEXT_PRIMARY_COLOR),
-                text_font = font,
+                text_font = self.font,
                 relief=DGG.FLAT, 
                 pos=(0.5,0,-0.6), 
                 scale=0.1, 
@@ -269,7 +268,7 @@ class SettingsMenu(GuiBase):
             parent = menu_box,
             text=("Leave" if is_online else "Main Menu"),
             text_fg=((1,0,0,1) if is_overlay else TEXT_PRIMARY_COLOR),
-            text_font = font,
+            text_font = self.font,
             relief=DGG.FLAT, 
             pos=(-0.5,0,-0.6) if is_overlay else (0,0,-0.6), 
             scale=0.1, 
@@ -323,6 +322,6 @@ class SettingsMenu(GuiBase):
         set_fps_counter_enabled(status == 1)
 
     def set_shadow_map_quality(self, status):
-        set_attack_authority(status == 1)
+        set_shadow_map_quality(status == 1)
         messenger.send(UPDATE_SHADOW_SETTINGS)
 

@@ -138,37 +138,3 @@ class PlayerInfo:
         hash += int(sum(self.action_offsets))
         hash += int(self.health)
         return hash
-
-if __name__ == "__main__":
-    import json
-    from dataclasses import asdict
-
-    def enum_friendly_factory(data):
-        def convert_value(obj):
-            # Resolve instance value to actual literal value
-            if isinstance(obj, Enum):
-                return obj.value
-            if isinstance(obj, list):
-                return [convert_value(val) for val in obj]
-            return obj
-
-        return dict((key, convert_value(val)) for key, val in data)
-
-    expected_player = PlayerInfo(
-        position=Vector(1.0, 2.0, 3.0, 4.0),
-        health=100,
-        lookRotation=90.0,
-        bodyRotation=45.0,
-        movement=Vector(0.1, 0.2, 0.3, 0.4),
-        actions=[PlayerAction.JUMP, PlayerAction.ATTACK_1],
-        action_offsets=[0.5, 1.2]
-    )
-
-    # Serialize and Deserialize
-    bytes_data = expected_player.to_bytes()
-    actual_player = PlayerInfo.from_bytes(bytes_data)
-
-    assert actual_player.__hash__() == expected_player.__hash__()
-
-    print(f"Old size: {len(json.dumps(asdict(expected_player, dict_factory=enum_friendly_factory)).encode('utf-8'))}")
-    print(f"New size: {len(bytes_data)}")

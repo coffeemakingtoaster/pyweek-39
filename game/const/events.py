@@ -7,6 +7,8 @@ DEFEAT_EVENT = "defeat"
 UPDATE_SHADOW_SETTINGS = "update_shadow_settings"
 RESET_PLAYER_CAMERA = "reset_player_camera"
 UPDATE_PLAYER_LOOK_SENSITIVITY = "update_player_look_sensitivity"
+SET_PLAYER_NO_EVENT = "set_player_no"
+START_MATCH_TIMER_EVENT = "start_match_timer"
 
 # Networking events
 NETWORK_SEND_PRIORITY_EVENT = "network_priority"

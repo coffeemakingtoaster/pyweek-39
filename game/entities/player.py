@@ -1,26 +1,19 @@
-from direct.stdpy.threading import current_thread
 from game.const.events import NETWORK_SEND_PRIORITY_EVENT, UPDATE_PLAYER_LOOK_SENSITIVITY
-from game.const.player import BASE_HEALTH, DASH_SPEED, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
+from game.const.player import DASH_SPEED, JUMP_VELOCITY
 from game.entities.base_entity import EntityBase
-from direct.actor.Actor import Actor
-from game.helpers.config import get_look_sensitivity, is_attacker_authority
+from game.helpers.config import get_look_sensitivity
 from game.helpers.helpers import *
-from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue
+from panda3d.core import Vec3, Vec2
 from shared.types.player_info import PlayerAction, PlayerInfo, Vector
-import random
 
 
 class Player(EntityBase):
-    def __init__(self,camera,window,online, non_interactive=False) -> None:
+    def __init__(self, camera, window, online) -> None:
         super().__init__(window, "player", online, "Player")
         self.mouse_sens = get_look_sensitivity()
         self.movement_status = {"forward": 0, "backward": 0, "left": 0, "right": 0}
         self.camera = camera
                 
-        # Keybinds for movement
-        if non_interactive:
-            return
-
         self.accept("a", self.set_movement_status, ["left"])
         self.accept("a-up", self.unset_movement_status, ["left"])
         self.accept("d", self.set_movement_status, ["right"])
@@ -33,6 +26,7 @@ class Player(EntityBase):
         self.accept("lshift", self.stab)
         self.accept("mouse1",self.sweep)
         self.accept("mouse3", self.block)
+
         self.accept(UPDATE_PLAYER_LOOK_SENSITIVITY, self.__update_player_sens)
 
     def __update_player_sens(self):
@@ -59,14 +53,8 @@ class Player(EntityBase):
         if not self.is_in_attack and not self.is_in_block:
             self.is_in_attack = True
             self.is_in_block = False
-            base.taskMgr.doMethodLater(5/24,self.playSoundLater,f"{self.id}-playSoundStab", extraArgs=["stab"])
             self.sword.play("stab")
-            frames = self.sword.getAnimControl("stab").getNumFrames()
-            base.taskMgr.doMethodLater(25/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
-            base.taskMgr.doMethodLater(32/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
-            base.taskMgr.doMethodLater(25/24,self.start_dash,f"{self.id}-startDashingTask")
-            base.taskMgr.doMethodLater(32/24,self.end_dash,f"{self.id}-endDashingTask")
-            base.taskMgr.doMethodLater(frames/24,self.endAttack,f"{self.id}-endAttackTask")
+            self.schedule_stab_tasks()
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.ATTACK_1], action_offsets=[self.match_timer], health=self.health)])
     
     def sweep(self):
@@ -74,17 +62,11 @@ class Player(EntityBase):
             return
 
         if not self.is_in_attack and not self.is_in_block:
-            
             self.is_in_attack = True
-            base.taskMgr.doMethodLater(14/24, self.playSoundLater, f"{self.id}-playSoundSweep", extraArgs=["sweep"])
-            
             if self.sweepCount == 4:
                 self.sweepCount = 1
             self.sword.play(f"sweep{self.sweepCount}")
-            frames = self.sword.getAnimControl(f"sweep{self.sweepCount}").getNumFrames()
-            base.taskMgr.doMethodLater(15/24,self.turnSwordLethal,f"{self.id}-makeSwordLethalTask")
-            base.taskMgr.doMethodLater(28/24,self.turnSwordHarmless,f"{self.id}-makeSwordHarmlessTask")
-            base.taskMgr.doMethodLater((frames-2)/24, self.endAttack,f"{self.id}-endAttackTask")
+            self.schedule_sweep_tasks()
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction(3 + self.sweepCount)], action_offsets=[self.match_timer], health=self.health)])
             self.sweepCount += 1
             
@@ -95,26 +77,13 @@ class Player(EntityBase):
         if not self.is_in_block:
             
             self.is_in_block = True
-            current_block_anim = self.block_animations.pop(0)
-            self.sword.play(current_block_anim)
-            self.block_animations.append(current_block_anim)
-            
-            self.endAttack(None)
-            
-            taskMgr.remove(f"{self.id}-endAttackTask")
-            taskMgr.remove(f"{self.id}-makeSwordLethalTask")
-            taskMgr.remove(f"{self.id}-makeSwordHarmlessTask")
-            taskMgr.remove(f"{self.id}-startDashingTask")
-            
-            frames = self.sword.getAnimControl("block1").getNumFrames()
-            base.taskMgr.doMethodLater(1/24, self.turnSwordBlock,f"{self.id}-makeSwordBlockTask")
-            base.taskMgr.doMethodLater(15/24, self.turnSwordSword,f"{self.id}-makeSwordSword")
-            base.taskMgr.doMethodLater(frames/24, self.endBlock,f"{self.id}-endBlockTask")
-            
+            self.start_block_animation()
+            self.end_attack(None)
+            self.schedule_block_tasks()
             messenger.send(NETWORK_SEND_PRIORITY_EVENT, [PlayerInfo(actions=[PlayerAction.BLOCK], action_offsets=[self.match_timer], health=self.health)])
 
     def update_state(self, player_info: PlayerInfo):
-        if PlayerAction.DEAL_DAMAGE in player_info.actions and is_attacker_authority():
+        if PlayerAction.DEAL_DAMAGE in player_info.actions:
             self.show_sword_hit(self.body.getPos(render), render.getRelativeVector(self.body, Vec3.forward() + Vec3.up()))
             if player_info.enemy_health != self.health:
                 self.logger.warning(f"Health desync. Updating with network value local: {self.health} remote: {player_info.enemy_health}")
