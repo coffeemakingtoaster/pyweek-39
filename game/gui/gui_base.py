@@ -1,10 +1,6 @@
 import logging
 from direct.showbase import DirectObject
-from direct.gui.DirectGui import OnscreenImage
-from os.path import join
-from panda3d.core import Filename
 
-from direct.showbase.PythonUtil import os
 
 class GuiBase(DirectObject.DirectObject):
     def __init__(self, readable_name="GuiBase"):

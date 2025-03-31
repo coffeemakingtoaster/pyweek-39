@@ -1,5 +1,4 @@
 
-from os.path import join
 from panda3d.core import Filename
 
 from direct.showbase.PythonUtil import os

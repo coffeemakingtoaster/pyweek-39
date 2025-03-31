@@ -5,7 +5,6 @@ from game.entities.player import Player
 from game.helpers.helpers import *
 from panda3d.core import Vec3
 from math import atan2, degrees, sqrt
-from panda3d.core import Vec3
 
 class Bot(EntityBase):
     def __init__(self,window) -> None:

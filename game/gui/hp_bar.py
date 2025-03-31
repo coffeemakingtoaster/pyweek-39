@@ -3,7 +3,6 @@ from direct.gui.DirectGui import DirectFrame, DirectLabel, OnscreenImage
 from game.const.player import BASE_HEALTH
 from game.gui.gui_base import GuiBase
 from panda3d.core import TransparencyAttrib
-from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
 
 class HpBar(GuiBase):
 

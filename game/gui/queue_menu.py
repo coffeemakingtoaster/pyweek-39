@@ -3,10 +3,9 @@ from game.const.events import CANCEL_QUEUE_EVENT, GUI_RETURN_EVENT
 from game.gui.gui_base import GuiBase
 from panda3d.core import TransparencyAttrib
 
-from direct.gui.DirectGui import DirectButton, DirectLabel, DirectFrame, DGG
+from direct.gui.DirectGui import DirectButton, DirectFrame, DGG
 from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
 
-from game.gui.gui_base import GuiBase
 
 class QueueMenu(GuiBase):
     def __init__(self):

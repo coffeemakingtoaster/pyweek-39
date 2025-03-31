@@ -1,5 +1,5 @@
 from typing import List
-from game.const.events import GUI_UPDATE_ANTI_PLAYER_NAME, GUI_UPDATE_LATENCY, NETWORK_SEND_PRIORITY_EVENT
+from game.const.events import GUI_UPDATE_ANTI_PLAYER_NAME, GUI_UPDATE_LATENCY
 from game.const.networking import POSITION_DIFF_THRESHOLD
 from game.const.player import DASH_SPEED, GRAVITY, JUMP_VELOCITY
 from game.entities.base_entity import EntityBase
@@ -11,7 +11,7 @@ from game.utils.name_generator import generate_name
 class AntiPlayer(EntityBase):
     def __init__(self, window) -> None:
         self.name = generate_name()
-        super().__init__(window, "enemy", True, f"Enemy (online)")
+        super().__init__(window, "enemy", True, "Enemy (online)")
 
         self.name_tag = None
         self.name_tag_node = None
@@ -24,7 +24,7 @@ class AntiPlayer(EntityBase):
         self.__add_name_tag()
 
         self.accept(GUI_UPDATE_ANTI_PLAYER_NAME, self.__update_name)
-        self.logger.info(f"Created representation for network opponent")
+        self.logger.info("Created representation for network opponent")
  
     def __add_name_tag(self):
         self.name_tag = TextNode(f"{self.id}-name")

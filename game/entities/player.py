@@ -1,12 +1,10 @@
-from direct.stdpy.threading import current_thread
-from game.const.events import NETWORK_SEND_PRIORITY_EVENT, SET_PLAYER_NO_EVENT, UPDATE_PLAYER_LOOK_SENSITIVITY
-from game.const.player import BASE_HEALTH, DASH_SPEED, GRAVITY, JUMP_VELOCITY, MOVEMENT_SPEED
+from game.const.events import NETWORK_SEND_PRIORITY_EVENT, UPDATE_PLAYER_LOOK_SENSITIVITY
+from game.const.player import DASH_SPEED, JUMP_VELOCITY
 from game.entities.base_entity import EntityBase
 from game.helpers.config import get_look_sensitivity
 from game.helpers.helpers import *
-from panda3d.core import Vec3, Point3, CollisionNode, CollisionSphere,Vec2,CollisionCapsule,ColorAttrib,CollisionHandlerEvent,CollisionHandlerQueue
+from panda3d.core import Vec3, Vec2
 from shared.types.player_info import PlayerAction, PlayerInfo, Vector
-import random
 
 
 class Player(EntityBase):

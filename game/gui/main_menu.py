@@ -1,9 +1,9 @@
 from game.const.events import ENTER_QUEUE_EVENT, GUI_SETTINGS_EVENT, START_GAME_EVENT
 from game.helpers.config import save_config
-from panda3d.core import TextNode, TransparencyAttrib
-from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
+from panda3d.core import TransparencyAttrib
+from game.const.colors import TEXT_PRIMARY_COLOR
 
-from direct.gui.DirectGui import DirectButton, DirectLabel, DirectFrame, DGG
+from direct.gui.DirectGui import DirectButton, DirectFrame, DGG
 
 import sys
 

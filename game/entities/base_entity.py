@@ -1,19 +1,14 @@
 import logging
-from typing import ForwardRef
 from direct.actor.Actor import Actor
 from direct.showbase import DirectObject
-from abc import abstractmethod
-import math
 
-from direct.stdpy.threading import current_thread
 from direct.task.Task import messenger
 
-from game.const import player
 from game.const.bit_masks import ANTI_PLAYER_BIT_MASK, NO_BIT_MASK, PLAYER_BIT_MASK
 from game.const.events import DEFEAT_EVENT, GUI_UPDATE_ANTI_HP, GUI_UPDATE_PLAYER_HP, NETWORK_SEND_PRIORITY_EVENT, SET_PLAYER_NO_EVENT, START_MATCH_TIMER_EVENT, WIN_EVENT
 from game.const.player import ALLOWED_WORD_CENTER_DISTANCE, BASE_HEALTH, BLOCK_RANGE_DEG, GRAVITY, MOVEMENT_SPEED, PLAYER_1_SPAWN, PLAYER_2_SPAWN, POST_HIT_INV_DURATION, WORLD_CENTER_POINT
 from game.helpers.helpers import getModelPath
-from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule, CollisionHandlerEvent, LineSegs, NodePath, Mat3,Quat
+from panda3d.core import Vec3, CollisionNode, CollisionSphere, CollisionCapsule, CollisionHandlerEvent, NodePath
 
 from game.utils.scene_graph import traverse_parents_until_name_is_matched
 from direct.particles.ParticleEffect import ParticleEffect

@@ -1,7 +1,7 @@
 from game.const.events import GUI_RETURN_EVENT
 from game.gui.gui_base import GuiBase
 
-from game.const.colors import TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR
+from game.const.colors import TEXT_PRIMARY_COLOR
 
 from panda3d.core import TransparencyAttrib
 
