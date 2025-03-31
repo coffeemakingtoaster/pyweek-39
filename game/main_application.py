@@ -385,6 +385,7 @@ class MainGame(ShowBase):
             self.camera.setHpr(0,0,0)
             self.camera.reparentTo(self.player.head)
             self.camera.setPos(0,0.09,0.4)
+            
             self.player.head.setP(0)
             if update_pointer:
                 self.win.movePointer(0, self.win.getXSize() // 2, self.win.getYSize() // 2)

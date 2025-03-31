@@ -156,7 +156,7 @@ class EntityBase(DirectObject.DirectObject):
         
         self.sword.setShaderOff()
                
-        self.sword.setPos(0, 0.2, 0)
+        self.sword.setPos(0, 0.35, 0)
     
         self.shoes = Actor(getModelPath("shoes"))
         self.shoes.reparentTo(self.body)

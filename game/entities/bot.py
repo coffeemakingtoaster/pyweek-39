@@ -143,10 +143,11 @@ class Bot(EntityBase):
             return
         self.action_check_cooldown = BOT_WAIT_TIME_BETWEEN_ACTION_CHECKS
         if player.is_in_attack:
-            # 1 in 100 chance to block -> this is per tick :)
-            self.block() if random.randint(1,800) else None
+           
+            
+            self.block() if random.randint(1,2) == 1 else None
         if 7 > dist_to_player > 3:
-            # 1 in 100 chance to block -> this is per tick :)
+            # 1 in 100 chance to block -> this is per tick :) #Irgendwie klappt das nicht
             
             self.stab(player) if random.randint(1,100) else None
             
